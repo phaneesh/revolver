@@ -56,7 +56,7 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private Set<Integer> acceptableResponseCodes = Collections.emptySet();
 
-    private RevolverHttpAuthorizationConfig authorization = new RevolverHttpAuthorizationConfig();
+    private Set<RevolverHttpAuthorizationConfig> authorization;
 
     @Builder(builderMethodName = "configBuilder")
     public RevolverHttpApiConfig(final String api, final HystrixCommandConfig runtime, final String path,

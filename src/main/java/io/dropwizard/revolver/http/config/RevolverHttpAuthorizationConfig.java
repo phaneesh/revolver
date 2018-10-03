@@ -33,14 +33,17 @@ import java.util.Set;
 @Builder
 public class RevolverHttpAuthorizationConfig {
 
+    private String namespace;
+
     @Builder.Default
     private String type = "dynamic";
 
     @Singular
-    @NotEmpty
     private Set<String> methods;
 
     @Singular
-    @NotEmpty
     private Set<String> roles;
+
+    @Singular
+    private Set<String> permissions;
 }

@@ -68,7 +68,6 @@ public class RevolverConfig {
     @Singular
     private List<RevolverServiceConfig> services;
 
-    @NotNull
     @Valid
     @Getter
     @Setter

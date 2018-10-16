@@ -36,7 +36,6 @@ public class SimpleEndpointSpec extends EndpointSpec {
 
     @Getter
     @Setter
-    @NotBlank
     private int port;
 
     public SimpleEndpointSpec() {

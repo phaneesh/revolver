@@ -33,6 +33,7 @@ import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
+import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -229,10 +230,11 @@ public class CallbackHandler {
                                 .build()).build()).build();
     }
 
-    private RevolverHttpCommand getCommand(final RevolverHttpServiceConfig httpConfig) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException, ExecutionException {
+    private RevolverHttpCommand getCommand(final RevolverHttpServiceConfig httpConfig) throws ExecutionException, CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
         try {
             return RevolverBundle.getHttpCommand(httpConfig.getService());
         } catch (RevolverExecutionException e) {
+            RevolverHttpClientFactory.initClient(httpConfig);
             RevolverBundle.addHttpCommand(httpConfig.getService(),
                     RevolverHttpCommand.builder()
                             .clientConfiguration(revolverConfig.getClientConfig())

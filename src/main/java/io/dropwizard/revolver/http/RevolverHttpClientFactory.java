@@ -19,18 +19,12 @@ package io.dropwizard.revolver.http;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import okhttp3.ConnectionPool;
-import okhttp3.ConnectionSpec;
-import okhttp3.Credentials;
-import okhttp3.OkHttpClient;
+import okhttp3.*;
 import okhttp3.internal.tls.OkHostnameVerifier;
 import org.apache.commons.lang3.StringUtils;
 
@@ -41,7 +35,8 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
-import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -50,21 +45,37 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RevolverHttpClientFactory {
 
-    private static LoadingCache<RevolverHttpServiceConfig, OkHttpClient> clientCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<RevolverHttpServiceConfig, OkHttpClient>() {
-                @Override
-                public OkHttpClient load(RevolverHttpServiceConfig serviceConfiguration) throws Exception {
-                    return getOkHttpClient(serviceConfiguration);
-                }
-            });
+    private static Map<String, OkHttpClient> clientCache = new HashMap<>();
 
-    public static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException, UnrecoverableKeyException, ExecutionException {
+    public static synchronized void initClient(final RevolverHttpServiceConfig serviceConfiguration) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
         Preconditions.checkNotNull(serviceConfiguration);
-        return clientCache.get(serviceConfiguration);
+        clientCache.put(serviceConfiguration.getService(), getOkHttpClient(serviceConfiguration));
+    }
+
+    static OkHttpClient client(final RevolverHttpServiceConfig serviceConfiguration) {
+        return clientCache.getOrDefault(serviceConfiguration.getService(), null);
     }
 
     private static OkHttpClient getOkHttpClient(RevolverHttpServiceConfig serviceConfiguration) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
-        final OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        final Dispatcher dispatcher = new Dispatcher();
+        dispatcher.setMaxRequests(serviceConfiguration.getConnectionPoolSize());
+        dispatcher.setMaxRequestsPerHost(serviceConfiguration.getConnectionPoolSize());
+        final OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .retryOnConnectionFailure(true)
+                .connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS)
+                .readTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS)
+                .writeTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS)
+                .connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS)
+                .followRedirects(false)
+                .followSslRedirects(false)
+                .connectionPool(new ConnectionPool(
+                        serviceConfiguration.getConnectionPoolSize(),
+                        serviceConfiguration.getConnectionKeepAliveInMillis() <= 0 ?
+                                30000 : serviceConfiguration.getConnectionKeepAliveInMillis(),
+                        TimeUnit.MILLISECONDS
+                ))
+                .dispatcher(dispatcher);
+
         if (serviceConfiguration.isAuthEnabled()) {
             switch (serviceConfiguration.getAuth().getType().toLowerCase()) {
                 case "basic":
@@ -110,18 +121,6 @@ public class RevolverHttpClientFactory {
                 builder.hostnameVerifier(hostNameVerifier);
             }
         }
-        if (serviceConfiguration.getConnectionKeepAliveInMillis() <= 0) {
-            builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), 30, TimeUnit.SECONDS));
-        } else {
-            builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
-        }
-        builder.retryOnConnectionFailure(true);
-        builder.connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.readTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.writeTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.followRedirects(false);
-        builder.followSslRedirects(false);
         return builder.build();
     }
 
@@ -137,7 +136,7 @@ public class RevolverHttpClientFactory {
         final SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
         clientBuilder.hostnameVerifier(OkHostnameVerifier.INSTANCE);
-        clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager)trustManagerFactory.getTrustManagers()[0]);
+        clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager) trustManagerFactory.getTrustManagers()[0]);
     }
 
 }

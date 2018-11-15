@@ -47,6 +47,7 @@ import io.dropwizard.revolver.exception.TimeoutExceptionMapper;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.handler.DynamicConfigHandler;
+import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
@@ -319,6 +320,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             ((RevolverHttpServiceConfig) config).getApis().forEach(a ->
                     apiStatus.put(config.getService() + "." + a.getApi(), true));
         }
+        RevolverHttpClientFactory.initClient(revolverHttpServiceConfig);
     }
 
     private static void registerHttpCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException, UnrecoverableKeyException {

@@ -30,6 +30,7 @@ import io.dropwizard.revolver.core.config.RevolverConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.Charsets;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -120,7 +121,7 @@ public class DynamicConfigHandler implements Managed {
     }
 
     private String computeHash(final String config) {
-        return Hashing.sha256().hashString(config, Charsets.UTF_8).toString();
+        return Hashing.sha256().hashString(config, StandardCharsets.UTF_8).toString();
     }
 
     @Override

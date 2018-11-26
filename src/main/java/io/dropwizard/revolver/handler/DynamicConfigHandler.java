@@ -22,15 +22,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.hash.Hashing;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.Charsets;
+import org.apache.commons.codec.digest.DigestUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -121,7 +119,7 @@ public class DynamicConfigHandler implements Managed {
     }
 
     private String computeHash(final String config) {
-        return Hashing.sha256().hashString(config, StandardCharsets.UTF_8).toString();
+        return DigestUtils.sha512Hex(config);
     }
 
     @Override

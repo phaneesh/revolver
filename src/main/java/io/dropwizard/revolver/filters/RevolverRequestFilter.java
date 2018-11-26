@@ -30,7 +30,6 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -43,8 +42,6 @@ import java.util.UUID;
 @Singleton
 public class RevolverRequestFilter implements ContainerRequestFilter {
 
-    private static final String FORWARDED_FOR = "X-FORWARDED-FOR";
-
     private final RevolverConfig config;
 
     public RevolverRequestFilter(RevolverConfig config) {
@@ -52,7 +49,7 @@ public class RevolverRequestFilter implements ContainerRequestFilter {
     }
 
     @Override
-    public void filter(final ContainerRequestContext containerRequestContext) throws IOException {
+    public void filter(final ContainerRequestContext containerRequestContext) {
         if(!containerRequestContext.getUriInfo().getPath().startsWith("revolver/v1")) {
             String requestId = containerRequestContext.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
             val transactionId = containerRequestContext.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);

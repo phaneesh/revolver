@@ -17,6 +17,8 @@
 
 package io.dropwizard.revolver.http;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
@@ -35,25 +37,20 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author phaneesh
  */
 @Slf4j
-public class RevolverHttpClientFactory {
+class RevolverHttpClientFactory {
 
-    private static Map<String, OkHttpClient> clientCache = new HashMap<>();
+    private static LoadingCache<RevolverHttpServiceConfig, OkHttpClient> clientCache = Caffeine.newBuilder()
+            .build(RevolverHttpClientFactory::getOkHttpClient);
 
-    public static synchronized void initClient(final RevolverHttpServiceConfig serviceConfiguration) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+    static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) {
         Preconditions.checkNotNull(serviceConfiguration);
-        clientCache.put(serviceConfiguration.getService(), getOkHttpClient(serviceConfiguration));
-    }
-
-    static OkHttpClient client(final RevolverHttpServiceConfig serviceConfiguration) {
-        return clientCache.getOrDefault(serviceConfiguration.getService(), null);
+        return clientCache.get(serviceConfiguration);
     }
 
     private static OkHttpClient getOkHttpClient(RevolverHttpServiceConfig serviceConfiguration) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {

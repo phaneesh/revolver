@@ -17,10 +17,9 @@
 
 package io.dropwizard.revolver.callback;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
@@ -33,7 +32,6 @@ import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
-import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -48,18 +46,11 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -79,13 +70,8 @@ public class CallbackHandler {
     public CallbackHandler(PersistenceProvider persistenceProvider, RevolverConfig revolverConfig) {
         this.persistenceProvider = persistenceProvider;
         this.revolverConfig = revolverConfig;
-        this.clientLoadingCache = CacheBuilder.newBuilder()
-                .build(new CacheLoader<CallbackConfigKey, RevolverHttpServiceConfig>() {
-                    @Override
-                    public RevolverHttpServiceConfig load(CallbackConfigKey key) throws Exception {
-                        return buildConfiguration(key.callbackRequest, key.endpoint);
-                    }
-                });
+        this.clientLoadingCache = Caffeine.newBuilder()
+                .build(key -> buildConfiguration(key.callbackRequest, key.endpoint));
     }
 
     @Data
@@ -93,7 +79,7 @@ public class CallbackHandler {
     @EqualsAndHashCode(exclude = "callbackRequest")
     @ToString(exclude = "callbackRequest")
     @AllArgsConstructor
-    public static class CallbackConfigKey {
+    private static class CallbackConfigKey {
         private String endpoint;
         private RevolverCallbackRequest callbackRequest;
     }
@@ -142,6 +128,10 @@ public class CallbackHandler {
                     .callbackRequest(callbackRequest)
                     .endpoint(callbackUri)
                     .build());
+            if(null == httpCommandConfig) {
+                log.error("Invalid callback configuration for key: {} for request: {}", uri.toString(), requestId);
+                return;
+            }
             final RevolverHttpCommand httpCommand = getCommand(httpCommandConfig);
             final MultivaluedMap<String, String> requestHeaders = new MultivaluedHashMap<>();
             callBackResponse.getHeaders().forEach(requestHeaders::put);
@@ -170,8 +160,6 @@ public class CallbackHandler {
                     },
                     (error) -> log.error("Error from callback for request id: {} | Error: {}", ExceptionUtils.getRootCauseMessage(error)));
             log.info("Callback complete for request id: {} in {} ms", requestId, (System.currentTimeMillis() - start));
-        } catch (MalformedURLException e) {
-            log.error("Invalid callback URL: {} for request: {}", uri.toString(), requestId, e);
         } catch (Exception e) {
             log.error("Error making callback for: {} for request: {}", uri.toString(), requestId, e);
         }
@@ -230,11 +218,10 @@ public class CallbackHandler {
                                 .build()).build()).build();
     }
 
-    private RevolverHttpCommand getCommand(final RevolverHttpServiceConfig httpConfig) throws ExecutionException, CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+    private RevolverHttpCommand getCommand(final RevolverHttpServiceConfig httpConfig) {
         try {
             return RevolverBundle.getHttpCommand(httpConfig.getService());
         } catch (RevolverExecutionException e) {
-            RevolverHttpClientFactory.initClient(httpConfig);
             RevolverBundle.addHttpCommand(httpConfig.getService(),
                     RevolverHttpCommand.builder()
                             .clientConfiguration(revolverConfig.getClientConfig())
@@ -242,9 +229,7 @@ public class CallbackHandler {
                             .serviceConfiguration(httpConfig)
                             .apiConfigurations(generateApiConfigMap(httpConfig))
                             .serviceResolver(RevolverBundle.getServiceNameResolver())
-                            .traceCollector(trace -> {
-                                //TODO: Put in a publisher if required
-                            }).build()
+                            .build()
             );
         }
         return RevolverBundle.getHttpCommand(httpConfig.getService());

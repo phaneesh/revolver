@@ -47,7 +47,6 @@ import io.dropwizard.revolver.exception.TimeoutExceptionMapper;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.handler.DynamicConfigHandler;
-import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
@@ -69,18 +68,11 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -114,13 +106,13 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     }
 
     @Override
-    public void run(final T configuration, final Environment environment) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+    public void run(final T configuration, final Environment environment) {
         //Add metrics publisher
         final HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(environment.metrics());
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
         final RevolverConfig revolverConfig = getRevolverConfig(configuration);
-        if(Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
+        if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, "/hystrix.stream");
         } else {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, revolverConfig.getHystrixStreamPath());
@@ -133,6 +125,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .revolverConfig(revolverConfig)
                 .build();
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
+
         environment.jersey().register(new RevolverRequestResource(environment.getObjectMapper(),
                 msgPackObjectMapper, xmlObjectMapper, persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
@@ -143,7 +136,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         DynamicConfigHandler dynamicConfigHandler = new
                 DynamicConfigHandler(getRevolverConfigAttribute(), revolverConfig, environment.getObjectMapper(), getConfigSource());
         //Register dynamic config poller if it is enabled
-        if(revolverConfig.isDynamicConfig()) {
+        if (revolverConfig.isDynamicConfig()) {
             environment.lifecycle().manage(dynamicConfigHandler);
         }
         environment.jersey().register(new RevolverConfigResource(dynamicConfigHandler));
@@ -230,17 +223,17 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             case "in_memory":
                 return new InMemoryPersistenceProvider();
             case "aerospike":
-                AerospikeConnectionManager.init((AerospikeMailBoxConfig)revolverConfig.getMailBox());
-                return new AeroSpikePersistenceProvider((AerospikeMailBoxConfig)revolverConfig.getMailBox(), environment.getObjectMapper());
+                AerospikeConnectionManager.init((AerospikeMailBoxConfig) revolverConfig.getMailBox());
+                return new AeroSpikePersistenceProvider((AerospikeMailBoxConfig) revolverConfig.getMailBox(), environment.getObjectMapper());
         }
         throw new IllegalArgumentException("Invalid mailbox configuration");
     }
 
     public abstract CuratorFramework getCurator();
 
-    private void initializeRevolver(final T configuration, final Environment environment) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException {
+    private void initializeRevolver(final T configuration, final Environment environment) {
         final RevolverConfig revolverConfig = getRevolverConfig(configuration);
-        if(revolverConfig.getServiceResolverConfig() != null) {
+        if (revolverConfig.getServiceResolverConfig() != null) {
             serviceNameResolver = revolverConfig.getServiceResolverConfig().isUseCurator() ? RevolverServiceResolver.usingCurator()
                     .curatorFramework(getCurator())
                     .objectMapper(environment.getObjectMapper())
@@ -258,14 +251,14 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         System.out.println("***************************************************************************************************");
         System.out.println("Revolver Service Map");
         System.out.println("***************************************************************************************************");
-        serviceToPathMap.forEach( (k, v) -> {
-            System.out.println("\tService: " +k);
-            v.forEach( a -> a.getApi().getMethods().forEach(b -> System.out.println("\t\t[" +b.name() +"] " + a.getApi().getApi() +": " +a.getPath())));
+        serviceToPathMap.forEach((k, v) -> {
+            System.out.println("\tService: " + k);
+            v.forEach(a -> a.getApi().getMethods().forEach(b -> System.out.println("\t\t[" + b.name() + "] " + a.getApi().getApi() + ": " + a.getPath())));
         });
         System.out.println("***************************************************************************************************");
     }
 
-    public static void loadServiceConfiguration(RevolverConfig revolverConfig) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException, UnrecoverableKeyException {
+    public static void loadServiceConfiguration(RevolverConfig revolverConfig) {
         for (final RevolverServiceConfig config : revolverConfig.getServices()) {
             final String type = config.getType();
             switch (type) {
@@ -282,7 +275,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    private static void registerHttpsCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException, UnrecoverableKeyException {
+    private static void registerHttpsCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) {
         final RevolverHttpsServiceConfig httpsConfig = (RevolverHttpsServiceConfig) config;
         final RevolverHttpServiceConfig revolverHttpServiceConfig = RevolverHttpServiceConfig.builder()
                 .apis(httpsConfig.getApis())
@@ -299,38 +292,27 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .trackingHeaders(httpsConfig.isTrackingHeaders())
                 .type(httpsConfig.getType())
                 .build();
-        try {
-            registerCommand(revolverConfig, config, revolverHttpServiceConfig);
-        } catch (ExecutionException e) {
-            log.error("Error creating http command: {}", config.getService(), e);
-        }
+        registerCommand(revolverConfig, config, revolverHttpServiceConfig);
     }
 
-    private static void registerCommand(RevolverConfig revolverConfig, RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException, UnrecoverableKeyException, ExecutionException {
+    private static void registerCommand(RevolverConfig revolverConfig, RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) {
         RevolverHttpCommand command = RevolverHttpCommand.builder()
                 .clientConfiguration(revolverConfig.getClientConfig())
                 .runtimeConfig(revolverConfig.getGlobal())
                 .serviceConfiguration(revolverHttpServiceConfig).apiConfigurations(generateApiConfigMap(revolverHttpServiceConfig))
                 .serviceResolver(serviceNameResolver)
-                .traceCollector(trace -> {
-                    //TODO: Put in a publisher if required
-                }).build();
+                .build();
         httpCommands.put(config.getService(), command);
-        if(config instanceof RevolverHttpServiceConfig) {
+        if (config instanceof RevolverHttpServiceConfig) {
             ((RevolverHttpServiceConfig) config).getApis().forEach(a ->
                     apiStatus.put(config.getService() + "." + a.getApi(), true));
         }
-        RevolverHttpClientFactory.initClient(revolverHttpServiceConfig);
     }
 
-    private static void registerHttpCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, KeyManagementException, UnrecoverableKeyException {
+    private static void registerHttpCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) {
         final RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
         httpConfig.setSecured(false);
-        try {
-            registerCommand(revolverConfig, config, httpConfig);
-        } catch (ExecutionException e) {
-            log.error("Error creating http command: {}", config.getService(), e);
-        }
+        registerCommand(revolverConfig, config, httpConfig);
     }
 
     public static void addHttpCommand(String service, RevolverHttpCommand httpCommand) {

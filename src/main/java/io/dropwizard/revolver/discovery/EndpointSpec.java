@@ -25,7 +25,7 @@ import javax.validation.constraints.NotNull;
 /**
  * @author phaneesh
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 public abstract class EndpointSpec {
 
     @NotNull

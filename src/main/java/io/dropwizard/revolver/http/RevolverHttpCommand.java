@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
-import io.dropwizard.revolver.core.tracing.TraceCollector;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.Endpoint;
@@ -43,7 +42,6 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /**
@@ -64,11 +62,10 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     public RevolverHttpCommand(final RuntimeConfig runtimeConfig, final ClientConfig clientConfiguration,
                                final RevolverHttpServiceConfig serviceConfiguration,
                                final Map<String, RevolverHttpApiConfig> apiConfigurations,
-                               final TraceCollector traceCollector, final RevolverServiceResolver serviceResolver)
-            throws ExecutionException {
-        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfigurations, traceCollector);
+                               final RevolverServiceResolver serviceResolver) {
+        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfigurations);
         (this.serviceResolver = serviceResolver).register(serviceConfiguration.getEndpoint());
-        this.client = RevolverHttpClientFactory.client(serviceConfiguration);
+        this.client = RevolverHttpClientFactory.buildClient(serviceConfiguration);
     }
 
     @Override

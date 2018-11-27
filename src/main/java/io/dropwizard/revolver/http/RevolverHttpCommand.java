@@ -161,9 +161,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val httpRequest = new Request.Builder()
                 .url(url)
                 .get();
-        if (null != request.getHeaders()) {
-            request.getHeaders().forEach((key, values) -> values.forEach(value -> httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         trackingHeaders(request, httpRequest);
         return executeRequest(apiConfiguration, httpRequest.build(), true);
     }
@@ -174,9 +172,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val httpRequest = new Request.Builder()
                 .url(url)
                 .method("OPTIONS", null);
-        if (null != request.getHeaders()) {
-            request.getHeaders().forEach((key, values) -> values.forEach(value -> httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         trackingHeaders(request, httpRequest);
         return executeRequest(apiConfiguration, httpRequest.build(), true);
     }
@@ -187,9 +183,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val httpRequest = new Request.Builder()
                 .url(url)
                 .head();
-        if (null != request.getHeaders()) {
-            request.getHeaders().forEach((key, values) -> values.forEach(value -> httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         trackingHeaders(request, httpRequest);
         return executeRequest(apiConfiguration, httpRequest.build(), false);
     }
@@ -199,9 +193,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new Request.Builder()
                 .url(url);
-        if (null != request.getHeaders()) {
-            request.getHeaders().forEach((key, values) -> values.forEach(value -> httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         if(request.getBody() != null) {
             if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.delete(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));
@@ -219,9 +211,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new Request.Builder()
                 .url(url);
-        if (null != request.getHeaders()) {
-            request.getHeaders().forEach((key, values) -> values.forEach(value -> httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         if(request.getBody() != null) {
             if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.patch(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));
@@ -239,12 +229,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new Request.Builder()
                 .url(url);
-        if (null != request.getHeaders()) {
-            request.getHeaders()
-                    .forEach((key, values) ->
-                            values.forEach(value ->
-                                    httpRequest.addHeader(key, value)));
-        }
+        addHeaders(request, httpRequest);
         if(request.getBody() != null) {
             if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.post(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));

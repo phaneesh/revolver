@@ -82,7 +82,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public abstract class RevolverBundle<T extends Configuration> implements ConfiguredBundle<T> {
 
-    private static ConcurrentHashMap<String, RevolverHttpCommand> httpCommands = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
+
+    private static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
 
     private static MultivaluedMap<String, ApiPathMap> serviceToPathMap = new MultivaluedHashMap<>();
 
@@ -93,6 +95,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static RevolverServiceResolver serviceNameResolver = null;
 
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
+
+    private static RevolverConfig revolverConfig;
 
     @Override
     public void initialize(final Bootstrap<?> bootstrap) {
@@ -195,12 +199,21 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    public static RevolverHttpCommand getHttpCommand(final String service) {
-        val command = httpCommands.get(service);
-        if (null == command) {
+    public static RevolverHttpCommand getHttpCommand(final String service, final String api) {
+        if(!serviceConfig.containsKey(service)) {
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "No service spec defined for service: " + service);
         }
-        return command;
+        final String serviceKey = service +"." +api;
+        if(!apiConfig.containsKey(serviceKey)) {
+            throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "No api spec defined for service: " + service);
+        }
+        return RevolverHttpCommand.builder()
+                    .apiConfiguration(apiConfig.get(serviceKey))
+                    .serviceResolver(serviceNameResolver)
+                    .clientConfiguration(revolverConfig.getClientConfig())
+                    .runtimeConfig(revolverConfig.getGlobal())
+                    .serviceConfiguration(serviceConfig.get(service))
+                .build();
     }
 
     public static RevolverServiceResolver getServiceNameResolver() {
@@ -232,7 +245,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public abstract CuratorFramework getCurator();
 
     private void initializeRevolver(final T configuration, final Environment environment) {
-        final RevolverConfig revolverConfig = getRevolverConfig(configuration);
+        revolverConfig = getRevolverConfig(configuration);
         if (revolverConfig.getServiceResolverConfig() != null) {
             serviceNameResolver = revolverConfig.getServiceResolverConfig().isUseCurator() ? RevolverServiceResolver.usingCurator()
                     .curatorFramework(getCurator())
@@ -263,19 +276,20 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             final String type = config.getType();
             switch (type) {
                 case "http":
-                    registerHttpCommand(revolverConfig, config);
+                    registerHttpCommand(config);
                     break;
                 case "https":
-                    registerHttpsCommand(revolverConfig, config);
+                    registerHttpsCommand(config);
                     break;
                 default:
                     log.warn("Unsupported Service type: " + type);
 
             }
         }
+        RevolverBundle.revolverConfig = revolverConfig;
     }
 
-    private static void registerHttpsCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) {
+    private static void registerHttpsCommand(RevolverServiceConfig config) {
         final RevolverHttpsServiceConfig httpsConfig = (RevolverHttpsServiceConfig) config;
         final RevolverHttpServiceConfig revolverHttpServiceConfig = RevolverHttpServiceConfig.builder()
                 .apis(httpsConfig.getApis())
@@ -292,31 +306,32 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .trackingHeaders(httpsConfig.isTrackingHeaders())
                 .type(httpsConfig.getType())
                 .build();
-        registerCommand(revolverConfig, config, revolverHttpServiceConfig);
+        registerCommand(config, revolverHttpServiceConfig);
     }
 
-    private static void registerCommand(RevolverConfig revolverConfig, RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) {
-        RevolverHttpCommand command = RevolverHttpCommand.builder()
-                .clientConfiguration(revolverConfig.getClientConfig())
-                .runtimeConfig(revolverConfig.getGlobal())
-                .serviceConfiguration(revolverHttpServiceConfig).apiConfigurations(generateApiConfigMap(revolverHttpServiceConfig))
-                .serviceResolver(serviceNameResolver)
-                .build();
-        httpCommands.put(config.getService(), command);
+    private static void registerCommand(RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) {
         if (config instanceof RevolverHttpServiceConfig) {
-            ((RevolverHttpServiceConfig) config).getApis().forEach(a ->
-                    apiStatus.put(config.getService() + "." + a.getApi(), true));
+            ((RevolverHttpServiceConfig) config).getApis().forEach(a -> {
+                    final String key = config.getService() + "." + a.getApi();
+                    apiStatus.put(key, true);
+                    apiConfig.put(key, a);
+            });
+            generateApiConfigMap((RevolverHttpServiceConfig) config);
         }
     }
 
-    private static void registerHttpCommand(RevolverConfig revolverConfig, RevolverServiceConfig config) {
+    private static void registerHttpCommand(RevolverServiceConfig config) {
         final RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
         httpConfig.setSecured(false);
-        registerCommand(revolverConfig, config, httpConfig);
+        serviceConfig.put(config.getService(), httpConfig);
+        registerCommand(config, httpConfig);
     }
 
-    public static void addHttpCommand(String service, RevolverHttpCommand httpCommand) {
-        httpCommands.put(service, httpCommand);
+    public static void addHttpCommand(RevolverHttpServiceConfig config) {
+        if(!serviceConfig.containsKey(config.getService())) {
+            serviceConfig.put(config.getService(), config);
+            registerCommand(config, config);
+        }
     }
 
 }

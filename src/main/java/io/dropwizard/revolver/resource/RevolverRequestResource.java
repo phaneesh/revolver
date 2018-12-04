@@ -211,7 +211,7 @@ public class RevolverRequestResource {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
-        val httpCommand = RevolverBundle.getHttpCommand(service);
+        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
         val response = httpCommand.execute(
                 RevolverHttpRequest.builder()
                         .traceInfo(
@@ -312,7 +312,7 @@ public class RevolverRequestResource {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
-        val httpCommand = RevolverBundle.getHttpCommand(service);
+        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
         val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
         val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
         val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
@@ -394,7 +394,7 @@ public class RevolverRequestResource {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
-        val httpCommand = RevolverBundle.getHttpCommand(service);
+        val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
         val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
         val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
         val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);

@@ -32,7 +32,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
 import rx.Observable;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -46,25 +45,21 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     private final ContextType context;
     private final RuntimeConfig runtimeConfig;
     private final ServiceConfigurationType serviceConfiguration;
-    private final Map<String, CommandHandlerConfigType> apiConfigurations;
+    private final CommandHandlerConfigType apiConfiguration;
     private ClientConfig clientConfiguration;
 
     public RevolverCommand(final ContextType context, final ClientConfig clientConfiguration,
                            final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration,
-                           final Map<String, CommandHandlerConfigType> apiConfigurations) {
+                           final CommandHandlerConfigType apiConfiguration) {
         this.context = context;
         this.clientConfiguration = clientConfiguration;
         this.runtimeConfig = runtimeConfig;
         this.serviceConfiguration = serviceConfiguration;
-        this.apiConfigurations = apiConfigurations;
+        this.apiConfiguration = apiConfiguration;
     }
 
     @SuppressWarnings("unchecked")
     public ResponseType execute(final RequestType request) throws RevolverExecutionException, TimeoutException {
-        final CommandHandlerConfigType apiConfiguration = this.apiConfigurations.get(request.getApi());
-        if (null == apiConfiguration) {
-            throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "No api spec defined for key: " + request.getApi());
-        }
         final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
@@ -149,8 +144,8 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     }
 
 
-    public Map<String, CommandHandlerConfigType> getApiConfigurations() {
-        return this.apiConfigurations;
+    public CommandHandlerConfigType getApiConfiguration() {
+        return this.apiConfiguration;
     }
 
     private static class RevolverCommandHandler<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig>

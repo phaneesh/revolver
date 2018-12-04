@@ -64,7 +64,7 @@ public class RevolverCommandHelper {
     public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api) {
         final RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
         final RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
-        final CommandHandlerConfig config = (CommandHandlerConfig) commandHandler.getApiConfigurations().get(api);
+        final CommandHandlerConfig config = commandHandler.getApiConfiguration();
         CircuitBreakerConfig circuitBreakerConfig;
         if(null != runtimeConfig) {
             circuitBreakerConfig = runtimeConfig.getCircuitBreaker();

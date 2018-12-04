@@ -46,7 +46,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -63,7 +63,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -80,7 +80,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -97,7 +97,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");;
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -114,7 +114,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");;
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -131,7 +131,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -148,7 +148,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -165,7 +165,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -182,7 +182,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -199,7 +199,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -216,7 +216,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -233,7 +233,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -251,7 +251,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -268,7 +268,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -285,7 +285,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -302,7 +302,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -319,7 +319,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -336,7 +336,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -353,7 +353,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -370,7 +370,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -387,7 +387,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -404,7 +404,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -421,7 +421,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -438,7 +438,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -455,7 +455,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -472,7 +472,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -489,7 +489,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")
@@ -506,7 +506,7 @@ public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")));
-        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test");
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test");
         val request = RevolverHttpRequest.builder()
                 .service("test_secured")
                 .api("test")

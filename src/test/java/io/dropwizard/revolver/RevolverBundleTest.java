@@ -36,7 +36,7 @@ public class RevolverBundleTest extends BaseRevolverTest {
         assertTrue(bundle.getPersistenceProvider(configuration, environment) instanceof InMemoryPersistenceProvider);
         assertNotNull(bundle.getRevolverConfig(configuration));
         assertNotNull(RevolverBundle.matchPath("test", "v1/test"));
-        assertNotNull(RevolverBundle.getHttpCommand("test"));
+        assertNotNull(RevolverBundle.getHttpCommand("test", "test"));
     }
 
 

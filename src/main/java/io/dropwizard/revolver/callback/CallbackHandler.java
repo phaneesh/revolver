@@ -24,8 +24,6 @@ import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
-import io.dropwizard.revolver.core.RevolverExecutionException;
-import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
@@ -50,8 +48,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author phaneesh
@@ -198,8 +194,7 @@ public class CallbackHandler {
                 type = "ranger_sharded";
                 apiName = discoveryData[2];
         }
-
-        return RevolverHttpServiceConfig.builder()
+        RevolverHttpServiceConfig httpConfig = RevolverHttpServiceConfig.builder()
                 .authEnabled(false)
                 .connectionPoolSize(10)
                 .secured(uri.getScheme().equals("https"))
@@ -216,27 +211,11 @@ public class CallbackHandler {
                                         .timeout(Integer.parseInt(timeout))
                                         .build())
                                 .build()).build()).build();
+        RevolverBundle.addHttpCommand(httpConfig);
+        return httpConfig;
     }
 
     private RevolverHttpCommand getCommand(final RevolverHttpServiceConfig httpConfig) {
-        try {
-            return RevolverBundle.getHttpCommand(httpConfig.getService());
-        } catch (RevolverExecutionException e) {
-            RevolverBundle.addHttpCommand(httpConfig.getService(),
-                    RevolverHttpCommand.builder()
-                            .clientConfiguration(revolverConfig.getClientConfig())
-                            .runtimeConfig(revolverConfig.getGlobal())
-                            .serviceConfiguration(httpConfig)
-                            .apiConfigurations(generateApiConfigMap(httpConfig))
-                            .serviceResolver(RevolverBundle.getServiceNameResolver())
-                            .build()
-            );
-        }
-        return RevolverBundle.getHttpCommand(httpConfig.getService());
-    }
-
-    private Map<String, RevolverHttpApiConfig> generateApiConfigMap(final RevolverHttpServiceConfig serviceConfiguration) {
-        return serviceConfiguration.getApis().stream()
-                .collect(Collectors.toMap(CommandHandlerConfig::getApi, apiConfig -> apiConfig));
+        return RevolverBundle.getHttpCommand(httpConfig.getService(), httpConfig.getApis().iterator().next().getApi());
     }
 }

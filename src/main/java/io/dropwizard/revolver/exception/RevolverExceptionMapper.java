@@ -18,7 +18,6 @@
 package io.dropwizard.revolver.exception;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
@@ -41,16 +40,13 @@ public class RevolverExceptionMapper implements ExceptionMapper<RevolverExceptio
 
     private ObjectMapper jsonObjectMapper;
 
-    private XmlMapper xmlObjectMapper;
-
     private ObjectMapper msgPackObjectMapper;
 
     @Context
     private HttpHeaders headers;
 
-    public RevolverExceptionMapper(ObjectMapper objectMapper, XmlMapper xmlObjectMapper, ObjectMapper msgPackObjectMapper) {
+    public RevolverExceptionMapper(ObjectMapper objectMapper, ObjectMapper msgPackObjectMapper) {
         this.jsonObjectMapper = objectMapper;
-        this.xmlObjectMapper = xmlObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
     }
 
@@ -62,11 +58,11 @@ public class RevolverExceptionMapper implements ExceptionMapper<RevolverExceptio
         try {
             if(headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(response,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(response,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch(Exception e) {
             return Response.serverError().entity("Server Error".getBytes()).build();

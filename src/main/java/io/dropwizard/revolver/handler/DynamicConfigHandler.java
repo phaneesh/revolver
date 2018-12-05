@@ -112,7 +112,7 @@ public class DynamicConfigHandler implements Managed {
     }
 
     private String loadConfigData() throws Exception {
-        log.info("Fetching configuration from dynamic url: {}", revolverConfig.getDynamicConfigUrl());
+        log.info("Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}", prevConfigHash, new Date(prevLoadTime));
         JsonNode node = objectMapper.readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
         EnvironmentVariableSubstitutor substitute = new EnvironmentVariableSubstitutor(false, true);
         return substitute.replace(node.get(configAttribute).toString());

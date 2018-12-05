@@ -20,7 +20,6 @@ package io.dropwizard.revolver.resource;
 import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.base.Strings;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
@@ -67,8 +66,6 @@ public class RevolverRequestResource {
 
     private final ObjectMapper msgPackObjectMapper;
 
-    private final XmlMapper xmlObjectMapper;
-
     private final PersistenceProvider persistenceProvider;
 
     private final CallbackHandler callbackHandler;
@@ -81,11 +78,9 @@ public class RevolverRequestResource {
 
     public RevolverRequestResource(final ObjectMapper jsonObjectMapper,
                                    final ObjectMapper msgPackObjectMapper,
-                                   final XmlMapper xmlObjectMapper,
                                    final PersistenceProvider persistenceProvider, final CallbackHandler callbackHandler) {
         this.jsonObjectMapper = jsonObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
-        this.xmlObjectMapper = xmlObjectMapper;
         this.persistenceProvider = persistenceProvider;
         this.callbackHandler = callbackHandler;
     }
@@ -161,7 +156,7 @@ public class RevolverRequestResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(
                     ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                             headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
-                            jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)
+                            jsonObjectMapper, msgPackObjectMapper)
             ).build();
         }
         String serviceKey = service +"." +apiMap.getApi().getApi();
@@ -169,7 +164,7 @@ public class RevolverRequestResource {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(
                     ResponseTransformationUtil.transform(SERVICE_UNAVAILABLE_RESPONSE,
                             headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
-                            jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)
+                            jsonObjectMapper, msgPackObjectMapper)
             ).build();
         }
         val callMode = headers.getRequestHeaders().getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
@@ -184,7 +179,7 @@ public class RevolverRequestResource {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
                             ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                     headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
-                                    jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)
+                                    jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
                 return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(), callMode);
@@ -193,7 +188,7 @@ public class RevolverRequestResource {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
                             ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                     headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
-                                    jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)
+                                    jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
                 return executeCallbackSync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
@@ -201,7 +196,7 @@ public class RevolverRequestResource {
         return Response.status(Response.Status.BAD_REQUEST).entity(
                 ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                         headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
-                        jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)
+                        jsonObjectMapper, msgPackObjectMapper)
         ).build();
     }
 
@@ -261,13 +256,6 @@ public class RevolverRequestResource {
             } else {
                 responseData = jsonObjectMapper.convertValue(jsonNode, Map.class);
             }
-        } else if(responseMediaType.startsWith(MediaType.APPLICATION_XML)) {
-            final JsonNode jsonNode = xmlObjectMapper.readTree(response.getBody());
-            if(jsonNode.isArray()) {
-                responseData = xmlObjectMapper.convertValue(jsonNode, List.class);
-            } else {
-                responseData = xmlObjectMapper.convertValue(jsonNode, Map.class);
-            }
         } else if(responseMediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK)) {
             final JsonNode jsonNode = msgPackObjectMapper.readTree(response.getBody());
             if(jsonNode.isArray()) {
@@ -282,10 +270,6 @@ public class RevolverRequestResource {
             if(requestMediaType.startsWith(MediaType.APPLICATION_JSON)) {
                 httpResponse.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
                 httpResponse.entity(jsonObjectMapper.writeValueAsBytes(responseData));
-            } else if(requestMediaType.startsWith(MediaType.APPLICATION_XML)) {
-                httpResponse.header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_XML);
-                httpResponse.entity(xmlObjectMapper.writer()
-                        .withRootName("Response").writeValueAsBytes(responseData));
             } else if(requestMediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK)) {
                 httpResponse.header(HttpHeaders.CONTENT_TYPE, MsgPackMediaType.APPLICATION_MSGPACK);
                 httpResponse.entity(msgPackObjectMapper.writeValueAsBytes(responseData));
@@ -323,7 +307,7 @@ public class RevolverRequestResource {
             return Response.status(Response.Status.NOT_ACCEPTABLE)
                     .entity(ResponseTransformationUtil.transform(DUPLICATE_REQUEST_RESPONSE,
                             headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
-                            jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)).build();
+                            jsonObjectMapper, msgPackObjectMapper)).build();
         }
         persistenceProvider.saveRequest(requestId, mailBoxId,
                 RevolverCallbackRequest.builder()
@@ -384,7 +368,7 @@ public class RevolverRequestResource {
             RevolverAckMessage revolverAckMessage = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             return Response.accepted().entity(ResponseTransformationUtil.transform(revolverAckMessage,
                     headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
-                    jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)).build();
+                    jsonObjectMapper, msgPackObjectMapper)).build();
         }
     }
 
@@ -405,7 +389,7 @@ public class RevolverRequestResource {
             return Response.status(Response.Status.NOT_ACCEPTABLE)
                     .entity(ResponseTransformationUtil.transform(DUPLICATE_REQUEST_RESPONSE,
                             headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
-                            jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper)).build();
+                            jsonObjectMapper, msgPackObjectMapper)).build();
         }
         persistenceProvider.saveRequest(requestId, mailBoxId,
                 RevolverCallbackRequest.builder()

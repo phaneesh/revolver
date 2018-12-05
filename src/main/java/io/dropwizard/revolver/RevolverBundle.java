@@ -16,13 +16,8 @@
 package io.dropwizard.revolver;
 
 import com.codahale.metrics.json.MetricsModule;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.contrib.codahalemetricspublisher.HystrixCodaHaleMetricsPublisher;
@@ -60,7 +55,6 @@ import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.resource.*;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import io.dropwizard.xml.XmlBundle;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
@@ -90,9 +84,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     public static final ObjectMapper msgPackObjectMapper = new ObjectMapper(new MessagePackFactory());
 
-    public static final XmlMapper xmlObjectMapper = new XmlMapper();
-
-    private static RevolverServiceResolver serviceNameResolver = null;
+    public static RevolverServiceResolver serviceNameResolver = null;
 
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
 
@@ -103,8 +95,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         //Reset everything before configuration
         HystrixPlugins.reset();
         registerTypes(bootstrap);
-        configureXmlMapper();
-        bootstrap.addBundle(new XmlBundle());
         bootstrap.addBundle(new MsgPackBundle());
         bootstrap.addBundle(new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
     }
@@ -121,7 +111,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         } else {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, revolverConfig.getHystrixStreamPath());
         }
-        environment.jersey().register(new RevolverExceptionMapper(environment.getObjectMapper(), xmlObjectMapper, msgPackObjectMapper));
+        environment.jersey().register(new RevolverExceptionMapper(environment.getObjectMapper(), msgPackObjectMapper));
         environment.jersey().register(new TimeoutExceptionMapper(environment.getObjectMapper()));
         final PersistenceProvider persistenceProvider = getPersistenceProvider(configuration, environment);
         final CallbackHandler callbackHandler = CallbackHandler.builder()
@@ -131,10 +121,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 
         environment.jersey().register(new RevolverRequestResource(environment.getObjectMapper(),
-                msgPackObjectMapper, xmlObjectMapper, persistenceProvider, callbackHandler));
+                msgPackObjectMapper, persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
-                xmlObjectMapper, msgPackObjectMapper));
+                msgPackObjectMapper));
         environment.jersey().register(new RevolverMetadataResource(revolverConfig));
 
         DynamicConfigHandler dynamicConfigHandler = new
@@ -160,14 +150,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         bootstrap.getObjectMapper().registerSubtypes(new NamedType(AerospikeMailBoxConfig.class, "aerospike"));
     }
 
-    private void configureXmlMapper() {
-        xmlObjectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
-        xmlObjectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        xmlObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        xmlObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        xmlObjectMapper.configure(ToXmlGenerator.Feature.WRITE_XML_1_1, true);
-    }
-
     private static Map<String, RevolverHttpApiConfig> generateApiConfigMap(final RevolverHttpServiceConfig serviceConfiguration) {
         val tokenMatch = Pattern.compile("\\{(([^/])+\\})");
         List<RevolverHttpApiConfig> apis = new ArrayList<>(serviceConfiguration.getApis());
@@ -187,6 +169,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     }
 
     private static String generatePathExpression(final String path) {
+        if(Strings.isNullOrEmpty(path)) {
+            return "";
+        }
         return path.replaceAll("\\{(([^/])+\\})", "(([^/])+)");
     }
 
@@ -209,7 +194,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
         return RevolverHttpCommand.builder()
                     .apiConfiguration(apiConfig.get(serviceKey))
-                    .serviceResolver(serviceNameResolver)
                     .clientConfiguration(revolverConfig.getClientConfig())
                     .runtimeConfig(revolverConfig.getGlobal())
                     .serviceConfiguration(serviceConfig.get(service))
@@ -325,6 +309,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         httpConfig.setSecured(false);
         serviceConfig.put(config.getService(), httpConfig);
         registerCommand(config, httpConfig);
+        serviceNameResolver.register(httpConfig.getEndpoint());
     }
 
     public static void addHttpCommand(RevolverHttpServiceConfig config) {

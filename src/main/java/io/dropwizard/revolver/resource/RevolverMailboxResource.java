@@ -19,7 +19,6 @@ package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.base.Strings;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.base.core.*;
@@ -60,8 +59,6 @@ public class RevolverMailboxResource {
 
     private ObjectMapper jsonObjectMapper;
 
-    private XmlMapper xmlObjectMapper;
-
     private ObjectMapper msgPackObjectMapper;
 
     private static final RevolverException NOT_FOUND_ERROR = RevolverException.builder()
@@ -92,11 +89,11 @@ public class RevolverMailboxResource {
                     .build();
             if (headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(response,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(response,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch (Exception e) {
             log.error("Error getting request state", e);
@@ -148,11 +145,11 @@ public class RevolverMailboxResource {
             }
             if (headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackRequest,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(callbackRequest,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch (Exception e) {
             log.error("Error getting request", e);
@@ -194,11 +191,11 @@ public class RevolverMailboxResource {
             }
             if (headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackRequests,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(callbackRequests,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch (Exception e) {
             log.error("Error getting requests", e);
@@ -227,11 +224,11 @@ public class RevolverMailboxResource {
             }
             if (headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackResponses,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(callbackResponses,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch (Exception e) {
             log.error("Error getting responses", e);
@@ -268,11 +265,11 @@ public class RevolverMailboxResource {
             RevolverAckMessage response = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             if (headers.getAcceptableMediaTypes().size() == 0) {
                 return Response.ok(ResponseTransformationUtil.transform(response,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
             }
             return Response.ok(ResponseTransformationUtil.transform(response,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
         } catch (Exception e) {
             log.error("Error getting responses", e);

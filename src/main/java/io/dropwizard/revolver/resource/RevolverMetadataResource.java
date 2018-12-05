@@ -21,6 +21,8 @@ import com.codahale.metrics.annotation.Metered;
 import com.flipkart.ranger.healthcheck.HealthcheckStatus;
 import com.flipkart.ranger.model.ServiceNode;
 import com.google.common.collect.ImmutableMap;
+import io.dropwizard.discovery.client.io.dropwizard.ranger.ServiceDiscoveryClient;
+import io.dropwizard.discovery.common.ShardInfo;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
@@ -95,14 +97,13 @@ public class RevolverMetadataResource {
     @Metered
     @ApiOperation(value = "Get the status & metadata of a service registered in api")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<ServiceNode<RevolverServiceResolver.ShardInfo>> serviceStatus(@PathParam("service") String service) {
+    public List<ServiceNode<ShardInfo>> serviceStatus(@PathParam("service") String service) {
         RevolverServiceResolver serviceResolver = RevolverBundle.getServiceNameResolver();
-        RevolverServiceResolver.ShardedServiceDiscoveryInfo serviceInfo = serviceResolver.getServiceFinders().getOrDefault(service, null);
-        if(serviceInfo == null) {
+        ServiceDiscoveryClient serviceDiscoveryClient = serviceResolver.getServiceFinders().getOrDefault(service, null);
+        if(serviceDiscoveryClient == null) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
-        return serviceInfo.getShardFinder()
-                .getAll(new RevolverServiceResolver.ShardInfo(serviceInfo.getEnvironment()));
+        return serviceDiscoveryClient.getAllNodes();
     }
 
 
@@ -157,9 +158,8 @@ public class RevolverMetadataResource {
             serviceMetadataBuilder.status(UNKNOWN);
         } else {
             if(serviceResolver.getServiceFinders().containsKey(endpoint.getService())) {
-                List<ServiceNode<RevolverServiceResolver.ShardInfo>> serviceNodes = serviceResolver.getServiceFinders()
-                        .get(endpoint.getService()).getShardFinder()
-                        .getAll(new RevolverServiceResolver.ShardInfo(endpoint.getEnvironment()));
+                List<ServiceNode<ShardInfo>> serviceNodes = serviceResolver.getServiceFinders()
+                        .get(endpoint.getService()).getAllNodes();
                 long healthy =  serviceNodes.parallelStream().filter( n -> n.getHealthcheckStatus() == HealthcheckStatus.healthy).count();
                 serviceMetadataBuilder.instances(serviceNodes.size())
                         .healthy(healthy)

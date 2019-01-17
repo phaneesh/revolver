@@ -17,19 +17,22 @@
 
 package io.dropwizard.revolver.core;
 
-import io.dropwizard.revolver.core.config.ClientConfig;
-import io.dropwizard.revolver.core.config.CommandHandlerConfig;
-import io.dropwizard.revolver.core.config.RevolverServiceConfig;
-import io.dropwizard.revolver.core.config.RuntimeConfig;
+import io.dropwizard.revolver.core.config.*;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
 
 /**
  * @author phaneesh
  */
+<<<<<<< HEAD
 public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> extends RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> {
     public SimpleRevolverCommand(final ContextType context, final ClientConfig clientConfiguration, final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration, final CommandHandlerConfigurationType apiConfiguration) {
         super(context, clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
+=======
+public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig, ThreadPoolGroupConfigType extends ThreadPoolGroupConfig> extends RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType, ThreadPoolGroupConfigType> {
+    public SimpleRevolverCommand(final ContextType context, final ClientConfig clientConfiguration, final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration, final CommandHandlerConfigurationType apiConfiguration, final ThreadPoolGroupConfigType threadPoolGroupConfig) {
+        super(context, clientConfiguration, runtimeConfig, serviceConfiguration, Collections.singletonMap(apiConfiguration.getApi(), apiConfiguration), threadPoolGroupConfig);
+>>>>>>> Group Thread Pool
     }
 }
 

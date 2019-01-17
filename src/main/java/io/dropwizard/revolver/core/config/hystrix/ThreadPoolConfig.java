@@ -40,4 +40,6 @@ public class ThreadPoolConfig {
     private int dynamicRequestQueueSize = 10;
 
     private int timeout = 1000;
+
+    private String threadPoolName;
 }

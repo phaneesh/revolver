@@ -31,6 +31,8 @@ import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 
+import java.util.Map;
+
 /**
  * @author phaneesh
  */
@@ -61,7 +63,8 @@ public class RevolverCommandHelper {
         return request;
     }
 
-    public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api) {
+    public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api,
+                                               Map<String, ThreadPoolConfig> threadPoolConfigMap) {
         final RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
         final RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
         final CommandHandlerConfig config = commandHandler.getApiConfiguration();
@@ -91,15 +94,22 @@ public class RevolverCommandHelper {
         } else {
             metricsConfig = new MetricsConfig();
         }
-        if(config.isSharedPool()) {
+
+        String keyName;
+        //Group thread pool has high precedence over shared thread pool
+        if(config.getGroupThreadPool() != null && config.getGroupThreadPool().isEnabled() && threadPoolConfigMap.get
+                (config.getGroupThreadPool().getName()) != null){
+            threadPoolConfig = threadPoolConfigMap.get(config.getGroupThreadPool().getName());
+            keyName = config.getGroupThreadPool().getName();
+        }else if(config.isSharedPool()) {
             threadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
+            keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), "shared");
+        }else {
+            keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
         }
-        final String keyName = config.isSharedPool() ?
-                Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), "shared") :
-                Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
 
         return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory
-                .asKey(serviceConfiguration.getService()))
+            .asKey(serviceConfiguration.getService()))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
                         .withExecutionIsolationStrategy(threadPoolConfig.isSemaphoreIsolated() ? HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE : HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
                         .withExecutionIsolationSemaphoreMaxConcurrentRequests(threadPoolConfig.getConcurrency())

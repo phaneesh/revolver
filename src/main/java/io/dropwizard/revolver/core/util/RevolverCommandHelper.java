@@ -30,6 +30,7 @@ import io.dropwizard.revolver.core.config.hystrix.MetricsConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 
@@ -78,16 +79,20 @@ public class RevolverCommandHelper {
         } else {
             circuitBreakerConfig = new CircuitBreakerConfig();
         }
-        ThreadPoolConfig threadPoolConfig;
-        if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()) {
-            threadPoolConfig = config.getRuntime().getThreadPool();
-        } else if (null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool()) {
-            threadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
-        } else if(null != runtimeConfig) {
-            threadPoolConfig = runtimeConfig.getThreadPool();
-        } else {
-            threadPoolConfig = new ThreadPoolConfig();
+        ThreadPoolConfig serviceThreadPoolConfig = null;
+        String keyName = StringUtils.EMPTY;
+
+        if(null != serviceConfiguration.getGroupThreadPool() && serviceConfiguration.getGroupThreadPool().isEnabled()
+           && null != threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName())){
+            serviceThreadPoolConfig = threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName());
+            keyName = config.getGroupThreadPool().getName();
+
+        }else if(null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool
+                ()){
+            serviceThreadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
+
         }
+
         MetricsConfig metricsConfig;
         if(null != runtimeConfig) {
             metricsConfig = runtimeConfig.getMetrics();
@@ -95,17 +100,44 @@ public class RevolverCommandHelper {
             metricsConfig = new MetricsConfig();
         }
 
-        String keyName;
-        //Group thread pool has high precedence over shared thread pool
-        if(config.getGroupThreadPool() != null && config.getGroupThreadPool().isEnabled() && threadPoolConfigMap.get
-                (config.getGroupThreadPool().getName()) != null){
+        ThreadPoolConfig threadPoolConfig;
+
+        //Highest precedence is given to api level thread pool configuration
+        if(null != config.getGroupThreadPool() && config.getGroupThreadPool().isEnabled() && null !=
+                                                                                             threadPoolConfigMap.get(config.getGroupThreadPool().getName())){
             threadPoolConfig = threadPoolConfigMap.get(config.getGroupThreadPool().getName());
             keyName = config.getGroupThreadPool().getName();
-        }else if(config.isSharedPool()) {
-            threadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
-            keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), "shared");
-        }else {
+
+        }else if(config.isSharedPool() && null != serviceThreadPoolConfig){
+
+            threadPoolConfig = serviceThreadPoolConfig;
+            if(StringUtils.isEmpty(keyName)){
+                keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), "shared");
+            }
+
+        }else if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()) {
+
+            threadPoolConfig = config.getRuntime().getThreadPool();
             keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
+
+        }else if (null != serviceThreadPoolConfig) {
+            threadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
+            if(StringUtils.isEmpty(keyName)){
+                keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
+            }
+
+        } else if(null != runtimeConfig) {
+            threadPoolConfig = runtimeConfig.getThreadPool();
+            keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
+
+        } else {
+            threadPoolConfig = new ThreadPoolConfig();
+            keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
+        }
+
+        //Setting timeout from api threadpool config
+        if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()){
+            threadPoolConfig.setTimeout(config.getRuntime().getThreadPool().getTimeout());
         }
 
         return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory

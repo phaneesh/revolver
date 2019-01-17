@@ -28,7 +28,7 @@ import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.msgpack.MsgPackBundle;
 import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
-import io.dropwizard.revolver.callback.CallbackHandler;
+import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.RevolverExecutionException;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
@@ -113,8 +113,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
         environment.jersey().register(new RevolverExceptionMapper(environment.getObjectMapper(), msgPackObjectMapper));
         environment.jersey().register(new TimeoutExceptionMapper(environment.getObjectMapper()));
+
         final PersistenceProvider persistenceProvider = getPersistenceProvider(configuration, environment);
-        final CallbackHandler callbackHandler = CallbackHandler.builder()
+        final InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
                 .persistenceProvider(persistenceProvider)
                 .revolverConfig(revolverConfig)
                 .build();
@@ -301,6 +302,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     apiConfig.put(key, a);
             });
             generateApiConfigMap((RevolverHttpServiceConfig) config);
+            serviceNameResolver.register(revolverHttpServiceConfig.getEndpoint());
         }
     }
 
@@ -309,7 +311,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         httpConfig.setSecured(false);
         serviceConfig.put(config.getService(), httpConfig);
         registerCommand(config, httpConfig);
-        serviceNameResolver.register(httpConfig.getEndpoint());
     }
 
     public static void addHttpCommand(RevolverHttpServiceConfig config) {

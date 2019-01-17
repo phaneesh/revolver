@@ -24,7 +24,6 @@ import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
-import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.exception.RevolverException;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -312,7 +311,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private void addQueryParams(final RevolverHttpRequest request, final URIBuilder builder) {
         if (null != request.getQueryParams()) {
             request.getQueryParams().forEach((key, values) -> values.forEach(value ->
-                    builder.setParameter(key, value)
+                    builder.addParameter(key, value)
             ));
         }
     }

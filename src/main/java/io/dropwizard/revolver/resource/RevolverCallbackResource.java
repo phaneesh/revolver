@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
-import io.dropwizard.revolver.callback.CallbackHandler;
+import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.HeaderUtil;
@@ -52,9 +52,9 @@ public class RevolverCallbackResource {
 
     private final PersistenceProvider persistenceProvider;
 
-    private final CallbackHandler callbackHandler;
+    private final InlineCallbackHandler callbackHandler;
 
-    public RevolverCallbackResource(final PersistenceProvider persistenceProvider, final CallbackHandler callbackHandler) {
+    public RevolverCallbackResource(final PersistenceProvider persistenceProvider, final InlineCallbackHandler callbackHandler) {
         this.persistenceProvider = persistenceProvider;
         this.callbackHandler = callbackHandler;
     }

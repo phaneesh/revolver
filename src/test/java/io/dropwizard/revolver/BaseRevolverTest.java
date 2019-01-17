@@ -25,7 +25,7 @@ import io.dropwizard.jersey.DropwizardResourceConfig;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 import io.dropwizard.jetty.MutableServletContextHandler;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
-import io.dropwizard.revolver.callback.CallbackHandler;
+import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.*;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
@@ -94,7 +94,7 @@ public class BaseRevolverTest {
 
     protected RevolverConfig revolverConfig;
 
-    protected static CallbackHandler callbackHandler;
+    protected static InlineCallbackHandler callbackHandler;
 
 
     @Before
@@ -216,7 +216,7 @@ public class BaseRevolverTest {
                 e.printStackTrace();
             }
         });
-        callbackHandler = CallbackHandler.builder()
+        callbackHandler = InlineCallbackHandler.builder()
                 .persistenceProvider(inMemoryPersistenceProvider).revolverConfig(revolverConfig).build();
     }
 }

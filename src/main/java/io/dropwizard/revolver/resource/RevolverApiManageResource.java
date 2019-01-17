@@ -130,7 +130,7 @@ public class RevolverApiManageResource {
         return Response.ok(
                 RevolverBundle.apiStatus.entrySet().stream()
                     .map( e -> {
-                        String key[] = e.getKey().split("\\.");
+                        String[] key = e.getKey().split("\\.");
                         return ImmutableMap.<String, Object>builder()
                                 .put("service", key[0])
                                 .put("api", key[1])

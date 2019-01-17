@@ -28,7 +28,7 @@ import io.dropwizard.revolver.base.core.RevolverAckMessage;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
-import io.dropwizard.revolver.callback.CallbackHandler;
+import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -68,7 +68,7 @@ public class RevolverRequestResource {
 
     private final PersistenceProvider persistenceProvider;
 
-    private final CallbackHandler callbackHandler;
+    private final InlineCallbackHandler callbackHandler;
 
     private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap("message", "Bad Request");
 
@@ -78,7 +78,7 @@ public class RevolverRequestResource {
 
     public RevolverRequestResource(final ObjectMapper jsonObjectMapper,
                                    final ObjectMapper msgPackObjectMapper,
-                                   final PersistenceProvider persistenceProvider, final CallbackHandler callbackHandler) {
+                                   final PersistenceProvider persistenceProvider, final InlineCallbackHandler callbackHandler) {
         this.jsonObjectMapper = jsonObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
         this.persistenceProvider = persistenceProvider;

@@ -91,11 +91,16 @@ public class RevolverConfig {
     @Setter
     private String dynamicConfigUrl = null;
 
+    @Getter
+    @Setter
+    private ThreadPoolGroupConfig threadPoolGroupConfig;
+
 
     @Builder
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
                           ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
-                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox) {
+                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
+                          ThreadPoolGroupConfig threadPoolGroupConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;
@@ -104,6 +109,7 @@ public class RevolverConfig {
         this.mailBox = mailBox;
         this.callbackTimeout = 3000;
         this.dynamicConfig = false;
+        this.threadPoolGroupConfig = threadPoolGroupConfig;
     }
 
 
@@ -116,5 +122,6 @@ public class RevolverConfig {
         this.dynamicConfig = false;
         this.configPollIntervalSeconds = 600;
         this.dynamicConfigUrl = null;
+        this.threadPoolGroupConfig = new ThreadPoolGroupConfig();
     }
 }

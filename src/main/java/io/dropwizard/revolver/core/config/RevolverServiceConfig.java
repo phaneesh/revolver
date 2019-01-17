@@ -18,10 +18,7 @@
 package io.dropwizard.revolver.core.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.constraints.NotNull;
@@ -46,7 +43,7 @@ public class RevolverServiceConfig {
 
     private String fallbackAddress;
 
-    private GroupThreadPool groupThreadPool;
+    protected GroupThreadPool groupThreadPool;
 
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 

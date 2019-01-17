@@ -85,7 +85,7 @@ public class RevolverCommandHelper {
         if(null != serviceConfiguration.getGroupThreadPool() && serviceConfiguration.getGroupThreadPool().isEnabled()
            && null != threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName())){
             serviceThreadPoolConfig = threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName());
-            keyName = config.getGroupThreadPool().getName();
+            keyName = serviceConfiguration.getGroupThreadPool().getName();
 
         }else if(null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool
                 ()){

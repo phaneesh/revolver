@@ -24,15 +24,9 @@ import io.dropwizard.revolver.core.model.RevolverResponse;
 /**
  * @author phaneesh
  */
-<<<<<<< HEAD
-public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> extends RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> {
-    public SimpleRevolverCommand(final ContextType context, final ClientConfig clientConfiguration, final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration, final CommandHandlerConfigurationType apiConfiguration) {
-        super(context, clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
-=======
 public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig, ThreadPoolGroupConfigType extends ThreadPoolGroupConfig> extends RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType, ThreadPoolGroupConfigType> {
     public SimpleRevolverCommand(final ContextType context, final ClientConfig clientConfiguration, final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration, final CommandHandlerConfigurationType apiConfiguration, final ThreadPoolGroupConfigType threadPoolGroupConfig) {
-        super(context, clientConfiguration, runtimeConfig, serviceConfiguration, Collections.singletonMap(apiConfiguration.getApi(), apiConfiguration), threadPoolGroupConfig);
->>>>>>> Group Thread Pool
+        super(context, clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration, threadPoolGroupConfig);
     }
 }
 

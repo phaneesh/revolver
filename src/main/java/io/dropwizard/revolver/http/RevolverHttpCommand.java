@@ -70,16 +70,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     @Builder
     public RevolverHttpCommand(final RuntimeConfig runtimeConfig, final ClientConfig clientConfiguration,
                                final RevolverHttpServiceConfig serviceConfiguration,
-<<<<<<< HEAD
-                               final RevolverHttpApiConfig apiConfiguration) {
-        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
-=======
-                               final Map<String, RevolverHttpApiConfig> apiConfigurations,
-                               final RevolverServiceResolver serviceResolver,
-                               final ThreadPoolGroupConfig threadPoolGroupConfig) {
-        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfigurations, threadPoolGroupConfig);
-        (this.serviceResolver = serviceResolver).register(serviceConfiguration.getEndpoint());
->>>>>>> Group Thread Pool
+                               final RevolverHttpApiConfig apiConfiguration, final ThreadPoolGroupConfig threadPoolGroupConfig) {
+        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration, threadPoolGroupConfig);
         this.client = RevolverHttpClientFactory.buildClient(serviceConfiguration);
     }
 

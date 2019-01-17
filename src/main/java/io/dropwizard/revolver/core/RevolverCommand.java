@@ -52,21 +52,12 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
 
     public RevolverCommand(final ContextType context, final ClientConfig clientConfiguration,
                            final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration,
-<<<<<<< HEAD
                            final CommandHandlerConfigType apiConfiguration, ThreadPoolGroupConfig threadPoolGroupConfig) {
-=======
-                           final Map<String, CommandHandlerConfigType> apiConfigurations, ThreadPoolGroupConfigType threadPoolGroupConfig) {
->>>>>>> Group Thread Pool
         this.context = context;
         this.clientConfiguration = clientConfiguration;
         this.runtimeConfig = runtimeConfig;
         this.serviceConfiguration = serviceConfiguration;
-<<<<<<< HEAD
         this.apiConfiguration = apiConfiguration;
-        this.threadPoolConfigMap = threadPoolGroupConfig.getThreadPools().stream()
-                .collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t-> t));
-=======
-        this.apiConfigurations = apiConfigurations;
         if(threadPoolGroupConfig != null) {
             this.threadPoolConfigMap = threadPoolGroupConfig.getThreadPools()
                     .stream()
@@ -74,7 +65,6 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         }else {
             this.threadPoolConfigMap = Maps.newHashMap();
         }
->>>>>>> Group Thread Pool
     }
 
     @SuppressWarnings("unchecked")

@@ -18,10 +18,8 @@
 package io.dropwizard.revolver.core;
 
 import com.netflix.hystrix.HystrixCommand;
-import io.dropwizard.revolver.core.config.ClientConfig;
-import io.dropwizard.revolver.core.config.CommandHandlerConfig;
-import io.dropwizard.revolver.core.config.RevolverServiceConfig;
-import io.dropwizard.revolver.core.config.RuntimeConfig;
+import io.dropwizard.revolver.core.config.*;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
@@ -32,9 +30,11 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
 import rx.Observable;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * @author phaneesh
@@ -46,16 +46,19 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     private final RuntimeConfig runtimeConfig;
     private final ServiceConfigurationType serviceConfiguration;
     private final CommandHandlerConfigType apiConfiguration;
+    private final Map<String, ThreadPoolConfig> threadPoolConfigMap;
     private ClientConfig clientConfiguration;
 
     public RevolverCommand(final ContextType context, final ClientConfig clientConfiguration,
                            final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration,
-                           final CommandHandlerConfigType apiConfiguration) {
+                           final CommandHandlerConfigType apiConfiguration, ThreadPoolGroupConfig threadPoolGroupConfig) {
         this.context = context;
         this.clientConfiguration = clientConfiguration;
         this.runtimeConfig = runtimeConfig;
         this.serviceConfiguration = serviceConfiguration;
         this.apiConfiguration = apiConfiguration;
+        this.threadPoolConfigMap = threadPoolGroupConfig.getThreadPools().stream()
+                .collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t-> t));
     }
 
     @SuppressWarnings("unchecked")
@@ -64,7 +67,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
         try {
-            ResponseType response = (ResponseType) new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()),
+            ResponseType response = (ResponseType) new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap),
                     this.context, this, normalizedRequest).execute();
             if (log.isDebugEnabled()) {
                 log.debug("Command response: " + response);
@@ -94,7 +97,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        final Future<ResponseType> responseFuture = new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).queue();
+        final Future<ResponseType> responseFuture = new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap), this.context, this, normalizedRequest).queue();
         return CompletableFuture.supplyAsync(() -> {
                     try {
                         return responseFuture.get();
@@ -112,7 +115,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).toObservable();
+        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap), this.context, this, normalizedRequest).toObservable();
     }
 
     private void removeContextInfo() {

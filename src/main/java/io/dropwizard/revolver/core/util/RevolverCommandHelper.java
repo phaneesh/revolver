@@ -64,6 +64,10 @@ public class RevolverCommandHelper {
         return request;
     }
 
+    /*
+         Group thread pools can be specified. Services or individual api can subscribe to a specific group thread pool
+         Timeout would be overridden is provided at individual api level
+     */
     public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api,
                                                Map<String, ThreadPoolConfig> threadPoolConfigMap) {
         final RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
@@ -102,7 +106,6 @@ public class RevolverCommandHelper {
 
         ThreadPoolConfig threadPoolConfig;
 
-        //Highest precedence is given to api level thread pool configuration
         if(null != config.getGroupThreadPool() && config.getGroupThreadPool().isEnabled() && null !=
                                                                                              threadPoolConfigMap.get(config.getGroupThreadPool().getName())){
             threadPoolConfig = threadPoolConfigMap.get(config.getGroupThreadPool().getName());
@@ -135,7 +138,7 @@ public class RevolverCommandHelper {
             keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
         }
 
-        //Setting timeout from api threadpool config
+        //Setting timeout from api thread pool config
         if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()){
             threadPoolConfig.setTimeout(config.getRuntime().getThreadPool().getTimeout());
         }

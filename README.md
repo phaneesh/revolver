@@ -69,6 +69,14 @@ Use the following maven dependency:
 revolver:
   clientConfig:
     clientName: revolver-api
+  threadPoolGroupConfig:
+    threadPools:
+      - threadPoolName: group1-thread-pool
+        concurrency: 5
+        maxRequestQueueSize: 10
+      - threadPoolName: group2-thread-pool
+        concurrency: 5
+        maxRequestQueueSize: 10
   services:
     - type: http
       service: mocky
@@ -96,6 +104,24 @@ revolver:
             threadPool:
               concurrency: 5
               timeout: 10000
+        - api: pong
+          async: false
+          path: "{version}/56da42e80f0000ac31a427ce"
+          whitelist: true #Optional metadata for external authentication & authorization systems. Omitting the config will not effect behaviour.
+          methods:
+            - GET
+          authorization:  #Optional metadata for external authorization systems. Omitting the config will not effect behaviour  
+            type: dynamic #can 
+            methods:
+                - GET
+            roles:
+                - user
+          runtime:
+            threadPool:
+              timeout: 10000
+          groupThreadPool:
+            enabled: true
+            name: group1-thread-pool
 ```
 
 #### Dashboard

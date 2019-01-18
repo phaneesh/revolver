@@ -17,6 +17,7 @@
 
 package io.dropwizard.revolver.http.config;
 
+import io.dropwizard.revolver.core.config.GroupThreadPool;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
@@ -53,7 +54,8 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
     public RevolverHttpsServiceConfig(final String type, final String service, final EndpointSpec enpoint, final int connectionPoolSize,
                                       final boolean authEnabled, final AuthConfig auth, final String keyStorePath,
                                       final String keystorePassword, @Singular("api") final Set<RevolverHttpApiConfig> apis, final boolean trackingHeaders,
-                                      final boolean compression, final int connectionKeepAliveInMillis) {
+                                      final boolean compression, final int connectionKeepAliveInMillis,
+                                      GroupThreadPool groupThreadPool) {
         super(type, service);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
@@ -65,5 +67,6 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
         this.trackingHeaders = trackingHeaders;
         this.compression = compression;
         this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
+        this.groupThreadPool = groupThreadPool;
     }
 }

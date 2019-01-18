@@ -18,6 +18,7 @@
 package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
+import io.dropwizard.revolver.core.config.GroupThreadPool;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import lombok.*;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -62,8 +63,9 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     @Builder(builderMethodName = "configBuilder")
     public RevolverHttpApiConfig(final String api, final HystrixCommandConfig runtime, final String path,
-                                 @Singular final Set<RequestMethod> methods, final Set<Integer> acceptableResponseCodes, final boolean sharedPool) {
-        super(api, sharedPool, runtime);
+                                 @Singular final Set<RequestMethod> methods, final Set<Integer>
+                                             acceptableResponseCodes, final boolean sharedPool, final GroupThreadPool groupThreadPool) {
+        super(api, sharedPool, runtime, groupThreadPool);
         this.path = path;
         this.methods = methods;
         this.acceptableResponseCodes = acceptableResponseCodes;

@@ -38,4 +38,7 @@ public class CommandHandlerConfig {
     private boolean sharedPool = false;
 
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
+
+    private GroupThreadPool groupThreadPool = new GroupThreadPool();
+
 }

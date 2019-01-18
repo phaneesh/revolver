@@ -23,6 +23,7 @@ import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
+import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.exception.RevolverException;
@@ -56,7 +57,8 @@ import java.util.stream.Collectors;
  * @author phaneesh
  */
 @Slf4j
-public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, RevolverHttpResponse, RevolverHttpContext, RevolverHttpServiceConfig, RevolverHttpApiConfig> {
+public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, RevolverHttpResponse,
+        RevolverHttpContext, RevolverHttpServiceConfig, RevolverHttpApiConfig, ThreadPoolGroupConfig> {
 
 
     public static final String CALL_MODE_POLLING = "POLLING";
@@ -68,8 +70,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     @Builder
     public RevolverHttpCommand(final RuntimeConfig runtimeConfig, final ClientConfig clientConfiguration,
                                final RevolverHttpServiceConfig serviceConfiguration,
-                               final RevolverHttpApiConfig apiConfiguration) {
-        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
+                               final RevolverHttpApiConfig apiConfiguration, final ThreadPoolGroupConfig threadPoolGroupConfig) {
+        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration, threadPoolGroupConfig);
         this.client = RevolverHttpClientFactory.buildClient(serviceConfiguration);
     }
 

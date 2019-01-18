@@ -533,4 +533,38 @@ public class RevolverSimpleHttpCommandTest extends BaseRevolverTest {
         val response = httpCommand.execute(request);
         assertEquals(response.getStatusCode(), 200);
     }
+
+    @Test
+    public void testGroupPoolAtApiLevelHttpCommand() throws TimeoutException {
+        stubFor(get(urlEqualTo("/v1/test"))
+                        .willReturn(aResponse()
+                                            .withStatus(200)
+                                            .withHeader("Content-Type", "application/json")));
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_group_thread_pool");
+        val request = RevolverHttpRequest.builder()
+                .service("test")
+                .api("test_group_thread_pool")
+                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                .path("v1/test")
+                .build();
+        val response = httpCommand.execute(request);
+        assertEquals(response.getStatusCode(), 200);
+    }
+
+    @Test
+    public void testGroupPoolAtServiceLevelHttpCommand() throws TimeoutException {
+        stubFor(get(urlEqualTo("/v1/test"))
+                        .willReturn(aResponse()
+                                            .withStatus(200)
+                                            .withHeader("Content-Type", "application/json")));
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test_group_thread_pool", "test");
+        val request = RevolverHttpRequest.builder()
+                .service("test_group_thread_pool")
+                .api("test")
+                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                .path("v1/test")
+                .build();
+        val response = httpCommand.execute(request);
+        assertEquals(response.getStatusCode(), 200);
+    }
 }

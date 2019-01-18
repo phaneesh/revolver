@@ -20,6 +20,7 @@ package io.dropwizard.revolver;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import io.dropwizard.Configuration;
 import io.dropwizard.jersey.DropwizardResourceConfig;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
@@ -117,6 +118,13 @@ public class BaseRevolverTest {
         securedEndpoint.setHost("localhost");
         securedEndpoint.setPort(9933);
 
+        ThreadPoolConfig threadPoolConfig = ThreadPoolConfig.builder()
+                                                    .concurrency(2)
+                                                    .dynamicRequestQueueSize(2)
+                                                    .threadPoolName("test")
+                                                    .timeout(100)
+                                            .build();
+
         revolverConfig = RevolverConfig.builder()
                 .mailBox(InMemoryMailBoxConfig.builder().build())
                 .serviceResolverConfig(ServiceResolverConfig.builder()
@@ -127,6 +135,9 @@ public class BaseRevolverTest {
                         .clientName("test-client")
                         .build()
                 )
+                .threadPoolGroupConfig(ThreadPoolGroupConfig.builder()
+                     .threadPools(Lists.newArrayList(threadPoolConfig))
+                        .build())
                 .global(new RuntimeConfig())
                 .service(RevolverHttpServiceConfig.builder()
                         .authEnabled(false)
@@ -165,6 +176,25 @@ public class BaseRevolverTest {
                                                 .concurrency(1).timeout(2000)
                                                 .build())
                                         .build()).build())
+                        .api(RevolverHttpApiConfig.configBuilder()
+                                .api("test_group_thread_pool")
+                                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                                .method(RevolverHttpApiConfig.RequestMethod.POST)
+                                .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                                .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                                .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                                .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                                .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                .path("{version}/test/{operation}")
+                                .groupThreadPool(GroupThreadPool.builder()
+                                                         .enabled(true)
+                                                         .name("test")
+                                                         .build())
+                                .runtime(HystrixCommandConfig.builder()
+                                               .threadPool(ThreadPoolConfig.builder()
+                                                                   .concurrency(1).timeout(2000)
+                                                                   .build())
+                                               .build()).build())
                         .build())
                 .service(RevolverHttpsServiceConfig.builder()
                         .authEnabled(false)
@@ -203,6 +233,29 @@ public class BaseRevolverTest {
                                                 .build())
                                         .build()).build())
                         .build())
+                .service(RevolverHttpServiceConfig.builder()
+                                 .authEnabled(false)
+                                 .connectionPoolSize(1)
+                                 .secured(false)
+                                 .enpoint(simpleEndpoint)
+                                 .service("test_group_thread_pool")
+                                 .groupThreadPool(GroupThreadPool.builder()
+                                                          .enabled(true)
+                                                          .name("test")
+                                                          .build())
+                                 .type("http")
+                                 .api(RevolverHttpApiConfig.configBuilder()
+                                              .api("test")
+                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
+                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
+                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                              .path("{version}/test")
+                                              .build())
+                                 .build())
                 .build();
 
         bundle.initialize(bootstrap);

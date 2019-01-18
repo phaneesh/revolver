@@ -69,14 +69,6 @@ Use the following maven dependency:
 revolver:
   clientConfig:
     clientName: revolver-api
-  threadPoolGroupConfig:
-    threadPools:
-      - threadPoolName: group1-thread-pool
-        concurrency: 5
-        maxRequestQueueSize: 10
-      - threadPoolName: group2-thread-pool
-        concurrency: 5
-        maxRequestQueueSize: 10
   services:
     - type: http
       service: mocky
@@ -87,6 +79,14 @@ revolver:
         type: simple
         host: www.mocky.io
         port: 80
+      threadPoolGroupConfig:
+        threadPools:
+          - threadPoolName: group1-thread-pool
+            concurrency: 5
+            maxRequestQueueSize: 10
+          - threadPoolName: group2-thread-pool
+            concurrency: 5
+            maxRequestQueueSize: 10
       apis:
         - api: ping
           async: false

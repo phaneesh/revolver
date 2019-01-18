@@ -17,10 +17,11 @@
 
 package io.dropwizard.revolver.core;
 
-import com.google.common.collect.Maps;
 import com.netflix.hystrix.HystrixCommand;
-import io.dropwizard.revolver.core.config.*;
-import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.core.config.ClientConfig;
+import io.dropwizard.revolver.core.config.CommandHandlerConfig;
+import io.dropwizard.revolver.core.config.RevolverServiceConfig;
+import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
@@ -31,40 +32,30 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
 import rx.Observable;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 /**
  * @author phaneesh
  */
 @Slf4j
-public abstract class RevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigType extends CommandHandlerConfig, ThreadPoolGroupConfigType extends ThreadPoolGroupConfig> {
+public abstract class RevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigType extends CommandHandlerConfig> {
 
     private final ContextType context;
     private final RuntimeConfig runtimeConfig;
     private final ServiceConfigurationType serviceConfiguration;
     private final CommandHandlerConfigType apiConfiguration;
-    private final Map<String, ThreadPoolConfig> threadPoolConfigMap;
     private ClientConfig clientConfiguration;
 
     public RevolverCommand(final ContextType context, final ClientConfig clientConfiguration,
                            final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration,
-                           final CommandHandlerConfigType apiConfiguration, ThreadPoolGroupConfig threadPoolGroupConfig) {
+                           final CommandHandlerConfigType apiConfiguration) {
         this.context = context;
         this.clientConfiguration = clientConfiguration;
         this.runtimeConfig = runtimeConfig;
         this.serviceConfiguration = serviceConfiguration;
         this.apiConfiguration = apiConfiguration;
-        if(threadPoolGroupConfig != null) {
-            this.threadPoolConfigMap = threadPoolGroupConfig.getThreadPools()
-                    .stream()
-                    .collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t -> t));
-        }else {
-            this.threadPoolConfigMap = Maps.newHashMap();
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -73,7 +64,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
         try {
-            ResponseType response = (ResponseType) new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap),
+            ResponseType response = (ResponseType) new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()),
                     this.context, this, normalizedRequest).execute();
             if (log.isDebugEnabled()) {
                 log.debug("Command response: " + response);
@@ -103,7 +94,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        final Future<ResponseType> responseFuture = new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap), this.context, this, normalizedRequest).queue();
+        final Future<ResponseType> responseFuture = new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).queue();
         return CompletableFuture.supplyAsync(() -> {
                     try {
                         return responseFuture.get();
@@ -121,7 +112,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
         final TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi(), threadPoolConfigMap), this.context, this, normalizedRequest).toObservable();
+        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).toObservable();
     }
 
     private void removeContextInfo() {
@@ -157,13 +148,13 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         return this.apiConfiguration;
     }
 
-    private static class RevolverCommandHandler<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig, ThreadPoolGroupConfigType extends ThreadPoolGroupConfig>
+    private static class RevolverCommandHandler<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig>
             extends HystrixCommand<ResponseType> {
-        private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType, ThreadPoolGroupConfigType> handler;
+        private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
         private final RequestType request;
         private final ContextType context;
 
-        RevolverCommandHandler(final HystrixCommand.Setter setter, final ContextType context, final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType, ThreadPoolGroupConfigType> handler, final RequestType request) {
+        RevolverCommandHandler(final HystrixCommand.Setter setter, final ContextType context, final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler, final RequestType request) {
             super(setter);
             this.context = context;
             this.handler = handler;

@@ -43,7 +43,7 @@ public class RevolverServiceConfig {
 
     private String fallbackAddress;
 
-    protected GroupThreadPool groupThreadPool;
+    protected ThreadPoolGroupConfig threadPoolGroupConfig;
 
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 

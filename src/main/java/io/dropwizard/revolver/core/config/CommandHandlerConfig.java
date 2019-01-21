@@ -39,6 +39,4 @@ public class CommandHandlerConfig {
 
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 
-    private GroupThreadPool groupThreadPool = new GroupThreadPool();
-
 }

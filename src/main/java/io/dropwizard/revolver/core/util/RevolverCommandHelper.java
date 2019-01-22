@@ -19,6 +19,7 @@ package io.dropwizard.revolver.core.util;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import com.netflix.hystrix.*;
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.RevolverExecutionException;
@@ -33,6 +34,7 @@ import io.dropwizard.revolver.core.tracing.TraceInfo;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author phaneesh
@@ -65,11 +67,11 @@ public class RevolverCommandHelper {
     }
 
     /*
-         Group thread pools can be specified. Services or individual api can subscribe to a specific group thread pool
-         Timeout would be overridden is provided at individual api level
+         Group thread pools can be specified at service level. Different api of the service can subscribe to
+         different group thread pool
+         Timeout would be overridden if provided at individual api level
      */
-    public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api,
-                                               Map<String, ThreadPoolConfig> threadPoolConfigMap) {
+    public static HystrixCommand.Setter setter(final RevolverCommand commandHandler, final String api) {
         final RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
         final RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
         final CommandHandlerConfig config = commandHandler.getApiConfiguration();
@@ -84,18 +86,10 @@ public class RevolverCommandHelper {
             circuitBreakerConfig = new CircuitBreakerConfig();
         }
         ThreadPoolConfig serviceThreadPoolConfig = null;
-        String keyName = StringUtils.EMPTY;
-
-        if(null != serviceConfiguration.getGroupThreadPool() && serviceConfiguration.getGroupThreadPool().isEnabled()
-           && null != threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName())){
-            serviceThreadPoolConfig = threadPoolConfigMap.get(serviceConfiguration.getGroupThreadPool().getName());
-            keyName = serviceConfiguration.getGroupThreadPool().getName();
-
-        }else if(null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool
-                ()){
+        if(null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool()){
             serviceThreadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
-
         }
+        String keyName = StringUtils.EMPTY;
 
         MetricsConfig metricsConfig;
         if(null != runtimeConfig) {
@@ -104,12 +98,25 @@ public class RevolverCommandHelper {
             metricsConfig = new MetricsConfig();
         }
 
+        Map<String, ThreadPoolConfig> threadPoolConfigMap;
+        if(null != serviceConfiguration.getThreadPoolGroupConfig() &&
+           null != serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()) {
+            threadPoolConfigMap = serviceConfiguration.getThreadPoolGroupConfig()
+                    .getThreadPools()
+                    .stream()
+                    .collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t -> t));
+        }else {
+            threadPoolConfigMap = Maps.newHashMap();
+        }
+
         ThreadPoolConfig threadPoolConfig;
 
-        if(null != config.getGroupThreadPool() && config.getGroupThreadPool().isEnabled() && null !=
-                                                                                             threadPoolConfigMap.get(config.getGroupThreadPool().getName())){
-            threadPoolConfig = threadPoolConfigMap.get(config.getGroupThreadPool().getName());
-            keyName = config.getGroupThreadPool().getName();
+        if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()
+           && StringUtils.isNotEmpty(config.getRuntime().getThreadPool().getThreadPoolName())
+                && null != threadPoolConfigMap.get(config.getRuntime().getThreadPool().getThreadPoolName())){
+
+            threadPoolConfig = threadPoolConfigMap.get(config.getRuntime().getThreadPool().getThreadPoolName());
+            keyName = threadPoolConfig.getThreadPoolName();
 
         }else if(config.isSharedPool() && null != serviceThreadPoolConfig){
 

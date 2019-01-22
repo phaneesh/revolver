@@ -198,7 +198,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .clientConfiguration(revolverConfig.getClientConfig())
                     .runtimeConfig(revolverConfig.getGlobal())
                     .serviceConfiguration(serviceConfig.get(service))
-                    .threadPoolGroupConfig(revolverConfig.getThreadPoolGroupConfig())
                 .build();
     }
 

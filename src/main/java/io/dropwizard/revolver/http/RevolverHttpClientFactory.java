@@ -86,8 +86,8 @@ class RevolverHttpClientFactory {
         connectionManager.setDefaultMaxPerRoute(serviceConfiguration.getConnectionPoolSize());
         connectionManager.setMaxTotal(serviceConfiguration.getConnectionPoolSize());
         connectionManager.setDefaultMaxPerRoute(serviceConfiguration.getConnectionPoolSize());
-        connectionManager.setValidateAfterInactivity(serviceConfiguration.getConnectionKeepAliveInMillis() <= 0 ?
-                30000 : serviceConfiguration.getConnectionKeepAliveInMillis());
+        //Fix for: https://issues.apache.org/jira/browse/HTTPCLIENT-1610
+        connectionManager.setValidateAfterInactivity(100);
         connectionManager.setDefaultSocketConfig(socketConfig);
         connectionManager.setDefaultConnectionConfig(connectionConfig);
 

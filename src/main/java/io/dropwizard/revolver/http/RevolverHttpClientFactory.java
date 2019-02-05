@@ -53,6 +53,7 @@ import java.nio.charset.CodingErrorAction;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author phaneesh
@@ -88,7 +89,12 @@ class RevolverHttpClientFactory {
         connectionManager.setDefaultMaxPerRoute(serviceConfiguration.getConnectionPoolSize());
         //Fix for: https://issues.apache.org/jira/browse/HTTPCLIENT-1610
         connectionManager.setValidateAfterInactivity(100);
+        //Close the connections after keep alive
+        connectionManager
+                .closeIdleConnections(serviceConfiguration.getConnectionKeepAliveInMillis() <= 0 ? 30000 :
+                        serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS);
         connectionManager.setDefaultSocketConfig(socketConfig);
+
         connectionManager.setDefaultConnectionConfig(connectionConfig);
 
         // Create global request configuration

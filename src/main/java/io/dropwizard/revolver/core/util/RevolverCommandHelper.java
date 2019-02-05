@@ -45,6 +45,8 @@ public class RevolverCommandHelper {
         return Joiner.on(".").join(request.getService(), request.getApi());
     }
 
+    private static final double CORE_POOL_SIZE_REDUCTION_PARAM = 0.75;
+
     public static <T extends RevolverRequest> T normalize(final T request) {
         if (null == request) {
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "Request cannot be null");
@@ -150,6 +152,8 @@ public class RevolverCommandHelper {
             threadPoolConfig.setTimeout(config.getRuntime().getThreadPool().getTimeout());
         }
 
+        int concurrency = threadPoolConfig.getConcurrency();
+        int coreSize = (int)(concurrency * CORE_POOL_SIZE_REDUCTION_PARAM);
         return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory
             .asKey(serviceConfiguration.getService()))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
@@ -166,7 +170,8 @@ public class RevolverCommandHelper {
                         .withMetricsRollingPercentileWindowInMilliseconds(metricsConfig.getPercentileTimeInMillis()))
                 .andCommandKey(HystrixCommandKey.Factory.asKey(keyName)).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(keyName))
                 .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
-                        .withCoreSize(threadPoolConfig.getConcurrency()).withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize())
+                        .withCoreSize(coreSize).withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize())
+                        .withMaximumSize(concurrency).withKeepAliveTimeMinutes(threadPoolConfig.getKeepAliveTimeInMinutes())
                         .withQueueSizeRejectionThreshold(threadPoolConfig.getDynamicRequestQueueSize())
                         .withMetricsRollingStatisticalWindowBuckets(metricsConfig.getStatsBucketSize())
                         .withMetricsRollingStatisticalWindowInMilliseconds(metricsConfig.getStatsTimeInMillis()));

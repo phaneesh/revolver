@@ -300,8 +300,11 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             //Adjust connectionPool size to make sure we don't starve connections. Guard against misconfiguration
             //1. Add concurrency from thread pool groups
             //2. Add concurrency from apis which do not belong to any thread pool group
-            int totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools()
-                    .stream().mapToInt(ThreadPoolConfig::getConcurrency).sum();
+            int totalConcurrency = 0;
+            if(config.getThreadPoolGroupConfig() != null){
+                totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools()
+                        .stream().mapToInt(ThreadPoolConfig::getConcurrency).sum();
+            }
             totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
                     .filter( a -> Strings.isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
                     .mapToInt( a -> a.getRuntime().getThreadPool().getConcurrency()).sum();

@@ -29,8 +29,10 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.Consts;
 import org.apache.http.HttpRequestInterceptor;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.SocketConfig;
@@ -42,6 +44,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HTTP;
+import org.apache.http.protocol.HttpContext;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -109,6 +112,13 @@ class RevolverHttpClientFactory {
         final HttpClientBuilder client = HttpClients.custom()
                 .addInterceptorFirst((HttpRequestInterceptor) (httpRequest, httpContext) -> httpRequest.removeHeaders(HTTP.CONTENT_LEN))
                 .setConnectionManager(connectionManager)
+                .setRetryHandler((exception, executionCount, context) -> {
+                    if(exception instanceof NoHttpResponseException && executionCount < 3) {
+                        log.warn("Invalid connection used for service client: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
+                        return true;
+                    }
+                    return false;
+                })
                 .setDefaultRequestConfig(defaultRequestConfig);
 
         if (serviceConfiguration.isAuthEnabled()) {

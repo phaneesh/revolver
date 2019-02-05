@@ -296,6 +296,12 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private static void registerCommand(RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) {
         if (config instanceof RevolverHttpServiceConfig) {
+            //Adjust connectionPool size to make sure we don't starve connections. Guard against misconfiguration
+            int totalConcurrency = ((RevolverHttpServiceConfig) config).getApis().stream()
+                    .mapToInt( a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
+            if(((RevolverHttpServiceConfig) config).getConnectionPoolSize() < totalConcurrency) {
+                ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);
+            }
             ((RevolverHttpServiceConfig) config).getApis().forEach(a -> {
                     final String key = config.getService() + "." + a.getApi();
                     apiStatus.put(key, true);

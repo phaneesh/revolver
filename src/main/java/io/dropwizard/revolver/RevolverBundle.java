@@ -34,6 +34,7 @@ import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
@@ -297,7 +298,12 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static void registerCommand(RevolverServiceConfig config, RevolverHttpServiceConfig revolverHttpServiceConfig) {
         if (config instanceof RevolverHttpServiceConfig) {
             //Adjust connectionPool size to make sure we don't starve connections. Guard against misconfiguration
-            int totalConcurrency = ((RevolverHttpServiceConfig) config).getApis().stream()
+            //1. Add concurrency from thread pool groups
+            //2. Add concurrency from apis which do not belong to any thread pool group
+            int totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools()
+                    .stream().mapToInt(ThreadPoolConfig::getConcurrency).sum();
+            totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
+                    .filter( a -> Strings.isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
                     .mapToInt( a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
             if(((RevolverHttpServiceConfig) config).getConnectionPoolSize() < totalConcurrency) {
                 ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);

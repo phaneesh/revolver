@@ -151,7 +151,7 @@ public class RevolverCommandHelper {
         }
 
         int concurrency = threadPoolConfig.getConcurrency();
-        int coreSize = (int)(concurrency * metricsConfig.getCorePoolSizeReductionParam());
+        int coreSize = (int)Math.ceil(concurrency * metricsConfig.getCorePoolSizeReductionParam());
         return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory
             .asKey(serviceConfiguration.getService()))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()

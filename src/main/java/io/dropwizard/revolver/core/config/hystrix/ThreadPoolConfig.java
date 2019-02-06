@@ -37,7 +37,7 @@ public class ThreadPoolConfig {
 
     private int maxRequestQueueSize = 100;
 
-    private int dynamicRequestQueueSize = 10;
+    private int dynamicRequestQueueSize = 20;
 
     private int timeout = 1000;
 

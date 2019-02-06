@@ -42,4 +42,6 @@ public class ThreadPoolConfig {
     private int timeout = 1000;
 
     private String threadPoolName;
+
+    private int keepAliveTimeInMinutes = 5;
 }

@@ -89,7 +89,6 @@ class RevolverHttpClientFactory {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
         connectionManager.setDefaultMaxPerRoute(serviceConfiguration.getConnectionPoolSize());
         connectionManager.setMaxTotal(serviceConfiguration.getConnectionPoolSize());
-        connectionManager.setDefaultMaxPerRoute(serviceConfiguration.getConnectionPoolSize());
         //Fix for: https://issues.apache.org/jira/browse/HTTPCLIENT-1610
         connectionManager.setValidateAfterInactivity(100);
         //Close the connections after keep alive

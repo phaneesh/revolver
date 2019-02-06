@@ -45,8 +45,6 @@ public class RevolverCommandHelper {
         return Joiner.on(".").join(request.getService(), request.getApi());
     }
 
-    private static final double CORE_POOL_SIZE_REDUCTION_PARAM = 0.75;
-
     public static <T extends RevolverRequest> T normalize(final T request) {
         if (null == request) {
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "Request cannot be null");
@@ -153,7 +151,7 @@ public class RevolverCommandHelper {
         }
 
         int concurrency = threadPoolConfig.getConcurrency();
-        int coreSize = (int)(concurrency * CORE_POOL_SIZE_REDUCTION_PARAM);
+        int coreSize = (int)(concurrency * metricsConfig.getCorePoolSizeReductionParam());
         return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory
             .asKey(serviceConfiguration.getService()))
                 .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()

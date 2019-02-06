@@ -171,6 +171,7 @@ public class RevolverCommandHelper {
                         .withCoreSize(coreSize).withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize())
                         .withMaximumSize(concurrency).withKeepAliveTimeMinutes(threadPoolConfig.getKeepAliveTimeInMinutes())
                         .withQueueSizeRejectionThreshold(threadPoolConfig.getDynamicRequestQueueSize())
+                        .withAllowMaximumSizeToDivergeFromCoreSize(true)
                         .withMetricsRollingStatisticalWindowBuckets(metricsConfig.getStatsBucketSize())
                         .withMetricsRollingStatisticalWindowInMilliseconds(metricsConfig.getStatsTimeInMillis()));
     }

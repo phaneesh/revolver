@@ -160,7 +160,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
                     httpResponse.getStatusCode(), (end-start));
             return httpResponse;
         } catch (Exception e) {
-            log.error("Error running HTTP GET call: ", e);
+            log.error("Error running HTTP GET call for path " + apiConfiguration.getPath() + ", uri : " + request.getURI() + " with " +
+                      "exception" , e);
             throw e;
         } finally {
             if(response != null) {

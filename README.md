@@ -1,7 +1,7 @@
 # Revolver Bundle [![Travis build status](https://travis-ci.org/phaneesh/revolver.svg?branch=master)](https://travis-ci.org/phaneesh/revolver)
 
 This bundle enables one to build downstream proxy with support for transparent callbacks and durable mailbox with polling support.
-This bundle compiles only on Java 8.
+This bundle compiles only on Java 11.
 
 ## Features
 * Honours Accept header for common media types (JSON, XML, MsgPack)
@@ -39,7 +39,7 @@ Use the following maven dependency:
 <dependency>
     <groupId>io.dropwizard.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>1.3.7-9-SNAPSHOT</version>
+    <version>1.3.7-11-JDK11-SNAPSHOT</version>
 </dependency>
 ```
 

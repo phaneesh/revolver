@@ -52,6 +52,7 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketException;
 import java.nio.charset.CodingErrorAction;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -115,9 +116,17 @@ class RevolverHttpClientFactory {
                 .addInterceptorFirst((HttpRequestInterceptor) (httpRequest, httpContext) -> httpRequest.removeHeaders(HTTP.CONTENT_LEN))
                 .setConnectionManager(connectionManager)
                 .setRetryHandler((exception, executionCount, context) -> {
-                    if(exception instanceof NoHttpResponseException && executionCount < 3) {
-                        log.warn("Invalid connection used for service client: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
-                        return true;
+                    if(executionCount < 3) {
+                        if(exception instanceof NoHttpResponseException) {
+                            log.warn("Invalid connection used for service client: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
+                            return true;
+                        }
+                        if(exception instanceof SocketException) {
+                            if(exception.getMessage().contains("Connection reset")) {
+                                log.warn("Connection reset error: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
+                                return true;
+                            }
+                        }
                     }
                     return false;
                 })

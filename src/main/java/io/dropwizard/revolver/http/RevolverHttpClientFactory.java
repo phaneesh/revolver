@@ -77,6 +77,7 @@ class RevolverHttpClientFactory {
         SocketConfig socketConfig = SocketConfig.custom()
                 .setTcpNoDelay(true)
                 .setSoKeepAlive(true)
+                .setSoTimeout(0)
                 .build();
 
         // Create connection configuration
@@ -97,7 +98,9 @@ class RevolverHttpClientFactory {
                         serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS);
         connectionManager.setDefaultSocketConfig(socketConfig);
 
+
         connectionManager.setDefaultConnectionConfig(connectionConfig);
+
 
         // Create global request configuration
         RequestConfig defaultRequestConfig = RequestConfig.custom()

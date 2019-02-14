@@ -43,13 +43,6 @@ import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 
-import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -99,8 +92,7 @@ public class BaseRevolverTest {
 
 
     @Before
-    public void setup() throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException,
-            KeyStoreException, KeyManagementException, IOException, InterruptedException {
+    public void setup() {
         when(jerseyEnvironment.getResourceConfig()).thenReturn(new DropwizardResourceConfig());
         when(environment.jersey()).thenReturn(jerseyEnvironment);
         when(environment.lifecycle()).thenReturn(lifecycleEnvironment);
@@ -138,7 +130,7 @@ public class BaseRevolverTest {
                 .global(new RuntimeConfig())
                 .service(RevolverHttpServiceConfig.builder()
                         .authEnabled(false)
-                        .connectionPoolSize(1)
+                        .connectionPoolSize(10)
                         .secured(false)
                         .enpoint(simpleEndpoint)
                         .service("test")
@@ -194,7 +186,7 @@ public class BaseRevolverTest {
                         .build())
                 .service(RevolverHttpsServiceConfig.builder()
                         .authEnabled(false)
-                        .connectionPoolSize(1)
+                        .connectionPoolSize(10)
                         .enpoint(securedEndpoint)
                         .service("test_secured")
                         .type("https")

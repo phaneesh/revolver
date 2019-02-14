@@ -30,7 +30,6 @@ import java.util.Set;
 /**
  * @author phaneesh
  */
-@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -71,5 +70,10 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
         this.compression = compression;
         this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
         this.threadPoolGroupConfig = threadPoolGroupConfig;
+    }
+
+    public boolean equals(Object other) {
+        return other instanceof RevolverHttpServiceConfig
+                && ((RevolverHttpServiceConfig)other).getService().equals(getService());
     }
 }

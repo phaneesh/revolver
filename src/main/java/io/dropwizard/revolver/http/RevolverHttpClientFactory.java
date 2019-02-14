@@ -32,7 +32,6 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.SocketConfig;
@@ -44,7 +43,6 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HTTP;
-import org.apache.http.protocol.HttpContext;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -52,7 +50,6 @@ import javax.net.ssl.TrustManagerFactory;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketException;
 import java.nio.charset.CodingErrorAction;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -109,6 +106,7 @@ class RevolverHttpClientFactory {
                 .setRedirectsEnabled(false)
                 .setConnectTimeout(Integer.MAX_VALUE)
                 .setConnectionRequestTimeout(Integer.MAX_VALUE)
+                .setSocketTimeout(0)
                 .build();
 
 
@@ -120,12 +118,6 @@ class RevolverHttpClientFactory {
                         if(exception instanceof NoHttpResponseException) {
                             log.warn("Invalid connection used for service client: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
                             return true;
-                        }
-                        if(exception instanceof SocketException) {
-                            if(exception.getMessage().contains("Connection reset")) {
-                                log.warn("Connection reset error: {} | Retry count: {}", serviceConfiguration.getService(), executionCount);
-                                return true;
-                            }
                         }
                     }
                     return false;

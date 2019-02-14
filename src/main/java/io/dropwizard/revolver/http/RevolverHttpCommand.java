@@ -82,7 +82,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     protected RevolverHttpResponse execute(final RevolverHttpContext context, final RevolverHttpRequest request) throws Exception {
         Preconditions.checkNotNull(client);
         final RevolverHttpApiConfig apiConfig = getApiConfiguration();
-        if(apiConfig.getMethods().contains(request.getMethod())) {
+        if (apiConfig.getMethods().contains(request.getMethod())) {
             switch (request.getMethod()) {
                 case GET: {
                     return doGet(request);
@@ -124,12 +124,12 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private URI getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
         Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve((this.getServiceConfiguration()).getEndpoint());
-        if(endpoint == null) {
-            if(Strings.isNullOrEmpty(getServiceConfiguration().getFallbackAddress())) {
-                throw new RevolverException(503, "R999", "Service [" +request.getPath() +"] Unavailable");
+        if (endpoint == null) {
+            if (Strings.isNullOrEmpty(getServiceConfiguration().getFallbackAddress())) {
+                throw new RevolverException(503, "R999", "Service [" + request.getPath() + "] Unavailable");
             }
             String[] address = getServiceConfiguration().getFallbackAddress().split(":");
-            if(address.length == 1) {
+            if (address.length == 1) {
                 endpoint = Endpoint.builder()
                         .host(address[0])
                         .port(80)
@@ -157,14 +157,14 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
             val httpResponse = getHttpResponse(apiConfiguration, response, readBody);
             log.info("[{}/{}] {} {}:{}{} {} {}ms", apiConfiguration.getApi(), apiConfiguration.getPath(),
                     request.getMethod(), request.getURI().getHost(), request.getURI().getPort(), request.getURI().getRawPath(),
-                    httpResponse.getStatusCode(), (end-start));
+                    httpResponse.getStatusCode(), (end - start));
             return httpResponse;
         } catch (Exception e) {
             log.error("ErrorRunning HTTP GET call for path " + apiConfiguration.getPath() + ", uri : " + request.getURI() +
-                      "withException" , e);
+                    "withException", e);
             throw e;
         } finally {
-            if(response != null) {
+            if (response != null) {
                 response.close();
             }
         }
@@ -210,13 +210,13 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new HttpPatch(url);
         addHeaders(request, httpRequest);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
-                httpRequest.setEntity(new ByteArrayEntity(request.getBody(),
-                        ContentType.getByMimeType(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE))));
-            else
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE))) {
+                httpRequest.setEntity(new ByteArrayEntity(request.getBody()));
+                httpRequest.setHeader(HttpHeaders.CONTENT_TYPE, request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE));
+            } else {
                 httpRequest.setEntity(new ByteArrayEntity(request.getBody(), ContentType.WILDCARD));
-
+            }
         } else {
             httpRequest.setEntity(new ByteArrayEntity(new byte[0], ContentType.WILDCARD));
         }
@@ -229,8 +229,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new HttpPost(url);
         addHeaders(request, httpRequest);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.setEntity(new ByteArrayEntity(request.getBody()));
             else
                 httpRequest.setEntity(new ByteArrayEntity(request.getBody()));
@@ -247,8 +247,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val url = getServiceUrl(request, apiConfiguration);
         val httpRequest = new HttpPut(url);
         addHeaders(request, httpRequest);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.setEntity(new ByteArrayEntity(request.getBody()));
             else
                 httpRequest.setEntity(new ByteArrayEntity(request.getBody()));
@@ -284,11 +284,11 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
                     apiConfiguration.getApi(), response.getStatusLine().getStatusCode(), response.getStatusLine().getReasonPhrase()));
         }
         val headers = new MultivaluedHashMap<String, String>();
-        Arrays.stream(response.getAllHeaders()).forEach( h -> headers.putSingle( h.getName(), h.getValue()));
+        Arrays.stream(response.getAllHeaders()).forEach(h -> headers.putSingle(h.getName(), h.getValue()));
         val revolverResponse = RevolverHttpResponse.builder()
                 .statusCode(response.getStatusLine().getStatusCode())
                 .headers(headers);
-        if(readBody && response.getEntity() != null) {
+        if (readBody && response.getEntity() != null) {
             revolverResponse.body(EntityUtils.toByteArray(response.getEntity()));
         }
         return revolverResponse.build();
@@ -322,7 +322,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
             return;
         }
         val spanInfo = request.getTrace();
-        if(request.getHeaders() == null) {
+        if (request.getHeaders() == null) {
             request.setHeaders(new MultivaluedHashMap<>());
         }
         List<String> existing = request.getHeaders().keySet().stream().map(String::toLowerCase).collect(Collectors.toList());

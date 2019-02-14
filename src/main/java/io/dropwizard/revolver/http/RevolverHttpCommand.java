@@ -252,7 +252,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val revolverResponse = RevolverHttpResponse.builder()
                 .statusCode(response.code())
                 .headers(headers);
-        if(readBody) {
+        if(readBody && response.body() != null) {
             revolverResponse.body(response.body().bytes());
         }
         return revolverResponse.build();

@@ -169,11 +169,6 @@
             <version>${okhttp.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.raskasa.metrics</groupId>
-            <artifactId>metrics-okhttp</artifactId>
-            <version>0.4.0</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>

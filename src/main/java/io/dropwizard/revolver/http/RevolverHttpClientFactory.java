@@ -21,8 +21,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.raskasa.metrics.okhttp.InstrumentedOkHttpClients;
-import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -118,8 +116,7 @@ class RevolverHttpClientFactory {
         } else {
             builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
-        return InstrumentedOkHttpClients.create(RevolverBundle.getMetricRegistry(),
-                builder.build(), serviceConfiguration.getService());
+        return builder.build();
     }
 
     private static void setSSLContext(final String keyStorePath, final String keyStorePassword, OkHttpClient.Builder builder) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {

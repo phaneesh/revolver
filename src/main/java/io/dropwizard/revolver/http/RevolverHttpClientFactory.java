@@ -147,31 +147,15 @@ class RevolverHttpClientFactory {
 
 
     private static OkHttpClient getInstrumentedClient(OkHttpClient.Builder builder, RevolverHttpServiceConfig serviceConfiguration) {
-        builder.addInterceptor(new Interceptor() {
-            private final Meter submitted = RevolverBundle.getMetricRegistry().meter(metricId(serviceConfiguration.getService(), "network-requests-submitted"));
-            private final Counter running = RevolverBundle.getMetricRegistry().counter(metricId(serviceConfiguration.getService(), "network-requests-running"));
-            private final Meter completed = RevolverBundle.getMetricRegistry().meter(metricId(serviceConfiguration.getService(), "network-requests-completed"));
-            private final Timer duration = RevolverBundle.getMetricRegistry().timer(metricId(serviceConfiguration.getService(), "network-requests-duration"));
-
-            @Override
-            public Response intercept(Chain chain) throws IOException {
-                submitted.mark();
-                running.inc();
-                final Timer.Context context = duration.time();
-                try {
-                    return chain.proceed(chain.request());
-                } finally {
-                    context.stop();
-                    running.dec();
-                    completed.mark();
-                }
-            }
-        });
         OkHttpClient httpClient = builder.build();
-        RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-total-count"),
-                (Gauge<Integer>) () -> httpClient.connectionPool().connectionCount());
-        RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"),
-                (Gauge<Integer>) () -> httpClient.connectionPool().idleConnectionCount());
+        if(!RevolverBundle.getMetricRegistry().getGauges().containsKey(metricId(serviceConfiguration.getService(), "connection-pool-total-count"))) {
+            RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-total-count"),
+                    (Gauge<Integer>) () -> httpClient.connectionPool().connectionCount());
+        }
+        if(!RevolverBundle.getMetricRegistry().getGauges().containsKey(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"))) {
+            RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"),
+                    (Gauge<Integer>) () -> httpClient.connectionPool().idleConnectionCount());
+        }
         return httpClient;
     }
 

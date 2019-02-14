@@ -17,10 +17,15 @@
 
 package io.dropwizard.revolver.http;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -38,6 +43,8 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * @author phaneesh
@@ -116,7 +123,7 @@ class RevolverHttpClientFactory {
         } else {
             builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
-        return builder.build();
+        return getInstrumentedClient(builder, serviceConfiguration);
     }
 
     private static void setSSLContext(final String keyStorePath, final String keyStorePassword, OkHttpClient.Builder builder) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
@@ -132,6 +139,40 @@ class RevolverHttpClientFactory {
         sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
         X509TrustManager trustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
         builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+    }
+
+    private static String metricId(String name, String metric) {
+        return name(OkHttpClient.class, name, metric);
+    }
+
+
+    private static OkHttpClient getInstrumentedClient(OkHttpClient.Builder builder, RevolverHttpServiceConfig serviceConfiguration) {
+        builder.addInterceptor(new Interceptor() {
+            private final Meter submitted = RevolverBundle.getMetricRegistry().meter(metricId(serviceConfiguration.getService(), "network-requests-submitted"));
+            private final Counter running = RevolverBundle.getMetricRegistry().counter(metricId(serviceConfiguration.getService(), "network-requests-running"));
+            private final Meter completed = RevolverBundle.getMetricRegistry().meter(metricId(serviceConfiguration.getService(), "network-requests-completed"));
+            private final Timer duration = RevolverBundle.getMetricRegistry().timer(metricId(serviceConfiguration.getService(), "network-requests-duration"));
+
+            @Override
+            public Response intercept(Chain chain) throws IOException {
+                submitted.mark();
+                running.inc();
+                final Timer.Context context = duration.time();
+                try {
+                    return chain.proceed(chain.request());
+                } finally {
+                    context.stop();
+                    running.dec();
+                    completed.mark();
+                }
+            }
+        });
+        OkHttpClient httpClient = builder.build();
+        RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-total-count"),
+                (Gauge<Integer>) () -> httpClient.connectionPool().connectionCount());
+        RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"),
+                (Gauge<Integer>) () -> httpClient.connectionPool().idleConnectionCount());
+        return httpClient;
     }
 
 }

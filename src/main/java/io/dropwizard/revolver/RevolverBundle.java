@@ -15,6 +15,7 @@
  */
 package io.dropwizard.revolver;
 
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
@@ -91,6 +92,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private static RevolverConfig revolverConfig;
 
+    private static MetricRegistry metricRegistry;
+
     @Override
     public void initialize(final Bootstrap<?> bootstrap) {
         //Reset everything before configuration
@@ -102,6 +105,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     @Override
     public void run(final T configuration, final Environment environment) {
+        metricRegistry = environment.metrics();
         //Add metrics publisher
         final HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(environment.metrics());
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
@@ -333,6 +337,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             serviceConfig.put(config.getService(), config);
             registerCommand(config, config);
         }
+    }
+
+    public static MetricRegistry getMetricRegistry() {
+        return metricRegistry;
     }
 
 }

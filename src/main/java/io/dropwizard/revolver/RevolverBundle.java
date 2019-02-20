@@ -112,7 +112,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         } else {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, revolverConfig.getHystrixStreamPath());
         }
-
         environment.jersey().register(new RevolverExceptionMapper(environment.getObjectMapper(), msgPackObjectMapper));
         environment.jersey().register(new TimeoutExceptionMapper(environment.getObjectMapper()));
 
@@ -140,6 +139,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverApiManageResource());
     }
 
+    
     private void registerTypes(final Bootstrap<?> bootstrap) {
         bootstrap.getObjectMapper().registerModule(new MetricsModule(TimeUnit.MINUTES, TimeUnit.MILLISECONDS, false));
         bootstrap.getObjectMapper().registerSubtypes(new NamedType(RevolverHttpServiceConfig.class, "http"));

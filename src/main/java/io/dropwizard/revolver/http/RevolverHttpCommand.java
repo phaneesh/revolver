@@ -298,10 +298,10 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
         String uri;
 
-        if(null != httpApiConfiguration.getSplitConfig() && !(httpApiConfiguration.getSplitConfig().isEnabled())){
-            uri = getUri(httpApiConfiguration, request);
+        if(null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled()){
+            uri = getSplitUri(httpApiConfiguration, request);
         }else {
-           uri = getSplitUri(httpApiConfiguration, request);
+            uri = getUri(httpApiConfiguration, request);
         }
 
         if (Strings.isNullOrEmpty(uri)) {

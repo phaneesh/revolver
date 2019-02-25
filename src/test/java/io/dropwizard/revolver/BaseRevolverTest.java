@@ -130,6 +130,7 @@ public class BaseRevolverTest {
 
         SplitConfig splitConfigv1 = SplitConfig.builder().path("/v1/test").wrr(0.6).build();
         SplitConfig splitConfigv2 = SplitConfig.builder().path("/v2/test").wrr(0.4).build();
+        SplitConfig splitConfigv4 = SplitConfig.builder().path("/v4/test").wrr(1).build();
         List<SplitConfig> splitConfigs  = Lists.newArrayList(splitConfigv1, splitConfigv2);
 
         revolverConfig = RevolverConfig.builder()
@@ -202,6 +203,25 @@ public class BaseRevolverTest {
                                                        .concurrency(1).timeout(20000)
                                                        .build())
                                    .build()).build())
+                        .api(RevolverHttpApiConfig.configBuilder()
+                                  .api("test_single_split")
+                                  .method(RevolverHttpApiConfig.RequestMethod.GET)
+                                  .method(RevolverHttpApiConfig.RequestMethod.POST)
+                                  .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                                  .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                                  .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                                  .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                                  .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                  .path("{version}/single_split")
+                                  .splitConfig(RevolverHttpApiSplitConfig.builder()
+                                                       .enabled(true)
+                                                       .splits(Lists.newArrayList(splitConfigv4))
+                                                       .build())
+                                  .runtime(HystrixCommandConfig.builder()
+                                                   .threadPool(ThreadPoolConfig.builder()
+                                                                       .concurrency(1).timeout(20000)
+                                                                       .build())
+                                                   .build()).build())
                         .api(RevolverHttpApiConfig.configBuilder()
                                 .api("test_group_thread_pool")
                                 .method(RevolverHttpApiConfig.RequestMethod.GET)

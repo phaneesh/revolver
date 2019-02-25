@@ -335,6 +335,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             from += wrr;
             splitConfig.setTo(from);
         }
+        if(from > 1.0){
+            throw new RuntimeException("wrr of split api is exceeding weight of 1");
+        }
     }
 
     private static void registerHttpCommand(RevolverServiceConfig config) {

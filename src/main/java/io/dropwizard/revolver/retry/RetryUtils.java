@@ -48,28 +48,28 @@ public class RetryUtils {
         switch (waitStrategy) {
             case FIXED:
                 return RetryerBuilder.newBuilder()
-                        .retryIfException()
+                        .retryIfResult(new ValidResponseFilter())
                         .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
                         .withWaitStrategy(WaitStrategies.fixedWait(maximumTimeInSeconds, TimeUnit.SECONDS))
                         .build();
 
             case NO_WAIT:
                 return RetryerBuilder.newBuilder()
-                        .retryIfException()
+                        .retryIfResult(new ValidResponseFilter())
                         .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
                         .withWaitStrategy(WaitStrategies.noWait())
                         .build();
 
             case EXPONENTIAL:
                 return RetryerBuilder.newBuilder()
-                        .retryIfException()
+                        .retryIfResult(new ValidResponseFilter())
                         .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
                         .withWaitStrategy(WaitStrategies.exponentialWait(maximumTimeInSeconds, TimeUnit.SECONDS))
                         .build();
 
             case INCREMENTAL:
                 return RetryerBuilder.newBuilder()
-                        .retryIfException()
+                        .retryIfResult(new ValidResponseFilter())
                         .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
                         .withWaitStrategy(WaitStrategies.incrementingWait(INITIAL_WAIT_IN_MILLS, TimeUnit.MILLISECONDS, incrementByInMillis,
                                                                           TimeUnit.MILLISECONDS
@@ -78,7 +78,7 @@ public class RetryUtils {
 
             case FIBONACCI:
                 return RetryerBuilder.newBuilder()
-                        .retryIfException()
+                        .retryIfResult(new ValidResponseFilter())
                         .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
                         .withWaitStrategy(WaitStrategies.fibonacciWait(maximumTimeInSeconds, TimeUnit.SECONDS))
                         .build();

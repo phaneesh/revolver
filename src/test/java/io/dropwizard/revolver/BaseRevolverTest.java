@@ -238,7 +238,7 @@ public class BaseRevolverTest {
                               .path("{version}/test")
                               .runtime(HystrixCommandConfig.builder()
                                        .threadPool(ThreadPoolConfig.builder()
-                                                           .concurrency(1).timeout(2000)
+                                                           .concurrency(1).timeout(20000)
                                                            .build())
                                        .build()).build())
                         .api(RevolverHttpApiConfig.configBuilder()

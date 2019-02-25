@@ -36,6 +36,8 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
+import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
+import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +51,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -125,6 +128,10 @@ public class BaseRevolverTest {
                                                     .timeout(100)
                                             .build();
 
+        SplitConfig splitConfigv1 = SplitConfig.builder().path("/v1/test").wrr(0.6).build();
+        SplitConfig splitConfigv2 = SplitConfig.builder().path("/v2/test").wrr(0.4).build();
+        List<SplitConfig> splitConfigs  = Lists.newArrayList(splitConfigv1, splitConfigv2);
+
         revolverConfig = RevolverConfig.builder()
                 .mailBox(InMemoryMailBoxConfig.builder().build())
                 .serviceResolverConfig(ServiceResolverConfig.builder()
@@ -176,6 +183,25 @@ public class BaseRevolverTest {
                                                 .concurrency(1).timeout(2000)
                                                 .build())
                                         .build()).build())
+                        .api(RevolverHttpApiConfig.configBuilder()
+                              .api("test_split")
+                              .method(RevolverHttpApiConfig.RequestMethod.GET)
+                              .method(RevolverHttpApiConfig.RequestMethod.POST)
+                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                              .path("{version}/split")
+                              .splitConfig(RevolverHttpApiSplitConfig.builder()
+                                   .enabled(true)
+                                   .splits(splitConfigs)
+                                        .build())
+                              .runtime(HystrixCommandConfig.builder()
+                                   .threadPool(ThreadPoolConfig.builder()
+                                                       .concurrency(1).timeout(20000)
+                                                       .build())
+                                   .build()).build())
                         .api(RevolverHttpApiConfig.configBuilder()
                                 .api("test_group_thread_pool")
                                 .method(RevolverHttpApiConfig.RequestMethod.GET)

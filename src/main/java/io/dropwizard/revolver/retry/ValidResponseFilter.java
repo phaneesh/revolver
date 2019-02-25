@@ -33,6 +33,6 @@ public class ValidResponseFilter implements Predicate<Object> {
         int statusCode = response.getStatusLine()
                 .getStatusCode();
 
-        return !(statusCode >= 200 && statusCode < 300);
+        return statusCode >= 500;
     }
 }

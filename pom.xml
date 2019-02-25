@@ -4,7 +4,7 @@
 
     <groupId>io.dropwizard.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>1.3.7-17-SNAPSHOT</version>
+    <version>1.3.7-16-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>dropwizard-revolver</name>
@@ -39,6 +39,11 @@
             <id>phaneesh</id>
             <name>Phaneesh Nagaraja</name>
             <email>phaneesh.n@gmail.com</email>
+        </developer>
+        <developer>
+            <id>nitishgoyal13</id>
+            <name>Nitish Goyal</name>
+            <email>nitishgoyal13@gmail.com</email>
         </developer>
     </developers>
 
@@ -82,7 +87,7 @@
             <version>${dropwizard.version}</version>
             <scope>provided</scope>
         </dependency>
-         <dependency>
+        <dependency>
             <groupId>com.smoketurner</groupId>
             <artifactId>dropwizard-swagger</artifactId>
             <version>${dropwizard.version}-1</version>
@@ -216,7 +221,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-     </dependencies>
+    </dependencies>
 
     <build>
         <plugins>

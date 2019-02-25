@@ -31,6 +31,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
 import io.dropwizard.revolver.splitting.SplitConfig;
+import io.dropwizard.revolver.retry.RetryUtils;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -51,6 +52,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 /**
@@ -153,7 +155,17 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         CloseableHttpResponse response = null;
         try {
             long start = System.currentTimeMillis();
-            response = client.execute(request);
+            if(null != apiConfiguration.getRetryConfig() && apiConfiguration.getRetryConfig().isEnabled()){
+                response = (CloseableHttpResponse)RetryUtils.getRetryer(apiConfiguration)
+                        .call(new Callable() {
+                            @Override
+                            public Object call() throws Exception {
+                                return client.execute(request);
+                            }
+                        });
+            }else {
+                response = client.execute(request);
+            }
             long end = System.currentTimeMillis();
             val httpResponse = getHttpResponse(apiConfiguration, response, readBody);
             log.info("[{}/{}] {} {}:{}{} {} {}ms", apiConfiguration.getApi(), apiConfiguration.getPath(),

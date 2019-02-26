@@ -24,13 +24,16 @@ import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
+import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.exception.RevolverException;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
+import io.dropwizard.revolver.splitting.RevolverSplitServiceConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
+import io.dropwizard.revolver.splitting.SplitStrategy;
 import io.dropwizard.revolver.retry.RetryUtils;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
@@ -126,7 +129,11 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private URI getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
-        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve((this.getServiceConfiguration()).getEndpoint());
+        EndpointSpec endpointSpec = generateEndPoint(apiConfiguration);
+        if(endpointSpec == null){
+            endpointSpec = this.getServiceConfiguration().getEndpoint();
+        }
+        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve(endpointSpec);
         if (endpoint == null) {
             if (Strings.isNullOrEmpty(getServiceConfiguration().getFallbackAddress())) {
                 throw new RevolverException(503, "R999", "Service [" + request.getPath() + "] Unavailable");
@@ -149,6 +156,32 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } catch (URISyntaxException e) {
             throw new RevolverException(400, "R001", "Bad URI");
         }
+    }
+
+    private EndpointSpec generateEndPoint(RevolverHttpApiConfig apiConfiguration){
+        if(null != apiConfiguration.getSplitConfig() && apiConfiguration.getSplitConfig().isEnabled()){
+            return getFromSplitConfig(apiConfiguration);
+        }else {
+            return this.getServiceConfiguration().getEndpoint();
+        }
+    }
+
+    private EndpointSpec getFromSplitConfig(RevolverHttpApiConfig apiConfiguration) {
+
+        String serviceEndPoint = getSplitService(apiConfiguration);
+
+        RevolverHttpServiceConfig serviceConfig = this.getServiceConfiguration();
+        if(serviceConfig == null || null == serviceConfig.getServiceSplitConfig() ||
+           apiConfiguration.getSplitConfig().getSplitStrategy() != SplitStrategy.SERVICE  || StringUtils.isEmpty(serviceEndPoint) ){
+            return null;
+        }
+
+        for(RevolverSplitServiceConfig  splitServiceConfig : serviceConfig.getServiceSplitConfig().getConfigs()){
+            if(splitServiceConfig.getName().equals(serviceEndPoint)){
+                return splitServiceConfig.getEndpoint();
+            }
+        }
+        return null;
     }
 
     private RevolverHttpResponse executeRequest(final RevolverHttpApiConfig apiConfiguration, final HttpRequestBase request, final boolean readBody) throws Exception {
@@ -310,8 +343,9 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
         String uri;
 
-        if(null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled()){
-            uri = getSplitUri(httpApiConfiguration, request);
+        if(null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled() && httpApiConfiguration
+                .getSplitConfig().getSplitStrategy() == SplitStrategy.PATH){
+            uri = getSplitUri(httpApiConfiguration);
         }else {
             uri = getUri(httpApiConfiguration, request);
         }
@@ -322,13 +356,25 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         return uri.charAt(0) == '/' ? uri : "/" + uri;
     }
 
-    private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
+    private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration) {
 
         double random = Math.random();
         for(SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
                 .getSplits()) {
             if(splitConfig.getFrom() <= random && splitConfig.getTo() > random){
                 return splitConfig.getPath();
+            }
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private String getSplitService(RevolverHttpApiConfig httpApiConfiguration) {
+
+        double random = Math.random();
+        for(SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
+                .getSplits()) {
+            if(splitConfig.getFrom() <= random && splitConfig.getTo() > random){
+                return splitConfig.getService();
             }
         }
         return StringUtils.EMPTY;

@@ -8,18 +8,14 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /***
- Created by nitish.goyal on 25/02/19
+ Created by nitish.goyal on 26/02/19
  ***/
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RevolverHttpApiSplitConfig {
+@Builder
+public class RevolverHttpServiceSplitConfig {
 
-    private boolean enabled;
-
-    private SplitStrategy splitStrategy;
-
-    private List<SplitConfig> splits;
+    private List<RevolverSplitServiceConfig> configs;
 
 }

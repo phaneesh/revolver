@@ -136,4 +136,22 @@ public class RevolverHttpApiSplitTest extends BaseRevolverTest {
         assertEquals(response.getStatusCode(), 400);
 
     }
+
+    @Test
+    public void testSimpleSplitServiceHttpCommand() throws TimeoutException {
+        stubFor(get(urlEqualTo("/v1/test_service_split")).willReturn(aResponse().withStatus(200)
+                                                               .withHeader("Content-Type", "application/json")));
+
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_service_split");
+        val request = RevolverHttpRequest.builder()
+                .service("test")
+                .api("test_service_split")
+                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                .path("v1/test_service_split")
+                .build();
+        val response = httpCommand.execute(request);
+        assertEquals(response.getStatusCode(), 200);
+
+    }
+
 }

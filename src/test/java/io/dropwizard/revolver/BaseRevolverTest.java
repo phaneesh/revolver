@@ -39,6 +39,7 @@ import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
+import io.dropwizard.revolver.splitting.*;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
@@ -132,7 +133,12 @@ public class BaseRevolverTest {
         SplitConfig splitConfigv1 = SplitConfig.builder().path("/v1/test").wrr(0.6).build();
         SplitConfig splitConfigv2 = SplitConfig.builder().path("/v2/test").wrr(0.4).build();
         SplitConfig splitConfigv4 = SplitConfig.builder().path("/v4/test").wrr(1).build();
+        SplitConfig serviceSplitConfig1 = SplitConfig.builder().service("s1").wrr(0.9).build();
+        SplitConfig serviceSplitConfig2 = SplitConfig.builder().service("s2").wrr(0.1).build();
         List<SplitConfig> splitConfigs  = Lists.newArrayList(splitConfigv1, splitConfigv2);
+
+        RevolverSplitServiceConfig s1 = RevolverSplitServiceConfig.builder().name("s1").endpoint(simpleEndpoint).build();
+        RevolverSplitServiceConfig s2 = RevolverSplitServiceConfig.builder().name("s2").endpoint(securedEndpoint).build();
 
         revolverConfig = RevolverConfig.builder()
                 .mailBox(InMemoryMailBoxConfig.builder().build())
@@ -155,6 +161,7 @@ public class BaseRevolverTest {
                         .threadPoolGroupConfig(ThreadPoolGroupConfig.builder()
                                 .threadPools(Lists.newArrayList(threadPoolConfig))
                                        .build())
+                        .serviceSplitConfig(RevolverHttpServiceSplitConfig.builder().configs(Lists.newArrayList(s1, s2)).build())
                         .api(RevolverHttpApiConfig.configBuilder()
                                 .api("test")
                                 .method(RevolverHttpApiConfig.RequestMethod.GET)
@@ -197,6 +204,7 @@ public class BaseRevolverTest {
                               .path("{version}/split")
                               .splitConfig(RevolverHttpApiSplitConfig.builder()
                                    .enabled(true)
+                                   .splitStrategy(SplitStrategy.PATH)
                                    .splits(splitConfigs)
                                         .build())
                               .runtime(HystrixCommandConfig.builder()
@@ -215,12 +223,33 @@ public class BaseRevolverTest {
                                   .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
                                   .path("{version}/single_split")
                                   .splitConfig(RevolverHttpApiSplitConfig.builder()
-                                                       .enabled(true)
-                                                       .splits(Lists.newArrayList(splitConfigv4))
-                                                       .build())
+                                       .enabled(true)
+                                       .splits(Lists.newArrayList(splitConfigv4))
+                                       .splitStrategy(SplitStrategy.PATH)
+                                       .build())
                                   .runtime(HystrixCommandConfig.builder()
                                                    .threadPool(ThreadPoolConfig.builder()
                                                                        .concurrency(1).timeout(20000)
+                                                                       .build())
+                                                   .build()).build())
+                        .api(RevolverHttpApiConfig.configBuilder()
+                                  .api("test_service_split")
+                                  .method(RevolverHttpApiConfig.RequestMethod.GET)
+                                  .method(RevolverHttpApiConfig.RequestMethod.POST)
+                                  .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                                  .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                                  .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                                  .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                                  .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                  .path("{version}/test_service_split")
+                                  .splitConfig(RevolverHttpApiSplitConfig.builder()
+                                       .enabled(true)
+                                       .splits(Lists.newArrayList(serviceSplitConfig1, serviceSplitConfig2))
+                                       .splitStrategy(SplitStrategy.SERVICE)
+                                       .build())
+                                  .runtime(HystrixCommandConfig.builder()
+                                                   .threadPool(ThreadPoolConfig.builder()
+                                                                       .concurrency(1).timeout(30000)
                                                                        .build())
                                                    .build()).build())
                         .api(RevolverHttpApiConfig.configBuilder()

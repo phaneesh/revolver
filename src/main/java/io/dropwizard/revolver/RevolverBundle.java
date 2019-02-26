@@ -54,6 +54,7 @@ import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.resource.*;
+import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
@@ -247,14 +248,14 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .build();
         }
         loadServiceConfiguration(revolverConfig);
-        System.out.println("***************************************************************************************************");
+        /*System.out.println("***************************************************************************************************");
         System.out.println("Revolver Service Map");
         System.out.println("***************************************************************************************************");
         serviceToPathMap.forEach((k, v) -> {
             System.out.println("\tService: " + k);
             v.forEach(a -> a.getApi().getMethods().forEach(b -> System.out.println("\t\t[" + b.name() + "] " + a.getApi().getApi() + ": " + a.getPath())));
         });
-        System.out.println("***************************************************************************************************");
+        System.out.println("***************************************************************************************************");*/
     }
 
     public static void loadServiceConfiguration(RevolverConfig revolverConfig) {
@@ -311,13 +312,31 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             if(((RevolverHttpServiceConfig) config).getConnectionPoolSize() < totalConcurrency) {
                 ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);
             }
+
             ((RevolverHttpServiceConfig) config).getApis().forEach(a -> {
                     final String key = config.getService() + "." + a.getApi();
                     apiStatus.put(key, true);
                     apiConfig.put(key, a);
+                    if(null != a.getSplitConfig() && a.getSplitConfig().isEnabled()){
+                        updateSplitConfig(a);
+                    }
             });
             generateApiConfigMap((RevolverHttpServiceConfig) config);
             serviceNameResolver.register(revolverHttpServiceConfig.getEndpoint());
+        }
+    }
+
+    private static void updateSplitConfig(RevolverHttpApiConfig apiConfig) {
+        double from = 0.0;
+        for(SplitConfig splitConfig : apiConfig.getSplitConfig()
+                .getSplits()) {
+            double wrr = splitConfig.getWrr();
+            splitConfig.setFrom(from);
+            from += wrr;
+            splitConfig.setTo(from);
+        }
+        if(from > 1.0){
+            throw new RuntimeException("wrr of split api is exceeding weight of 1");
         }
     }
 

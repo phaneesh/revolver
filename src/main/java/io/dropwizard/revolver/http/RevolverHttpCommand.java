@@ -30,6 +30,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
+import io.dropwizard.revolver.splitting.SplitConfig;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -295,7 +296,34 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
-        String uri = null;
+        String uri;
+
+        if(null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled()){
+            uri = getSplitUri(httpApiConfiguration, request);
+        }else {
+            uri = getUri(httpApiConfiguration, request);
+        }
+
+        if (Strings.isNullOrEmpty(uri)) {
+            uri = httpApiConfiguration.getPath();
+        }
+        return uri.charAt(0) == '/' ? uri : "/" + uri;
+    }
+
+    private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
+
+        double random = Math.random();
+        for(SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
+                .getSplits()) {
+            if(splitConfig.getFrom() <= random && splitConfig.getTo() > random){
+                return splitConfig.getPath();
+            }
+        }
+        return StringUtils.EMPTY;
+    }
+
+    private String getUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
+        String uri = StringUtils.EMPTY;
         if (Strings.isNullOrEmpty(request.getPath())) {
             if (null != request.getPathParams()) {
                 uri = StringSubstitutor.replace(httpApiConfiguration.getPath(), request.getPathParams());
@@ -303,10 +331,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } else {
             uri = request.getPath();
         }
-        if (Strings.isNullOrEmpty(uri)) {
-            uri = httpApiConfiguration.getPath();
-        }
-        return uri.charAt(0) == '/' ? uri : "/" + uri;
+
+        return uri;
     }
 
     private void addQueryParams(final RevolverHttpRequest request, final URIBuilder builder) {

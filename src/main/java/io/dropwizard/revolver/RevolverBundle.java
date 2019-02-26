@@ -140,7 +140,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverApiManageResource());
     }
 
-
+    
     private void registerTypes(final Bootstrap<?> bootstrap) {
         bootstrap.getObjectMapper().registerModule(new MetricsModule(TimeUnit.MINUTES, TimeUnit.MILLISECONDS, false));
         bootstrap.getObjectMapper().registerSubtypes(new NamedType(RevolverHttpServiceConfig.class, "http"));

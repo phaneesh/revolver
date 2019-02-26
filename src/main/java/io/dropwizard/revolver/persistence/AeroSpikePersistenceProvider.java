@@ -35,6 +35,7 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.internal.util.collection.StringKeyIgnoreCaseMultivaluedMap;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -276,15 +277,19 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         } catch (IOException e) {
             log.warn("Error decoding response", e);
         }
+        Map<String, List<String>> headersKeyIgnoreCaseMap = new StringKeyIgnoreCaseMultivaluedMap<>();
+        Map<String, List<String>> queryParamsKeyIgnoreCaseMap = new StringKeyIgnoreCaseMultivaluedMap<>();
+        headers.forEach(headersKeyIgnoreCaseMap::put);
+        queryParams.forEach(queryParamsKeyIgnoreCaseMap::put);
         return RevolverCallbackRequest.builder()
-                .headers(headers)
+                .headers(headersKeyIgnoreCaseMap)
                 .api(record.getString(BinNames.API))
                 .callbackUri(record.getString(BinNames.CALLBACK_URI))
                 .body(record.getValue(BinNames.REQUEST_BODY) == null ? null : (byte[])record.getValue(BinNames.REQUEST_BODY))
                 .method(record.getString(BinNames.METHOD))
                 .mode(record.getString(BinNames.MODE))
                 .path(record.getString(BinNames.PATH))
-                .queryParams(queryParams)
+                .queryParams(queryParamsKeyIgnoreCaseMap)
                 .service(record.getString(BinNames.SERVICE))
                 .build();
     }

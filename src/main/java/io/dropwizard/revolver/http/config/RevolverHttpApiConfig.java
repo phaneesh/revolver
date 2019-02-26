@@ -20,6 +20,7 @@ package io.dropwizard.revolver.http.config;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
+import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import lombok.*;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -50,6 +51,8 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private  String acceptEncoding = "identity";
 
+    private RevolverApiRetryConfig retryConfig;
+
     private RevolverHttpApiSplitConfig splitConfig;
 
     @NotNull
@@ -66,11 +69,13 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     @Builder(builderMethodName = "configBuilder")
     public RevolverHttpApiConfig(final String api, final HystrixCommandConfig runtime, final String path,
                                  @Singular final Set<RequestMethod> methods, final Set<Integer>
-                                             acceptableResponseCodes, final boolean sharedPool, RevolverHttpApiSplitConfig splitConfig) {
+                                             acceptableResponseCodes, final boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
+                                 final RevolverApiRetryConfig retryConfig) {
         super(api, sharedPool, runtime);
         this.path = path;
         this.methods = methods;
         this.acceptableResponseCodes = acceptableResponseCodes;
+        this.retryConfig = retryConfig;
         this.splitConfig = splitConfig;
     }
 

@@ -13,7 +13,6 @@ import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 import lombok.val;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +28,6 @@ import static org.junit.Assert.assertEquals;
  ***/
 public class RevolverHttpApiSplitTest extends BaseRevolverTest {
 
-    @Ignore
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(9999);
 
@@ -54,7 +52,6 @@ public class RevolverHttpApiSplitTest extends BaseRevolverTest {
 
     }
 
-    @Ignore
     @Test(expected = RuntimeException.class)
     public void testFalseSplitHttpCommand() throws TimeoutException {
 
@@ -123,7 +120,6 @@ public class RevolverHttpApiSplitTest extends BaseRevolverTest {
         httpCommand.execute(request);
     }
 
-    @Ignore
     @Test
     public void testSingleSplitHttpCommand() throws TimeoutException {
         stubFor(get(urlEqualTo("/v4/test")).willReturn(aResponse().withStatus(400)

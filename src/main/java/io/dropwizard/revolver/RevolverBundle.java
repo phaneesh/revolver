@@ -248,14 +248,14 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .build();
         }
         loadServiceConfiguration(revolverConfig);
-        System.out.println("***************************************************************************************************");
+        /*System.out.println("***************************************************************************************************");
         System.out.println("Revolver Service Map");
         System.out.println("***************************************************************************************************");
         serviceToPathMap.forEach((k, v) -> {
             System.out.println("\tService: " + k);
             v.forEach(a -> a.getApi().getMethods().forEach(b -> System.out.println("\t\t[" + b.name() + "] " + a.getApi().getApi() + ": " + a.getPath())));
         });
-        System.out.println("***************************************************************************************************");
+        System.out.println("***************************************************************************************************");*/
     }
 
     public static void loadServiceConfiguration(RevolverConfig revolverConfig) {

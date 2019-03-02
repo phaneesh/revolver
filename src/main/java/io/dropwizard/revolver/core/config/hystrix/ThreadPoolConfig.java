@@ -39,7 +39,7 @@ public class ThreadPoolConfig {
 
     private int dynamicRequestQueueSize = 50;
 
-    private int timeout = 1000;
+    private int timeout = 3000;
 
     private String threadPoolName;
 

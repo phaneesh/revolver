@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class SplitConfig {
 
     private String path;
+    private String service;
 
     //Weighted round robin
     private double wrr;

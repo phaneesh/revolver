@@ -17,6 +17,7 @@
 
 package io.dropwizard.revolver.resource;
 
+import com.codahale.metrics.MetricRegistry;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.dropwizard.revolver.BaseRevolverTest;
 import io.dropwizard.revolver.RevolverBundle;
@@ -42,7 +43,7 @@ public class RevolverRequestResourceTest extends BaseRevolverTest {
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
             .addResource(new RevolverRequestResource(environment.getObjectMapper(),
-                    RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler))
+                    RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry()))
             .build();
 
     @Rule

@@ -17,12 +17,12 @@
 
 package io.dropwizard.revolver.core.config;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import io.dropwizard.Configuration;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.Singular;
+import io.dropwizard.riemann.RiemannConfig;
+import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -34,7 +34,8 @@ import java.util.List;
 /**
  * @author phaneesh
  */
-public class RevolverConfig {
+@AllArgsConstructor
+public class RevolverConfig extends Configuration {
 
     @NotNull
     @Valid
@@ -90,6 +91,12 @@ public class RevolverConfig {
     @Getter
     @Setter
     private String dynamicConfigUrl = null;
+
+    @JsonProperty("riemann")
+    @Getter
+    @Setter
+    private RiemannConfig riemann;
+
 
 
     @Builder

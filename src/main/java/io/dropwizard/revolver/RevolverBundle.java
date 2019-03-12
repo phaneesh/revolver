@@ -55,6 +55,8 @@ import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.resource.*;
 import io.dropwizard.revolver.splitting.SplitConfig;
+import io.dropwizard.riemann.RiemannBundle;
+import io.dropwizard.riemann.RiemannConfig;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
@@ -99,12 +101,22 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         registerTypes(bootstrap);
         bootstrap.addBundle(new MsgPackBundle());
         bootstrap.addBundle(new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
+        bootstrap.addBundle(new RiemannBundle<Configuration>() {
+            @Override
+            public RiemannConfig getRiemannConfiguration(Configuration configuration) {
+                if(configuration instanceof RevolverConfig){
+                    return ((RevolverConfig)configuration).getRiemann();
+                }
+                return null;
+            }
+        });
     }
 
     @Override
     public void run(final T configuration, final Environment environment) {
         //Add metrics publisher
         final HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(environment.metrics());
+        val metrics = environment.metrics();
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
         final RevolverConfig revolverConfig = getRevolverConfig(configuration);
@@ -124,7 +136,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 
         environment.jersey().register(new RevolverRequestResource(environment.getObjectMapper(),
-                msgPackObjectMapper, persistenceProvider, callbackHandler));
+                msgPackObjectMapper, persistenceProvider, callbackHandler, metrics));
         environment.jersey().register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
                 msgPackObjectMapper));

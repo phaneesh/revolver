@@ -79,6 +79,12 @@
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-riemann</artifactId>
             <version>${dropwizard.version}-1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.codahale.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>

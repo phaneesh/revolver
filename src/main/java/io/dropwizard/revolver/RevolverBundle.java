@@ -271,6 +271,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     }
 
     public static void loadServiceConfiguration(RevolverConfig revolverConfig) {
+        serviceToPathMap = new MultivaluedHashMap<>();
         for (final RevolverServiceConfig config : revolverConfig.getServices()) {
             final String type = config.getType();
             switch (type) {

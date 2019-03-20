@@ -96,9 +96,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver GET api endpoint")
     public Response get(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
         pushMetrics(response, service, path);
-        return response;
+            return response;
     }
 
     @HEAD
@@ -107,9 +107,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver HEAD api endpoint")
     public Response head(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.HEAD, path, headers, uriInfo, null);
-        pushMetrics(response, service, path);
-        return response;
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.HEAD, path, headers, uriInfo, null);
+            pushMetrics(response, service, path);
+            return response;
     }
 
     @POST
@@ -118,9 +118,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver POST api endpoint")
     public Response post(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.POST, path, headers, uriInfo, body);
-        pushMetrics(response, service, path);
-        return response;
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.POST, path, headers, uriInfo, body);
+            pushMetrics(response, service, path);
+            return response;
     }
 
     @PUT
@@ -129,7 +129,7 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver PUT api endpoint")
     public Response put(@PathParam("service") final String service,
                          @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
+        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
         pushMetrics(response, service, path);
         return response;
     }
@@ -140,9 +140,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver DELETE api endpoint")
     public Response delete(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
         pushMetrics(response, service, path);
-        return response;
+            return response;
     }
 
     @PATCH
@@ -151,9 +151,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver PATCH api endpoint")
     public Response patch(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PATCH, path, headers, uriInfo, body);
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PATCH, path, headers, uriInfo, body);
         pushMetrics(response, service, path);
-        return response;
+            return response;
     }
 
     @OPTIONS
@@ -162,9 +162,9 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver OPTIONS api endpoint")
     public Response options(@PathParam("service") final String service,
                           @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.OPTIONS, path, headers, uriInfo, body);
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.OPTIONS, path, headers, uriInfo, body);
         pushMetrics(response, service, path);
-        return response;
+            return response;
     }
 
 
@@ -203,7 +203,7 @@ public class RevolverRequestResource {
                 }
                 return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(), callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
-                if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER)) || apiMap.getApi().isAsync()) {
+                if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
                             ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                     headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
@@ -440,11 +440,6 @@ public class RevolverRequestResource {
         );
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
         val result = response.get();
-        callbackHandler.handle(requestId, RevolverCallbackResponse.builder()
-                .body(result.getBody())
-                .headers(result.getHeaders())
-                .statusCode(result.getStatusCode())
-                .build());
         return transform(headers, result, api.getApi(), path, method);
     }
 

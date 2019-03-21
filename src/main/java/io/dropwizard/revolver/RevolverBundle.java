@@ -66,10 +66,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -174,10 +171,19 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             return tokenMatch.matcher(o2Expr).groupCount() - tokenMatch.matcher(o1Expr).groupCount();
         });
         apis.sort(Comparator.comparing(RevolverHttpApiConfig::getPath));
-        apis.forEach(apiConfig -> serviceToPathMap.add(serviceConfiguration.getService(),
-                ApiPathMap.builder()
+        apis.forEach(apiConfig -> {
+                final ApiPathMap apiPathMap = ApiPathMap.builder()
                         .api(apiConfig)
-                        .path(generatePathExpression(apiConfig.getPath())).build()));
+                        .path(generatePathExpression(apiConfig.getPath())).build();
+            //Update
+            int elementIndex = serviceToPathMap.getOrDefault(serviceConfiguration.getService(), Collections.emptyList())
+                    .indexOf(apiPathMap);
+            if(elementIndex == -1) {
+                serviceToPathMap.add(serviceConfiguration.getService(), apiPathMap);
+            } else {
+                serviceToPathMap.get(serviceConfiguration.getService()).set(elementIndex, apiPathMap);
+            }
+        });
         final ImmutableMap.Builder<String, RevolverHttpApiConfig> configMapBuilder = ImmutableMap.builder();
         apis.forEach(apiConfig -> configMapBuilder.put(apiConfig.getApi(), apiConfig));
         return configMapBuilder.build();
@@ -271,7 +277,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     }
 
     public static void loadServiceConfiguration(RevolverConfig revolverConfig) {
-        serviceToPathMap = new MultivaluedHashMap<>();
         for (final RevolverServiceConfig config : revolverConfig.getServices()) {
             final String type = config.getType();
             switch (type) {

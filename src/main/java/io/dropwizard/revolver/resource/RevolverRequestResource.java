@@ -203,7 +203,7 @@ public class RevolverRequestResource {
                 }
                 return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(), callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
-                if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER)) || apiMap.getApi().isAsync()) {
+                if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
                             ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                                     headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,

@@ -52,8 +52,10 @@ public class DynamicConfigHandler implements Managed {
 
     private long prevLoadTime;
 
-    public DynamicConfigHandler(final String configAttribute,
-                                RevolverConfig revolverConfig, ObjectMapper objectMapper, ConfigSource configSource) {
+    private RevolverBundle revolverBundle;
+
+    public DynamicConfigHandler(final String configAttribute, RevolverConfig revolverConfig, ObjectMapper objectMapper,
+                                ConfigSource configSource, RevolverBundle revolverBundle) {
         this.configAttribute = configAttribute;
         this.revolverConfig = revolverConfig;
         this.configSource = configSource;
@@ -61,11 +63,12 @@ public class DynamicConfigHandler implements Managed {
         this.objectMapper = objectMapper.copy();
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.revolverBundle = revolverBundle;
         try {
             if(configSource == null) {
                 prevConfigHash = "unknown";
             } else {
-                prevConfigHash = computeHash(loadConfigData());
+                prevConfigHash = computeHash(loadConfigData(false));
             }
             log.info("Initializing dynamic config handler... Config Hash: {}", prevConfigHash);
         } catch (Exception e) {
@@ -84,7 +87,7 @@ public class DynamicConfigHandler implements Managed {
             return "unknown";
         }
         try {
-            final String substituted = loadConfigData();
+            final String substituted = loadConfigData(false);
             String curHash = computeHash(substituted);
             log.info("Old Config Hash: {} | New Config Hash: {}", prevConfigHash, curHash);
             if (!prevConfigHash.equals(curHash)) {
@@ -93,6 +96,7 @@ public class DynamicConfigHandler implements Managed {
                 RevolverBundle.loadServiceConfiguration(revolverConfig);
                 this.prevConfigHash = curHash;
                 prevLoadTime = System.currentTimeMillis();
+                revolverBundle.onConfigChange(loadConfigData(true));
                 return prevConfigHash;
             } else {
                 log.info("No config changes detected. Not reloading config..");
@@ -111,10 +115,13 @@ public class DynamicConfigHandler implements Managed {
                 .build();
     }
 
-    private String loadConfigData() throws Exception {
+    private String loadConfigData(boolean fullConfig) throws Exception {
         log.info("Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}", prevConfigHash, new Date(prevLoadTime));
         JsonNode node = objectMapper.readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
         EnvironmentVariableSubstitutor substitute = new EnvironmentVariableSubstitutor(false, true);
+        if(fullConfig) {
+            return substitute.replace(node.toString());
+        }
         return substitute.replace(node.get(configAttribute).toString());
     }
 

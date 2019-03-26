@@ -2,14 +2,14 @@ package io.dropwizard.revolver.retry;
 
 
 import com.google.common.base.Predicate;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import okhttp3.Response;
 
 import javax.annotation.Nullable;
 
 /***
  Created by nitish.goyal on 25/02/19
  ***/
-public class ValidResponseFilter implements Predicate<Object> {
+public class ValidResponseFilter<T> implements Predicate<T> {
 
 
     @Override
@@ -23,16 +23,10 @@ public class ValidResponseFilter implements Predicate<Object> {
     }
 
     private boolean validateResponse(Object object) {
-        if(!(object instanceof CloseableHttpResponse)) {
+        if(!(object instanceof Response)) {
             return false;
         }
-        CloseableHttpResponse response = (CloseableHttpResponse)object;
-        if(response.getStatusLine() == null) {
-            return false;
-        }
-        int statusCode = response.getStatusLine()
-                .getStatusCode();
-
-        return statusCode >= 500;
+        Response response = (Response)object;
+        return response.code() >= 500;
     }
 }

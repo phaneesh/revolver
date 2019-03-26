@@ -17,15 +17,10 @@
 
 package io.dropwizard.revolver.http;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -43,8 +38,6 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-
-import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * @author phaneesh
@@ -123,7 +116,7 @@ class RevolverHttpClientFactory {
         } else {
             builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
-        return getInstrumentedClient(builder, serviceConfiguration);
+        return builder.build();
     }
 
     private static void setSSLContext(final String keyStorePath, final String keyStorePassword, OkHttpClient.Builder builder) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
@@ -140,23 +133,4 @@ class RevolverHttpClientFactory {
         X509TrustManager trustManager = (X509TrustManager) trustManagerFactory.getTrustManagers()[0];
         builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
     }
-
-    private static String metricId(String name, String metric) {
-        return name(OkHttpClient.class, name, metric);
-    }
-
-
-    private static OkHttpClient getInstrumentedClient(OkHttpClient.Builder builder, RevolverHttpServiceConfig serviceConfiguration) {
-        OkHttpClient httpClient = builder.build();
-        if(!RevolverBundle.getMetricRegistry().getGauges().containsKey(metricId(serviceConfiguration.getService(), "connection-pool-total-count"))) {
-            RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-total-count"),
-                    (Gauge<Integer>) () -> httpClient.connectionPool().connectionCount());
-        }
-        if(!RevolverBundle.getMetricRegistry().getGauges().containsKey(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"))) {
-            RevolverBundle.getMetricRegistry().register(metricId(serviceConfiguration.getService(), "connection-pool-idle-count"),
-                    (Gauge<Integer>) () -> httpClient.connectionPool().idleConnectionCount());
-        }
-        return httpClient;
-    }
-
 }

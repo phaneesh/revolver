@@ -31,10 +31,10 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
+import io.dropwizard.revolver.retry.RetryUtils;
 import io.dropwizard.revolver.splitting.RevolverSplitServiceConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.revolver.splitting.SplitStrategy;
-import io.dropwizard.revolver.retry.RetryUtils;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -45,9 +45,6 @@ import org.apache.commons.text.StringSubstitutor;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -121,12 +118,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         return null;
     }
 
-    private URI getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
-        EndpointSpec endpointSpec = generateEndPoint(apiConfiguration);
-        if(endpointSpec == null){
-            endpointSpec = this.getServiceConfiguration().getEndpoint();
-        }
-        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve(endpointSpec);
+    private HttpUrl getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
+        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve((this.getServiceConfiguration()).getEndpoint());
         if (endpoint == null) {
             if (Strings.isNullOrEmpty(getServiceConfiguration().getFallbackAddress())) {
                 throw new RevolverException(503, "R999", "Service [" + request.getPath() + "] Unavailable");
@@ -147,10 +140,10 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         return generateURI(request, apiConfiguration, endpoint);
     }
 
-    private EndpointSpec generateEndPoint(RevolverHttpApiConfig apiConfiguration){
-        if(null != apiConfiguration.getSplitConfig() && apiConfiguration.getSplitConfig().isEnabled()){
+    private EndpointSpec generateEndPoint(RevolverHttpApiConfig apiConfiguration) {
+        if (null != apiConfiguration.getSplitConfig() && apiConfiguration.getSplitConfig().isEnabled()) {
             return getFromSplitConfig(apiConfiguration);
-        }else {
+        } else {
             return this.getServiceConfiguration().getEndpoint();
         }
     }
@@ -160,33 +153,28 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         String serviceEndPoint = getSplitService(apiConfiguration);
 
         RevolverHttpServiceConfig serviceConfig = this.getServiceConfiguration();
-        if(serviceConfig == null || null == serviceConfig.getServiceSplitConfig() ||
-           apiConfiguration.getSplitConfig().getSplitStrategy() != SplitStrategy.SERVICE  || StringUtils.isEmpty(serviceEndPoint) ){
+        if (serviceConfig == null || null == serviceConfig.getServiceSplitConfig() ||
+                apiConfiguration.getSplitConfig().getSplitStrategy() != SplitStrategy.SERVICE || StringUtils.isEmpty(serviceEndPoint)) {
             return null;
         }
 
-        for(RevolverSplitServiceConfig  splitServiceConfig : serviceConfig.getServiceSplitConfig().getConfigs()){
-            if(splitServiceConfig.getName().equals(serviceEndPoint)){
+        for (RevolverSplitServiceConfig splitServiceConfig : serviceConfig.getServiceSplitConfig().getConfigs()) {
+            if (splitServiceConfig.getName().equals(serviceEndPoint)) {
                 return splitServiceConfig.getEndpoint();
             }
         }
         return null;
     }
 
-    private RevolverHttpResponse executeRequest(final RevolverHttpApiConfig apiConfiguration, final HttpRequestBase request, final boolean readBody) throws Exception {
-        CloseableHttpResponse response = null;
+    private RevolverHttpResponse executeRequest(final RevolverHttpApiConfig apiConfiguration, final Request request, final boolean readBody) throws Exception {
+        Response response = null;
         try {
             long start = System.currentTimeMillis();
-            if(null != apiConfiguration.getRetryConfig() && apiConfiguration.getRetryConfig().isEnabled()){
-                response = (CloseableHttpResponse)RetryUtils.getRetryer(apiConfiguration)
-                        .call(new Callable() {
-                            @Override
-                            public Object call() throws Exception {
-                                return client.execute(request);
-                            }
-                        });
-            }else {
-                response = client.execute(request);
+            if (null != apiConfiguration.getRetryConfig() && apiConfiguration.getRetryConfig().isEnabled()) {
+                response = RetryUtils.<Response>getRetryer(apiConfiguration)
+                        .call(() -> client.newCall(request).execute());
+            } else {
+                response = client.newCall(request).execute();
             }
             long end = System.currentTimeMillis();
             val httpResponse = getHttpResponse(apiConfiguration, response, readBody);
@@ -194,8 +182,9 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
                     request.method(), request.url().host(), request.url().port(), request.url().encodedPath(),
                     httpResponse.getStatusCode(), (end - start));
             return httpResponse;
+
         } catch (Exception e) {
-            log.error("ErrorRunning HTTP GET call for path " + apiConfiguration.getPath() + ", uri : " + request.getURI() +
+            log.error("ErrorRunning HTTP GET call for path " + apiConfiguration.getPath() + ", uri : " + request.url() +
                     "withException", e);
             throw e;
         } finally {
@@ -240,8 +229,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private RevolverHttpResponse doPatch(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.patch(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));
             else
                 httpRequest.patch(RequestBody.create(MediaType.parse("*/*"), request.getBody()));
@@ -253,8 +242,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private RevolverHttpResponse doPost(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.post(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));
             else
                 httpRequest.post(RequestBody.create(MediaType.parse("*/*"), request.getBody()));
@@ -266,8 +255,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private RevolverHttpResponse doPut(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
-        if(request.getBody() != null) {
-            if(null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
+        if (request.getBody() != null) {
+            if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)))
                 httpRequest.put(RequestBody.create(MediaType.parse(request.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE)), request.getBody()));
             else
                 httpRequest.put(RequestBody.create(MediaType.parse("*/*"), request.getBody()));
@@ -300,7 +289,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         val revolverResponse = RevolverHttpResponse.builder()
                 .statusCode(response.code())
                 .headers(headers);
-        if(readBody && response.body() != null) {
+        if (readBody && response.body() != null) {
             revolverResponse.body(response.body().bytes());
         }
         return revolverResponse.build();
@@ -309,10 +298,10 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
         String uri;
 
-        if(null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled() && httpApiConfiguration
-                .getSplitConfig().getSplitStrategy() == SplitStrategy.PATH){
+        if (null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled() && httpApiConfiguration
+                .getSplitConfig().getSplitStrategy() == SplitStrategy.PATH) {
             uri = getSplitUri(httpApiConfiguration);
-        }else {
+        } else {
             uri = getUri(httpApiConfiguration, request);
         }
 
@@ -325,9 +314,9 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration) {
 
         double random = Math.random();
-        for(SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
+        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
                 .getSplits()) {
-            if(splitConfig.getFrom() <= random && splitConfig.getTo() > random){
+            if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
                 return splitConfig.getPath();
             }
         }
@@ -337,9 +326,9 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private String getSplitService(RevolverHttpApiConfig httpApiConfiguration) {
 
         double random = Math.random();
-        for(SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
+        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
                 .getSplits()) {
-            if(splitConfig.getFrom() <= random && splitConfig.getTo() > random){
+            if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
                 return splitConfig.getService();
             }
         }
@@ -370,7 +359,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
             return;
         }
         val spanInfo = request.getTrace();
-        if(request.getHeaders() == null) {
+        if (request.getHeaders() == null) {
             request.setHeaders(new MultivaluedHashMap<>());
         }
         List<String> existing = request.getHeaders().keySet().stream().map(String::toLowerCase).collect(Collectors.toList());

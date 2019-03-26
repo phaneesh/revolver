@@ -129,7 +129,7 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver PUT api endpoint")
     public Response put(@PathParam("service") final String service,
                          @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
+        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
         pushMetrics(response, service, path);
         return response;
     }
@@ -140,7 +140,7 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver DELETE api endpoint")
     public Response delete(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
+        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
         pushMetrics(response, service, path);
         return response;
     }
@@ -440,11 +440,6 @@ public class RevolverRequestResource {
         );
         persistenceProvider.setRequestState(requestId, RevolverRequestState.REQUESTED, mailBoxTtl);
         val result = response.get();
-        callbackHandler.handle(requestId, RevolverCallbackResponse.builder()
-                .body(result.getBody())
-                .headers(result.getHeaders())
-                .statusCode(result.getStatusCode())
-                .build());
         return transform(headers, result, api.getApi(), path, method);
     }
 

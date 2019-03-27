@@ -18,7 +18,6 @@
 package io.dropwizard.revolver.http.config;
 
 import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
 
 import java.util.Set;
 

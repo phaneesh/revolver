@@ -18,7 +18,6 @@ package io.dropwizard.revolver;
 import com.codahale.metrics.json.MetricsModule;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
-import com.flipkart.ranger.healthcheck.HealthcheckStatus;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.contrib.codahalemetricspublisher.HystrixCodaHaleMetricsPublisher;
@@ -44,6 +43,7 @@ import io.dropwizard.revolver.exception.TimeoutExceptionMapper;
 import io.dropwizard.revolver.filters.RevolverRequestFilter;
 import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.handler.DynamicConfigHandler;
+import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
@@ -372,7 +372,16 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static void registerHttpCommand(RevolverServiceConfig config) {
         final RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
         httpConfig.setSecured(false);
-        serviceConfig.put(config.getService(), httpConfig);
+        if(serviceConfig.containsKey(httpConfig.getService())) {
+            if(!serviceConfig.get(httpConfig.getService()).equals(httpConfig)) {
+                serviceConfig.put(config.getService(), httpConfig);
+                RevolverHttpClientFactory.refreshClient(httpConfig);
+            } else {
+                serviceConfig.put(config.getService(), httpConfig);
+            }
+        } else {
+            serviceConfig.put(config.getService(), httpConfig);
+        }
         registerCommand(config, httpConfig);
     }
 
@@ -385,6 +394,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     public MultivaluedMap<String, ApiPathMap> getServiceToPathMap() {
         return serviceToPathMap;
+    }
+
+    public static ConcurrentHashMap<String, RevolverHttpServiceConfig> getServiceConfig() {
+        return serviceConfig;
     }
 
 }

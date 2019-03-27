@@ -17,10 +17,10 @@
 
 package io.dropwizard.revolver.persistence;
 
-import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
-import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
+import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
+import io.dropwizard.revolver.base.core.RevolverRequestState;
 
 import java.util.List;
 

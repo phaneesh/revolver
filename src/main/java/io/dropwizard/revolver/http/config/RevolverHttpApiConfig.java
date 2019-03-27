@@ -19,8 +19,8 @@ package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
-import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
+import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import lombok.*;
 import org.hibernate.validator.constraints.NotEmpty;
 

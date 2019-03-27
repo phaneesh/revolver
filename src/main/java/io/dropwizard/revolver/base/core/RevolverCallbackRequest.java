@@ -20,7 +20,6 @@ package io.dropwizard.revolver.base.core;
 
 import lombok.*;
 
-import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.Map;
 

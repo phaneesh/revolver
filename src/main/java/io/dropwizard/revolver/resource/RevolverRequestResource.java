@@ -226,24 +226,31 @@ public class RevolverRequestResource {
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
         val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
-        val response = httpCommand.execute(
-                RevolverHttpRequest.builder()
-                        .traceInfo(
-                                TraceInfo.builder()
-                                        .requestId(headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER))
-                                        .transactionId(headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
-                                        .timestamp(System.currentTimeMillis())
-                                        .build())
-                        .api(api.getApi())
-                        .service(service)
-                        .path(path)
-                        .method(method)
-                        .headers(sanatizedHeaders)
-                        .queryParams(uriInfo.getQueryParameters())
-                        .body(body)
-                        .build()
-        );
-        return transform(headers, response, api.getApi(), path, method);
+        final RevolverHttpResponse revolverHttpResponse = execute(httpCommand, service, api, method, path, headers, uriInfo, body, sanatizedHeaders);
+        return transform(headers, revolverHttpResponse, api.getApi(), path, method);
+     }
+
+     private RevolverHttpResponse execute(final RevolverHttpCommand httpCommand, final String service,
+                                          final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
+                                          final String path, final HttpHeaders headers,
+                                          final UriInfo uriInfo, final byte[] body,
+                                          final MultivaluedHashMap<String, String> sanatizedHeaders) throws TimeoutException {
+         return httpCommand.execute(
+                 RevolverHttpRequest.builder()
+                         .traceInfo(
+                                 TraceInfo.builder()
+                                         .requestId(headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER))
+                                         .transactionId(headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
+                                         .timestamp(System.currentTimeMillis())
+                                         .build())
+                         .api(api.getApi())
+                         .service(service)
+                         .path(path)
+                         .method(method)
+                         .headers(sanatizedHeaders)
+                         .queryParams(uriInfo.getQueryParameters())
+                         .body(body)
+                         .build());
      }
 
     private Response transform(HttpHeaders headers, RevolverHttpResponse response, String api, String path, RevolverHttpApiConfig.RequestMethod method) throws IOException {

@@ -19,8 +19,10 @@ package io.dropwizard.revolver.http;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -37,23 +39,39 @@ import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
  * @author phaneesh
  */
 @Slf4j
-class RevolverHttpClientFactory {
+public class RevolverHttpClientFactory {
 
-    private static final LoadingCache<RevolverHttpServiceConfig, OkHttpClient> clientCache = Caffeine.newBuilder()
+    private static final LoadingCache<String, OkHttpClient> clientCache = Caffeine.newBuilder()
+            .removalListener((RemovalListener<String, OkHttpClient>) (service, client, cause) -> {
+                if(Objects.nonNull(client)) {
+                    try {
+                        client.dispatcher().executorService().shutdown();
+                        client.connectionPool().evictAll();
+                    } catch (Exception e) {
+                        log.error("Error cleaning up stale client for service: {}", service, e);
+                    }
+                }
+            })
             .build(RevolverHttpClientFactory::getOkHttpClient);
 
     static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) {
         Preconditions.checkNotNull(serviceConfiguration);
-        return clientCache.get(serviceConfiguration);
+        return clientCache.get(serviceConfiguration.getService());
     }
 
-    private static OkHttpClient getOkHttpClient(RevolverHttpServiceConfig serviceConfiguration) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
+    public static void refreshClient(final RevolverHttpServiceConfig serviceConfiguration) {
+        clientCache.invalidate(serviceConfiguration.getService());
+    }
+
+    private static OkHttpClient getOkHttpClient(String service) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
+        RevolverHttpServiceConfig serviceConfiguration = RevolverBundle.getServiceConfig().get(service);
         final OkHttpClient.Builder builder = new OkHttpClient.Builder();
         builder.followRedirects(false);
         builder.followSslRedirects(false);

@@ -18,13 +18,11 @@
 package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.MetricRegistry;
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.dropwizard.revolver.BaseRevolverTest;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.testing.junit.ResourceTestRule;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import javax.ws.rs.client.Entity;

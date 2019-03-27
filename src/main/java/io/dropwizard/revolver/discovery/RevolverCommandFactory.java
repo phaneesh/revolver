@@ -17,11 +17,11 @@
 
 package io.dropwizard.revolver.discovery;
 
+import io.dropwizard.revolver.core.RevolverCommand;
+import io.dropwizard.revolver.core.RevolverContext;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
-import io.dropwizard.revolver.core.RevolverCommand;
-import io.dropwizard.revolver.core.RevolverContext;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
 import io.dropwizard.revolver.core.tracing.TraceCollector;

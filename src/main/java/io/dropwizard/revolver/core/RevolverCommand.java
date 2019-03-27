@@ -72,7 +72,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
             return response;
         } catch (Throwable t) {
             Throwable rootCause = ExceptionUtils.getRootCause(t);
-            log.error("ErrorOccurred while executing revolver command for service : " + request.getService() + ", for api : " + request
+            log.error("Error occurred while executing revolver command for service : " + request.getService() + ", for api : " + request
                     .getApi() + " with error : "+ t);
             if (rootCause == null) {
                 rootCause = t;

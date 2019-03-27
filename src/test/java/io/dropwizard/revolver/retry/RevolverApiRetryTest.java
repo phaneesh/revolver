@@ -37,7 +37,7 @@ public class RevolverApiRetryTest extends BaseRevolverTest {
 
     @Test(expected = RevolverExecutionException.class)
     public void testFailedRetryHttpCommand() throws TimeoutException {
-        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(500)
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(503)
                                                                .withHeader("Content-Type", "application/json")));
         RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_retry");
         val request = RevolverHttpRequest.builder()

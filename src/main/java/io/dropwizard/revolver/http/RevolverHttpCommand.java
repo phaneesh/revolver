@@ -172,8 +172,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         try {
             long start = System.currentTimeMillis();
             if (null != apiConfiguration.getRetryConfig() && apiConfiguration.getRetryConfig().isEnabled()) {
-                response = RetryUtils.<Response>getRetryer(apiConfiguration)
-                        .call(() -> client.newCall(request).execute());
+                    response = RetryUtils.<Response>getRetryer(apiConfiguration)
+                            .call(() -> client.newCall(request).execute());
             } else {
                 response = client.newCall(request).execute();
             }
@@ -183,10 +183,8 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
                     request.method(), request.url().host(), request.url().port(), request.url().encodedPath(),
                     httpResponse.getStatusCode(), (end - start));
             return httpResponse;
-
         } catch (Exception e) {
-            log.error("ErrorRunning HTTP GET call for path " + apiConfiguration.getPath() + ", uri : " + request.url() +
-                    "withException", e);
+            log.error("Error executing service request for service : " + request.url(), e);
             throw e;
         } finally {
             if (response != null) {
@@ -313,7 +311,6 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration) {
-
         double random = Math.random();
         for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
                 .getSplits()) {
@@ -384,5 +381,4 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
             request.getHeaders().forEach((key, values) -> values.forEach(value -> requestBuilder.addHeader(key, value)));
         }
     }
-
 }

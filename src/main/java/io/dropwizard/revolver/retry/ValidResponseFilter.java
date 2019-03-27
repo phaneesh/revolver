@@ -3,7 +3,7 @@ package io.dropwizard.revolver.retry;
 
 import com.google.common.base.Predicate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import okhttp3.Response;
 
 import javax.annotation.Nullable;
 
@@ -25,19 +25,13 @@ public class ValidResponseFilter<T> implements Predicate<T> {
     }
 
     private boolean validateResponse(Object object) {
-        if(!(object instanceof CloseableHttpResponse)) {
+        if(!(object instanceof Response)) {
             return false;
         }
-
-        CloseableHttpResponse response = (CloseableHttpResponse)object;
-        if(response.getStatusLine() == null) {
-            return false;
+        Response response = (Response)object;
+        if(response.code() >= 500){
+            log.error("5xxErrorOccurred inside retryer + " + response.code());
         }
-        int statusCode = response.getStatusLine()
-                .getStatusCode();
-        if(statusCode >= 500) {
-            log.error("5xxErrorOccurred inside retryer + " + statusCode + ", response : " + response.toString());
-        }
-        return statusCode >= 500;
+        return response.code() >= 500;
     }
 }

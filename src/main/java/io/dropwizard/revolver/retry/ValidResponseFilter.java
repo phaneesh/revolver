@@ -4,6 +4,7 @@ package io.dropwizard.revolver.retry;
 import com.google.common.base.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import okhttp3.Response;
 
 import javax.annotation.Nullable;
 
@@ -12,7 +13,6 @@ import javax.annotation.Nullable;
  ***/
 @Slf4j
 public class ValidResponseFilter implements Predicate<Object> {
-
 
     @Override
     public boolean apply(@Nullable Object o) {
@@ -25,9 +25,10 @@ public class ValidResponseFilter implements Predicate<Object> {
     }
 
     private boolean validateResponse(Object object) {
-        if(!(object instanceof CloseableHttpResponse)) {
+        if(!(object instanceof Response)) {
             return false;
         }
+
         CloseableHttpResponse response = (CloseableHttpResponse)object;
         if(response.getStatusLine() == null) {
             return false;

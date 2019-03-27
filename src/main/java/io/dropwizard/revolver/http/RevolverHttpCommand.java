@@ -120,7 +120,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private HttpUrl getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
         EndpointSpec endpointSpec = generateEndPoint(apiConfiguration);
-        if(endpointSpec == null){
+        if (endpointSpec == null) {
             endpointSpec = this.getServiceConfiguration().getEndpoint();
         }
         Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve(endpointSpec);
@@ -167,13 +167,18 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         return null;
     }
 
-    private RevolverHttpResponse executeRequest(final RevolverHttpApiConfig apiConfiguration, final Request request, final boolean readBody) throws Exception {
+    private RevolverHttpResponse executeRequest(final RevolverHttpApiConfig apiConfiguration, final Request request,
+                                                final boolean readBody, final RevolverHttpRequest originalRequest) throws Exception {
         Response response = null;
         try {
             long start = System.currentTimeMillis();
             if (null != apiConfiguration.getRetryConfig() && apiConfiguration.getRetryConfig().isEnabled()) {
-                    response = RetryUtils.<Response>getRetryer(apiConfiguration)
-                            .call(() -> client.newCall(request).execute());
+                response = RetryUtils.getRetryer(apiConfiguration)
+                        .call(() -> {
+                            val url = getServiceUrl(originalRequest, getApiConfiguration());
+                            return client.newCall(request.newBuilder()
+                                    .url(url).build()).execute();
+                        });
             } else {
                 response = client.newCall(request).execute();
             }
@@ -196,7 +201,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private RevolverHttpResponse doGet(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.get();
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private Request.Builder initializeRequest(RevolverHttpRequest request) throws RevolverException {
@@ -211,19 +216,19 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     private RevolverHttpResponse doOptions(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.method("OPTIONS", null);
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private RevolverHttpResponse doHead(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.head();
-        return executeRequest(getApiConfiguration(), httpRequest.build(), false);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), false, request);
     }
 
     private RevolverHttpResponse doDelete(final RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.delete();
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private RevolverHttpResponse doPatch(final RevolverHttpRequest request) throws Exception {
@@ -236,7 +241,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } else {
             httpRequest.patch(RequestBody.create(MediaType.parse("*/*"), new byte[0]));
         }
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private RevolverHttpResponse doPost(final RevolverHttpRequest request) throws Exception {
@@ -249,7 +254,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } else {
             httpRequest.post(RequestBody.create(MediaType.parse("*/*"), new byte[0]));
         }
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private RevolverHttpResponse doPut(final RevolverHttpRequest request) throws Exception {
@@ -262,7 +267,7 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } else {
             httpRequest.put(RequestBody.create(MediaType.parse("*/*"), new byte[0]));
         }
-        return executeRequest(getApiConfiguration(), httpRequest.build(), true);
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private HttpUrl generateURI(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration, final Endpoint endpoint) {

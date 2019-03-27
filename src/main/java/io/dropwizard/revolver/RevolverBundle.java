@@ -368,8 +368,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         final RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
         httpConfig.setSecured(false);
         serviceConfig.put(config.getService(), httpConfig);
-        loadHttpClient(config);
         registerCommand(config, httpConfig);
+        loadHttpClient(config);
     }
 
     private static void loadHttpClient(RevolverServiceConfig config) {

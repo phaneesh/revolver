@@ -119,7 +119,11 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private HttpUrl getServiceUrl(final RevolverHttpRequest request, final RevolverHttpApiConfig apiConfiguration) throws RevolverException {
-        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve((this.getServiceConfiguration()).getEndpoint());
+        EndpointSpec endpointSpec = generateEndPoint(apiConfiguration);
+        if(endpointSpec == null){
+            endpointSpec = this.getServiceConfiguration().getEndpoint();
+        }
+        Endpoint endpoint = RevolverBundle.serviceNameResolver.resolve(endpointSpec);
         if (endpoint == null) {
             if (Strings.isNullOrEmpty(getServiceConfiguration().getFallbackAddress())) {
                 throw new RevolverException(503, "R999", "Service [" + request.getPath() + "] Unavailable");
@@ -149,15 +153,12 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private EndpointSpec getFromSplitConfig(RevolverHttpApiConfig apiConfiguration) {
-
         String serviceEndPoint = getSplitService(apiConfiguration);
-
         RevolverHttpServiceConfig serviceConfig = this.getServiceConfiguration();
         if (serviceConfig == null || null == serviceConfig.getServiceSplitConfig() ||
                 apiConfiguration.getSplitConfig().getSplitStrategy() != SplitStrategy.SERVICE || StringUtils.isEmpty(serviceEndPoint)) {
             return null;
         }
-
         for (RevolverSplitServiceConfig splitServiceConfig : serviceConfig.getServiceSplitConfig().getConfigs()) {
             if (splitServiceConfig.getName().equals(serviceEndPoint)) {
                 return splitServiceConfig.getEndpoint();
@@ -324,7 +325,6 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private String getSplitService(RevolverHttpApiConfig httpApiConfiguration) {
-
         double random = Math.random();
         for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
                 .getSplits()) {
@@ -344,7 +344,6 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         } else {
             uri = request.getPath();
         }
-
         return uri;
     }
 

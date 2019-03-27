@@ -20,6 +20,7 @@ package io.dropwizard.revolver;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.collect.Lists;
 import io.dropwizard.Configuration;
 import io.dropwizard.jersey.DropwizardResourceConfig;
@@ -36,16 +37,15 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
-import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
-import io.dropwizard.revolver.splitting.SplitConfig;
-import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.*;
+import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -63,6 +63,9 @@ import static org.mockito.Mockito.when;
  */
 @Slf4j
 public class BaseRevolverTest {
+
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(9999, 9933);
 
     protected final HealthCheckRegistry healthChecks = mock(HealthCheckRegistry.class);
     protected final JerseyEnvironment jerseyEnvironment = mock(JerseyEnvironment.class);

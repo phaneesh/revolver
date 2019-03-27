@@ -1,6 +1,5 @@
 package io.dropwizard.revolver.spliting;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.collect.Lists;
 import io.dropwizard.revolver.BaseRevolverTest;
 import io.dropwizard.revolver.RevolverBundle;
@@ -14,7 +13,6 @@ import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
 import lombok.val;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
@@ -27,9 +25,6 @@ import static org.junit.Assert.assertEquals;
  Created by nitish.goyal on 25/02/19
  ***/
 public class RevolverHttpApiSplitTest extends BaseRevolverTest {
-
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(9999);
 
     @Test
     public void testSimpleSplitHttpCommand() throws TimeoutException {

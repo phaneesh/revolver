@@ -46,9 +46,6 @@ public class RevolverRequestResourceTest extends BaseRevolverTest {
                     RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry()))
             .build();
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(9999);
-
     @Test
     public void testGetRequest() {
         stubFor(get(urlEqualTo("/v1/test"))

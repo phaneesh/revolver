@@ -37,9 +37,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class RevolverSimpleHttpsCommandTest extends BaseRevolverTest {
 
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(9999, 9933);
-
     @Test
     public void testSimpleGetHttpsCommand() throws TimeoutException {
         stubFor(get(urlEqualTo("/v1/test"))

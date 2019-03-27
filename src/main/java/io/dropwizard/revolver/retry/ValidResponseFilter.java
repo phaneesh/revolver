@@ -11,7 +11,8 @@ import javax.annotation.Nullable;
  Created by nitish.goyal on 25/02/19
  ***/
 @Slf4j
-public class ValidResponseFilter implements Predicate<Object> {
+public class ValidResponseFilter<T> implements Predicate<T> {
+
 
     @Override
     public boolean apply(@Nullable Object o) {

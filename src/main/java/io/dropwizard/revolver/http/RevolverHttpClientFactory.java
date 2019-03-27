@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  * @author phaneesh
  */
 @Slf4j
-class RevolverHttpClientFactory {
+public class RevolverHttpClientFactory {
 
     private static final LoadingCache<RevolverHttpServiceConfig, OkHttpClient> clientCache = Caffeine.newBuilder()
             .build(RevolverHttpClientFactory::getOkHttpClient);
@@ -51,6 +51,10 @@ class RevolverHttpClientFactory {
     static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) {
         Preconditions.checkNotNull(serviceConfiguration);
         return clientCache.get(serviceConfiguration);
+    }
+
+    public static void refreshOkHttpClient(RevolverHttpServiceConfig serviceConfig){
+        clientCache.refresh(serviceConfig);
     }
 
     private static OkHttpClient getOkHttpClient(RevolverHttpServiceConfig serviceConfiguration) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {

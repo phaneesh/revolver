@@ -13,10 +13,12 @@ import java.util.concurrent.TimeUnit;
  ***/
 public class RetryUtils {
 
+    private static final int MIN_ATTEMPT = 2;
+    private static final int MIN_WAIT_IN_SECS = 3;
 
     private static final Retryer<Boolean> DEFAULT_RETRYER = RetryerBuilder.<Boolean>newBuilder().retryIfException()
-            .withStopStrategy(StopStrategies.stopAfterAttempt(RevolverApiRetryConfig.MAX_RETRY))
-            .withWaitStrategy(WaitStrategies.exponentialWait(RevolverApiRetryConfig.MAXIMUM_WAIT_TIME_IN_SECONDS, TimeUnit.SECONDS))
+            .withStopStrategy(StopStrategies.stopAfterAttempt(MIN_ATTEMPT))
+            .withWaitStrategy(WaitStrategies.fixedWait(MIN_WAIT_IN_SECS, TimeUnit.SECONDS))
             .build();
 
     private static final long INITIAL_WAIT_IN_MILLS = 200;

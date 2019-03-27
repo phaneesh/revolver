@@ -21,6 +21,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.annotation.Metered;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.rholder.retry.RetryException;
 import com.google.common.base.Strings;
 import io.dropwizard.jersey.PATCH;
 import io.dropwizard.msgpack.MsgPackMediaType;
@@ -37,6 +38,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
+import io.dropwizard.revolver.retry.RetryUtils;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -51,7 +53,9 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -178,7 +182,7 @@ public class RevolverRequestResource {
                             jsonObjectMapper, msgPackObjectMapper)
             ).build();
         }
-        String serviceKey = service +"." +apiMap.getApi().getApi();
+        String serviceKey = service + "." + apiMap.getApi().getApi();
         if(RevolverBundle.apiStatus.containsKey(serviceKey) && !RevolverBundle.apiStatus.get(serviceKey)) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(
                     ResponseTransformationUtil.transform(SERVICE_UNAVAILABLE_RESPONSE,
@@ -221,30 +225,49 @@ public class RevolverRequestResource {
 
     private Response executeInline(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
                                    final String path, final HttpHeaders headers,
-                                   final UriInfo uriInfo, final byte[] body) throws IOException, TimeoutException {
+                                   final UriInfo uriInfo, final byte[] body)
+            throws IOException, TimeoutException, ExecutionException, RetryException {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
         val httpCommand = RevolverBundle.getHttpCommand(service, api.getApi());
-        val response = httpCommand.execute(
-                RevolverHttpRequest.builder()
-                        .traceInfo(
-                                TraceInfo.builder()
-                                        .requestId(headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER))
-                                        .transactionId(headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER))
-                                        .timestamp(System.currentTimeMillis())
-                                        .build())
-                        .api(api.getApi())
-                        .service(service)
-                        .path(path)
-                        .method(method)
-                        .headers(sanatizedHeaders)
-                        .queryParams(uriInfo.getQueryParameters())
-                        .body(body)
-                        .build()
-        );
-        return transform(headers, response, api.getApi(), path, method);
+
+        RevolverHttpResponse revolverHttpResponse;
+        if(null != api.getRetryConfig() && api.getRetryConfig().isEnabled()) {
+            revolverHttpResponse = (RevolverHttpResponse)RetryUtils.getRetryer(api)
+                    .call(new Callable() {
+                        @Override
+                        public Object call() throws Exception {
+                            return execute(httpCommand, headers, api, service, path, method, sanatizedHeaders, uriInfo, body);
+                        }
+                    });
+        }else {
+            revolverHttpResponse = execute(httpCommand, headers, api, service, path, method, sanatizedHeaders, uriInfo, body);
+        }
+        return transform(headers, revolverHttpResponse, api.getApi(), path, method);
      }
+
+    private RevolverHttpResponse execute(RevolverHttpCommand httpCommand, HttpHeaders headers, RevolverHttpApiConfig api, String service,
+                                         String path, RevolverHttpApiConfig.RequestMethod method,
+                                         MultivaluedHashMap<String, String> sanatizedHeaders, UriInfo uriInfo, byte[] body)
+            throws TimeoutException {
+        return httpCommand.execute(RevolverHttpRequest.builder()
+                                           .traceInfo(TraceInfo.builder()
+                                                              .requestId(headers.getHeaderString(RevolversHttpHeaders
+                                                                                                         .REQUEST_ID_HEADER))
+                                                              .transactionId(headers.getHeaderString(
+                                                                      RevolversHttpHeaders.TXN_ID_HEADER))
+                                                              .timestamp(System.currentTimeMillis())
+                                                              .build())
+                                           .api(api.getApi())
+                                           .service(service)
+                                           .path(path)
+                                           .method(method)
+                                           .headers(sanatizedHeaders)
+                                           .queryParams(uriInfo.getQueryParameters())
+                                           .body(body)
+                                           .build());
+    }
 
     private Response transform(HttpHeaders headers, RevolverHttpResponse response, String api, String path, RevolverHttpApiConfig.RequestMethod method) throws IOException {
         val httpResponse = Response.status(response.getStatusCode());

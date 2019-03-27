@@ -2,6 +2,7 @@ package io.dropwizard.revolver.retry;
 
 
 import com.google.common.base.Predicate;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 
 import javax.annotation.Nullable;
@@ -9,6 +10,7 @@ import javax.annotation.Nullable;
 /***
  Created by nitish.goyal on 25/02/19
  ***/
+@Slf4j
 public class ValidResponseFilter implements Predicate<Object> {
 
 
@@ -32,7 +34,9 @@ public class ValidResponseFilter implements Predicate<Object> {
         }
         int statusCode = response.getStatusLine()
                 .getStatusCode();
-
+        if(statusCode >= 500){
+            log.error("5xxErrorOccurred inside retryer + " + statusCode + ", response : " + response.toString());
+        }
         return statusCode >= 500;
     }
 }

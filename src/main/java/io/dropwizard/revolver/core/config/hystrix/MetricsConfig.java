@@ -44,5 +44,5 @@ public class MetricsConfig {
 
     private int percentileBucketSize = 100;
 
-    private double corePoolSizeReductionParam = 0.75;
+    private double corePoolSizeReductionParam = 1.0;
 }

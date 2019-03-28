@@ -30,6 +30,7 @@ import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
+import io.dropwizard.revolver.core.RevolverExecutionException;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -42,6 +43,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
@@ -62,6 +64,8 @@ import java.util.concurrent.TimeoutException;
 @Singleton
 @Api(value = "Revolver Gateway", description = "Revolver api gateway endpoints")
 public class RevolverRequestResource {
+
+    private static final int TIMEOUT_STATUS = 504;
 
     private final ObjectMapper jsonObjectMapper;
 
@@ -96,9 +100,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver GET api endpoint")
     public Response get(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @HEAD
@@ -107,9 +119,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver HEAD api endpoint")
     public Response head(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.HEAD, path, headers, uriInfo, null);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.HEAD, path, headers, uriInfo, null);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @POST
@@ -118,9 +138,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver POST api endpoint")
     public Response post(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.POST, path, headers, uriInfo, body);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.POST, path, headers, uriInfo, body);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @PUT
@@ -129,9 +157,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver PUT api endpoint")
     public Response put(@PathParam("service") final String service,
                          @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PUT, path, headers, uriInfo, body);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @DELETE
@@ -140,9 +176,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver DELETE api endpoint")
     public Response delete(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
-        Response response =  processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.DELETE, path, headers, uriInfo, null);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @PATCH
@@ -151,9 +195,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver PATCH api endpoint")
     public Response patch(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PATCH, path, headers, uriInfo, body);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.PATCH, path, headers, uriInfo, body);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
     @OPTIONS
@@ -162,9 +214,17 @@ public class RevolverRequestResource {
     @ApiOperation(value = "Revolver OPTIONS api endpoint")
     public Response options(@PathParam("service") final String service,
                           @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo, final byte[] body) throws Exception {
-        Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.OPTIONS, path, headers, uriInfo, body);
-        pushMetrics(response, service, path);
-        return response;
+        try {
+            Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.OPTIONS, path, headers, uriInfo, body);
+            pushMetrics(response.getStatus(), service, path);
+            return response;
+        }catch (TimeoutException e){
+            pushMetrics(TIMEOUT_STATUS, service, path);
+            throw e;
+        }catch (Exception e){
+            extractErrorAndPushMetric(e, service, path);
+            throw e;
+        }
     }
 
 
@@ -311,7 +371,8 @@ public class RevolverRequestResource {
 
     private Response executeCommandAsync(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
                                          final String path, final HttpHeaders headers,
-                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync, final String callMode) throws Exception {
+                                         final UriInfo uriInfo, final byte[] body, final boolean isDownstreamAsync, final String
+                                                 callMode) throws Exception, RevolverExecutionException {
         val sanatizedHeaders = new MultivaluedHashMap<String, String>();
         headers.getRequestHeaders().forEach(sanatizedHeaders::put);
         cleanHeaders(sanatizedHeaders, api);
@@ -464,9 +525,22 @@ public class RevolverRequestResource {
         }
     }
 
-    private void pushMetrics(Response response, String service, String path){
+    private void pushMetrics(int status, String service, String path){
         val apiMap = RevolverBundle.matchPath(service, path);
+        if(apiMap == null){
+            return;
+        }
         String api = apiMap.getApi().getApi();
-        metrics.meter(String.format("%s.%s.%s", service, api, response.getStatus()));
+        metrics.meter(String.format("%s.%s.%s.%s.%s", "status", service, api, "code", status)).mark();
+    }
+
+    private void extractErrorAndPushMetric(Exception e, String service, String path) {
+        Throwable rootCause = ExceptionUtils.getRootCause(e);
+        if (rootCause == null) {
+            rootCause = e;
+        }
+        if (rootCause instanceof TimeoutException) {
+            pushMetrics(TIMEOUT_STATUS, service, path);
+        }
     }
 }

@@ -72,6 +72,7 @@ public class RevolverMailboxResource {
             .errorCode("R001")
             .message("Oops! Something went wrong!").build();
 
+
     @Path("/v1/request/status/{requestId}")
     @GET
     @Metered
@@ -172,6 +173,49 @@ public class RevolverMailboxResource {
                     .entity(callbackResponse.getBody());
             callbackResponse.getHeaders().forEach((k, v) -> v.forEach(h -> response.header(k, h)));
             return response.build();
+        } catch (Exception e) {
+            log.error("Error getting response", e);
+            throw SERVER_ERROR;
+        }
+    }
+
+    @Path("/v2/response/{requestId}")
+    @GET
+    @Metered
+    @ApiOperation(value = "Get the response for a request in the mailbox")
+    @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
+    public Response getResponse(@PathParam("requestId") final String requestId,  @Context final HttpHeaders headers) throws RevolverException {
+        try {
+            RevolverRequestState state = persistenceProvider.requestState(requestId);
+            if (state == null) {
+                throw NOT_FOUND_ERROR;
+            }
+            switch (state){
+                case RESPONDED:
+                    RevolverCallbackResponse callbackResponse = persistenceProvider.response(requestId);
+                    if (callbackResponse == null) {
+                        throw NOT_FOUND_ERROR;
+                    }
+                    val response = Response.status(callbackResponse.getStatusCode())
+                            .entity(callbackResponse.getBody());
+                    callbackResponse.getHeaders().forEach((k, v) -> v.forEach(h -> response.header(k, h)));
+                    return response.build();
+
+                default:
+                    RevolverRequestStateResponse revolverRequestStateResponse = RevolverRequestStateResponse.builder()
+                            .requestId(requestId)
+                            .state(state.name())
+                            .build();
+                    if (headers.getAcceptableMediaTypes().size() == 0) {
+                        return Response.ok(ResponseTransformationUtil.transform(revolverRequestStateResponse,
+                                                                                MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
+                                           MediaType.APPLICATION_JSON).build();
+                    }
+                    return Response.ok(ResponseTransformationUtil.transform(revolverRequestStateResponse,
+                                                                            headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
+                                       headers.getAcceptableMediaTypes().get(0).toString()).build();
+
+            }
         } catch (Exception e) {
             log.error("Error getting response", e);
             throw SERVER_ERROR;

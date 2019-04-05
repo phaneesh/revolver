@@ -369,7 +369,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .mapToInt(a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
 
             if(((RevolverHttpServiceConfig)config).getConnectionPoolSize() != totalConcurrency){
-                log.error("totalConcurrency changed from : " + ((RevolverHttpServiceConfig)config).getConnectionPoolSize() + ", to : " +
+                log.error("Total Concurrency changed from : " + ((RevolverHttpServiceConfig)config).getConnectionPoolSize() + ", to : " +
                           totalConcurrency + ", for service : " + config.getService());
             }
             ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);

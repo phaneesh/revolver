@@ -14,11 +14,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class OptimizerConcurrencyConfig {
 
-    private double maxThreshold = 0.7;
+    private double maxThreshold = 0.8;
 
     private double minThreshold = 0.6;
 
-    private double increaseBy = 1.2;
+    private double increaseBy = 1.15;
 
     private double decreaseBy = 0.8;
+
 }

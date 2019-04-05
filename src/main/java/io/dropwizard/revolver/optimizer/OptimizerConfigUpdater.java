@@ -98,7 +98,7 @@ public class OptimizerConfigUpdater implements Runnable {
         if(optimizerAggregatedMetrics == null) {
             return;
         }
-        updateConcurrencySetting(threadPoolConfig, optimizerAggregatedMetrics, configUpdated);
+        updateConcurrencySetting(threadPoolConfig, optimizerAggregatedMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
 
     }
 
@@ -112,12 +112,12 @@ public class OptimizerConfigUpdater implements Runnable {
             return;
         }
         updateConcurrencySetting(api.getRuntime()
-                                         .getThreadPool(), optimizerAggregatedMetrics, configUpdated);
+                                         .getThreadPool(), optimizerAggregatedMetrics, configUpdated, api.getApi());
 
     }
 
     private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig, OptimizerAggregatedMetrics optimizerAggregatedMetrics,
-                                          AtomicBoolean configUpdated) {
+                                          AtomicBoolean configUpdated, String poolName) {
         if(optimizerAggregatedMetrics.getMetricsMaxValueMap()
                    .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS) == null) {
             return;
@@ -128,16 +128,26 @@ public class OptimizerConfigUpdater implements Runnable {
                 .intValue();
         int concurrency = threadPoolConfig.getConcurrency();
 
+        //Not tuning the parameters for pools having maxActiveThreads <=3 and difference between concurrency and active threads is 1
+        //Else, the concurrency will keep fluctuating between 2/3/4 at every round of optimisation
+        if(maxRollingActiveThreads <= 3 && (concurrency - 1) <= maxRollingActiveThreads) {
+            return;
+        }
         if(maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold()) {
             concurrency = (int)Math.ceil(concurrency * concurrencyConfig.getIncreaseBy());
             configUpdated.set(true);
+            log.error("Setting concurrency for : " + threadPoolConfig.getThreadPoolName() + " from : " + threadPoolConfig.getConcurrency() +
+                      " to : " + concurrency + ", maxRollingActiveThreads : " + maxRollingActiveThreads);
         } else if(maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold()) {
             concurrency = (int)(concurrency * concurrencyConfig.getDecreaseBy());
             if(concurrency <= 0) {
                 return;
             }
             configUpdated.set(true);
+            log.error("Setting concurrency for : " + poolName + " from : " + threadPoolConfig.getConcurrency() +
+                      " to : " + concurrency + ", maxRollingActiveThreads : " + maxRollingActiveThreads);
         }
+
         threadPoolConfig.setConcurrency(concurrency);
     }
 }

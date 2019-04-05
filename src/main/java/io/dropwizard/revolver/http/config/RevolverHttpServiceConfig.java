@@ -75,8 +75,57 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
         this.serviceSplitConfig = serviceSplitConfig;
     }
 
-    public boolean equals(Object other) {
-        return other instanceof RevolverHttpServiceConfig
-                && ((RevolverHttpServiceConfig)other).getService().equals(getService());
+    @Override
+    public boolean equals(Object o) {
+        if(this == o)
+            return true;
+        if(!(o instanceof RevolverHttpServiceConfig))
+            return false;
+        if(!super.equals(o))
+            return false;
+
+        RevolverHttpServiceConfig that = (RevolverHttpServiceConfig)o;
+
+        if(connectionPoolSize != that.connectionPoolSize)
+            return false;
+        if(authEnabled != that.authEnabled)
+            return false;
+        if(secured != that.secured)
+            return false;
+        if(trackingHeaders != that.trackingHeaders)
+            return false;
+        if(compression != that.compression)
+            return false;
+        if(connectionKeepAliveInMillis != that.connectionKeepAliveInMillis)
+            return false;
+        if(!endpoint.equals(that.endpoint))
+            return false;
+        if(!auth.equals(that.auth))
+            return false;
+        if(!keyStorePath.equals(that.keyStorePath))
+            return false;
+        if(!keystorePassword.equals(that.keystorePassword))
+            return false;
+        if(!apis.equals(that.apis))
+            return false;
+        return serviceSplitConfig.equals(that.serviceSplitConfig);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + endpoint.hashCode();
+        result = 31 * result + connectionPoolSize;
+        result = 31 * result + (authEnabled ? 1 : 0);
+        result = 31 * result + (secured ? 1 : 0);
+        result = 31 * result + auth.hashCode();
+        result = 31 * result + keyStorePath.hashCode();
+        result = 31 * result + keystorePassword.hashCode();
+        result = 31 * result + apis.hashCode();
+        result = 31 * result + (trackingHeaders ? 1 : 0);
+        result = 31 * result + (compression ? 1 : 0);
+        result = 31 * result + connectionKeepAliveInMillis;
+        result = 31 * result + serviceSplitConfig.hashCode();
+        return result;
     }
 }

@@ -51,6 +51,11 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.http.model.ApiPathMap;
+import io.dropwizard.revolver.optimizer.OptimizerConfigUpdater;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsBuilder;
+import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -69,6 +74,7 @@ import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -89,6 +95,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public static RevolverServiceResolver serviceNameResolver = null;
 
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
+
+    private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
 
     private static RevolverConfig revolverConfig;
 
@@ -115,6 +123,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         //Add metrics publisher
         final HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(environment.metrics());
         val metrics = environment.metrics();
+        ScheduledExecutorService scheduledExecutorService = environment.lifecycle().scheduledExecutorService("metrics-builder").build();
+
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
         final RevolverConfig revolverConfig = getRevolverConfig(configuration);
@@ -131,6 +141,26 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .persistenceProvider(persistenceProvider)
                 .revolverConfig(revolverConfig)
                 .build();
+
+        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
+        if(optimizerConfig == null){
+            //TODO Remove later after updating the config in rosey
+            optimizerConfig = OptimizerUtils.getDefaultOptimizerConfig();
+        }
+        if(optimizerConfig != null && optimizerConfig.isEnabled()){
+            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
+                    optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();
+            OptimizerMetricsBuilder optimizerMetricsBuilder = OptimizerMetricsBuilder.builder().metrics(metrics)
+                    .optimizerMetricsCache(optimizerMetricsCache).build();
+            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsBuilder, optimizerConfig.getInitialDelay(), optimizerConfig
+                                                                 .getMetricsCollectorConfig().getRepeatAfter(),
+                                                         optimizerConfig.getTimeUnit());
+            OptimizerConfigUpdater optimizerConfigUpdater = OptimizerConfigUpdater.builder().optimizerConfig(optimizerConfig)
+                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig).build();
+            scheduledExecutorService.scheduleAtFixedRate(optimizerConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig
+                    .getConfigUpdaterConfig().getRepeatAfter(), optimizerConfig.getTimeUnit());
+        }
+
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 
         environment.jersey().register(new RevolverRequestResource(environment.getObjectMapper(),
@@ -150,7 +180,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverConfigResource(dynamicConfigHandler));
         environment.jersey().register(new RevolverApiManageResource());
     }
-
 
     private void registerTypes(final Bootstrap<?> bootstrap) {
         bootstrap.getObjectMapper().registerModule(new MetricsModule(TimeUnit.MINUTES, TimeUnit.MILLISECONDS, false));
@@ -338,9 +367,12 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
                     .filter(a -> Strings.isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
                     .mapToInt(a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
-            if (((RevolverHttpServiceConfig) config).getConnectionPoolSize() < totalConcurrency) {
-                ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);
+
+            if(((RevolverHttpServiceConfig)config).getConnectionPoolSize() != totalConcurrency){
+                log.error("totalConcurrency changed from : " + ((RevolverHttpServiceConfig)config).getConnectionPoolSize() + ", to : " +
+                          totalConcurrency + ", for service : " + config.getService());
             }
+            ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);
 
             ((RevolverHttpServiceConfig) config).getApis().forEach(a -> {
                 final String key = config.getService() + "." + a.getApi();
@@ -372,17 +404,19 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static void registerHttpCommand(RevolverServiceConfig config) {
         final RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
         httpConfig.setSecured(false);
+        registerCommand(config, httpConfig);
+
         if(serviceConfig.containsKey(httpConfig.getService())) {
-            if(!serviceConfig.get(httpConfig.getService()).equals(httpConfig)) {
-                serviceConfig.put(config.getService(), httpConfig);
+            serviceConfig.put(config.getService(), httpConfig);
+            if(serviceConnectionPoolMap.get(httpConfig.getService()) != null && !serviceConnectionPoolMap.get(httpConfig.getService())
+                    .equals(((RevolverHttpServiceConfig)config).getConnectionPoolSize()) ){
                 RevolverHttpClientFactory.refreshClient(httpConfig);
-            } else {
-                serviceConfig.put(config.getService(), httpConfig);
             }
         } else {
             serviceConfig.put(config.getService(), httpConfig);
         }
-        registerCommand(config, httpConfig);
+        serviceConnectionPoolMap.put(httpConfig.getService(), httpConfig.getConnectionPoolSize());
+
     }
 
     public static void addHttpCommand(RevolverHttpServiceConfig config) {

@@ -36,6 +36,11 @@ import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
+import io.dropwizard.revolver.optimizer.OptimizerConfigUpdater;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsBuilder;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.*;
@@ -105,6 +110,10 @@ public class BaseRevolverTest {
 
     protected static InlineCallbackHandler callbackHandler;
 
+    protected OptimizerMetricsBuilder optimizerMetricsBuilder;
+    protected OptimizerConfigUpdater optimizerConfigUpdater;
+    protected OptimizerMetricsCache optimizerMetricsCache;
+
 
     @Before
     public void setup() throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException,
@@ -143,6 +152,8 @@ public class BaseRevolverTest {
         RevolverSplitServiceConfig s1 = RevolverSplitServiceConfig.builder().name("s1").endpoint(simpleEndpoint).build();
         RevolverSplitServiceConfig s2 = RevolverSplitServiceConfig.builder().name("s2").endpoint(securedEndpoint).build();
 
+        OptimizerConfig optimizerConfig = OptimizerUtils.getDefaultOptimizerConfig();
+
         revolverConfig = RevolverConfig.builder()
                 .mailBox(InMemoryMailBoxConfig.builder().build())
                 .serviceResolverConfig(ServiceResolverConfig.builder()
@@ -154,6 +165,7 @@ public class BaseRevolverTest {
                         .build()
                 )
                 .global(new RuntimeConfig())
+                .optimizerConfig(optimizerConfig)
                 .service(RevolverHttpServiceConfig.builder()
                         .authEnabled(false)
                         .connectionPoolSize(1)
@@ -289,6 +301,30 @@ public class BaseRevolverTest {
                                                                    .build())
                                                .build()).build())
                         .build())
+                .service(RevolverHttpServiceConfig.builder()
+                         .authEnabled(false)
+                         .connectionPoolSize(1)
+                         .secured(false)
+                         .enpoint(simpleEndpoint)
+                         .service("test-without-pool")
+                         .type("http")
+                         .serviceSplitConfig(RevolverHttpServiceSplitConfig.builder().configs(Lists.newArrayList(s1, s2)).build())
+                         .api(RevolverHttpApiConfig.configBuilder()
+                              .api("test")
+                              .method(RevolverHttpApiConfig.RequestMethod.GET)
+                              .method(RevolverHttpApiConfig.RequestMethod.POST)
+                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                              .path("test")
+                              .runtime(HystrixCommandConfig.builder()
+                                               .threadPool(ThreadPoolConfig.builder()
+                                                                   .concurrency(1).timeout(2000)
+                                                                   .build())
+                                               .build()).build())
+                                 .build())
                 .service(RevolverHttpsServiceConfig.builder()
                         .authEnabled(false)
                         .connectionPoolSize(1)
@@ -341,5 +377,13 @@ public class BaseRevolverTest {
         });
         callbackHandler = InlineCallbackHandler.builder()
                 .persistenceProvider(inMemoryPersistenceProvider).revolverConfig(revolverConfig).build();
+
+        optimizerMetricsCache = OptimizerMetricsCache.builder().optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig
+                ()).build();
+        optimizerMetricsBuilder = OptimizerMetricsBuilder.builder().metrics(metricRegistry).optimizerMetricsCache(optimizerMetricsCache)
+                .build();
+        optimizerConfigUpdater = OptimizerConfigUpdater.builder().optimizerMetricsCache(optimizerMetricsCache).revolverConfig
+                (revolverConfig).optimizerConfig
+                (optimizerConfig).build();
     }
 }

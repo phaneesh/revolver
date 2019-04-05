@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class OptimizerUtils {
 
     public static final String ROLLING_MAX_ACTIVE_THREADS = "rollingMaxActiveThreads";
-    public static final String PREFIX = "HystrixThreadPool";
+    public static final String THREAD_POOL_PREFIX = "HystrixThreadPool";
 
     private static final List<String> METRICS_TO_READ = Lists.newArrayList("propertyValue_maximumSize", ROLLING_MAX_ACTIVE_THREADS);
 
@@ -26,7 +26,7 @@ public class OptimizerUtils {
 
     public static OptimizerConfig getDefaultOptimizerConfig() {
         return OptimizerConfig.builder().initialDelay(5).timeUnit(TimeUnit.MINUTES).concurrencyConfig
-                (OptimizerConcurrencyConfig.builder().increaseBy(1.2).decreaseBy(0.8).minThreshold(0.6).maxThreshold(0.7).build())
+                (OptimizerConcurrencyConfig.builder().minThreshold(0.6).maxThreshold(0.7).build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder().repeatAfter(5).build()).metricsCollectorConfig
                         (OptimizerMetricsCollectorConfig.builder().repeatAfter(1).timeUnit(TimeUnit.MINUTES).cachingWindow(15)
                                  .concurrency(3).build())

@@ -30,7 +30,7 @@ public class OptimizerMetricsBuilder implements Runnable {
 
         Long time = System.currentTimeMillis();
 
-        SortedMap<String, Gauge> gauges = metrics.getGauges(MetricFilter.startsWith(OptimizerUtils.PREFIX));
+        SortedMap<String, Gauge> gauges = metrics.getGauges(MetricFilter.startsWith(OptimizerUtils.THREAD_POOL_PREFIX));
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
             if(splits.length < 3) {

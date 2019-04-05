@@ -133,18 +133,12 @@ public class OptimizerConfigUpdater implements Runnable {
         if(maxRollingActiveThreads <= 3 && (concurrency - 1) <= maxRollingActiveThreads) {
             return;
         }
-        if(maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold()) {
-            concurrency = (int)Math.ceil(concurrency * concurrencyConfig.getIncreaseBy());
+        if(maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold() ||
+           maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold()) {
+
+            concurrency = (int)Math.ceil(maxRollingActiveThreads * concurrencyConfig.getBandwidth());
             configUpdated.set(true);
             log.error("Setting concurrency for : " + threadPoolConfig.getThreadPoolName() + " from : " + threadPoolConfig.getConcurrency() +
-                      " to : " + concurrency + ", maxRollingActiveThreads : " + maxRollingActiveThreads);
-        } else if(maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold()) {
-            concurrency = (int)(concurrency * concurrencyConfig.getDecreaseBy());
-            if(concurrency <= 0) {
-                return;
-            }
-            configUpdated.set(true);
-            log.error("Setting concurrency for : " + poolName + " from : " + threadPoolConfig.getConcurrency() +
                       " to : " + concurrency + ", maxRollingActiveThreads : " + maxRollingActiveThreads);
         }
 

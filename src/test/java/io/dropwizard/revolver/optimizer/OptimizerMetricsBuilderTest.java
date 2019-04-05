@@ -19,7 +19,7 @@ import java.security.cert.CertificateException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.PREFIX;
+import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.THREAD_POOL_PREFIX;
 import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS;
 
 /***
@@ -33,7 +33,7 @@ public class OptimizerMetricsBuilderTest extends BaseRevolverTest {
                    KeyManagementException, IOException {
         super.setup();
         MetricRegistry metrics = optimizerMetricsBuilder.getMetrics();
-        metrics.gauge(PREFIX + ".test-without-pool.test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
+        metrics.gauge(THREAD_POOL_PREFIX + ".test-without-pool.test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
             @Override
             public Gauge newMetric() {
                 return new Gauge() {
@@ -44,7 +44,7 @@ public class OptimizerMetricsBuilderTest extends BaseRevolverTest {
                 };
             }
         });
-        metrics.gauge(PREFIX + ".test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
+        metrics.gauge(THREAD_POOL_PREFIX + ".test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
             @Override
             public Gauge newMetric() {
                 return new Gauge() {

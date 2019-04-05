@@ -25,11 +25,23 @@ public class OptimizerUtils {
     }
 
     public static OptimizerConfig getDefaultOptimizerConfig() {
-        return OptimizerConfig.builder().initialDelay(5).timeUnit(TimeUnit.MINUTES).concurrencyConfig
-                (OptimizerConcurrencyConfig.builder().minThreshold(0.6).maxThreshold(0.7).build())
-                .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder().repeatAfter(5).build()).metricsCollectorConfig
-                        (OptimizerMetricsCollectorConfig.builder().repeatAfter(1).timeUnit(TimeUnit.MINUTES).cachingWindow(15)
-                                 .concurrency(3).build())
+        return OptimizerConfig.builder()
+                .initialDelay(5)
+                .timeUnit(TimeUnit.MINUTES)
+                .concurrencyConfig(OptimizerConcurrencyConfig.builder()
+                                           .bandwidth(1.2)
+                                           .minThreshold(0.6)
+                                           .maxThreshold(0.7)
+                                           .build())
+                .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
+                                             .repeatAfter(5)
+                                             .build())
+                .metricsCollectorConfig(OptimizerMetricsCollectorConfig.builder()
+                                                .repeatAfter(1)
+                                                .timeUnit(TimeUnit.MINUTES)
+                                                .cachingWindow(15)
+                                                .concurrency(3)
+                                                .build())
                 .enabled(true)
                 .build();
     }

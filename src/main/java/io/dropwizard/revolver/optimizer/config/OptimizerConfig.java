@@ -16,16 +16,15 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 public class OptimizerConfig {
 
+    private boolean enabled;
+
     private int initialDelay;
-
-    private OptimizerConfigUpdaterConfig configUpdaterConfig;
-
-    private OptimizerMetricsCollectorConfig metricsCollectorConfig;
-
     private TimeUnit timeUnit;
 
+    private OptimizerConfigUpdaterConfig configUpdaterConfig;
+    private OptimizerMetricsCollectorConfig metricsCollectorConfig;
     private OptimizerConcurrencyConfig concurrencyConfig;
+    private OptimizerTimeoutConfig timeoutConfig;
 
-    private boolean enabled;
 
 }

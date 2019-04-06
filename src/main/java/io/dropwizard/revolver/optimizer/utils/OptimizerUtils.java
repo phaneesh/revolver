@@ -17,6 +17,7 @@ public class OptimizerUtils {
 
     public static final String ROLLING_MAX_ACTIVE_THREADS = "rollingMaxActiveThreads";
     public static final String THREAD_POOL_PREFIX = "HystrixThreadPool";
+    public static final String LATENCY_PERCENTILE_99 = "latencyExecute_percentile_99";
 
     private static final List<String> METRICS_TO_READ = Lists.newArrayList("propertyValue_maximumSize", ROLLING_MAX_ACTIVE_THREADS);
 

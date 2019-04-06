@@ -9,6 +9,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerTimeoutConfig;
 import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -113,6 +114,8 @@ public class OptimizerConfigUpdater implements Runnable {
         }
         updateConcurrencySetting(api.getRuntime()
                                          .getThreadPool(), optimizerAggregatedMetrics, configUpdated, api.getApi());
+        updateTimeoutSettings(api.getRuntime()
+                                      .getThreadPool(), optimizerAggregatedMetrics, configUpdated, api);
 
     }
 
@@ -148,6 +151,30 @@ public class OptimizerConfigUpdater implements Runnable {
             configUpdated.set(true);
             log.error("Setting concurrency for : " + poolName + " from : " + concurrency + " to : " + updatedConcurrency +
                       ", maxRollingActiveThreads : " + maxRollingActiveThreads);
+        }
+
+    }
+
+    private void updateTimeoutSettings(ThreadPoolConfig threadPool, OptimizerAggregatedMetrics optimizerAggregatedMetrics,
+                                       AtomicBoolean configUpdated, RevolverHttpApiConfig api) {
+
+        OptimizerTimeoutConfig timeoutConfig = optimizerConfig.getTimeoutConfig();
+        if(timeoutConfig == null || optimizerAggregatedMetrics.getMetricsMaxValueMap()
+                                            .get(timeoutConfig.getTimeoutMetric()) == null) {
+            return;
+        }
+        int maxTimeoutValue = optimizerAggregatedMetrics.getMetricsMaxValueMap()
+                .get(timeoutConfig.getTimeoutMetric())
+                .intValue();
+
+        if(maxTimeoutValue > concurrency * concurrencyConfig.getMaxThreshold() ||
+           maxTimeoutValue < concurrency * concurrencyConfig.getMinThreshold()) {
+
+            int updatedConcurrency = (int)Math.ceil(maxTimeoutValue * concurrencyConfig.getBandwidth());
+            threadPoolConfig.setConcurrency(updatedConcurrency);
+            configUpdated.set(true);
+            log.error("Setting concurrency for : " + threadPoolConfig.getThreadPoolName() + " from : " + concurrency + " to : " +
+                      updatedConcurrency + ", maxRollingActiveThreads : " + maxTimeoutValue);
         }
 
     }

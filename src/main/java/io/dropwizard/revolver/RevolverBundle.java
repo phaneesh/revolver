@@ -143,10 +143,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .build();
 
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
-        if(optimizerConfig == null){
-            //TODO Remove later after updating the config in rosey
-            optimizerConfig = OptimizerUtils.getDefaultOptimizerConfig();
-        }
+
         if(optimizerConfig != null && optimizerConfig.isEnabled()){
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();

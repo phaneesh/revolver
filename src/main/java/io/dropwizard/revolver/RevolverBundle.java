@@ -54,8 +54,7 @@ import io.dropwizard.revolver.http.model.ApiPathMap;
 import io.dropwizard.revolver.optimizer.OptimizerConfigUpdater;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
-import io.dropwizard.revolver.optimizer.OptimizerMetricsBuilder;
-import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -147,9 +146,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         if(optimizerConfig != null && optimizerConfig.isEnabled()){
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();
-            OptimizerMetricsBuilder optimizerMetricsBuilder = OptimizerMetricsBuilder.builder().metrics(metrics)
+            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metrics)
                     .optimizerMetricsCache(optimizerMetricsCache).build();
-            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsBuilder, optimizerConfig.getInitialDelay(), optimizerConfig
+            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector, optimizerConfig.getInitialDelay(), optimizerConfig
                                                                  .getMetricsCollectorConfig().getRepeatAfter(),
                                                          optimizerConfig.getTimeUnit());
             OptimizerConfigUpdater optimizerConfigUpdater = OptimizerConfigUpdater.builder().optimizerConfig(optimizerConfig)

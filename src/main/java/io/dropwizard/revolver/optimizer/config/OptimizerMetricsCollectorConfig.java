@@ -20,7 +20,7 @@ public class OptimizerMetricsCollectorConfig {
 
     private TimeUnit timeUnit = TimeUnit.MINUTES;
 
-    private int cachingWindow = 30;
+    private int cachingWindowInMinutes = 30;
 
     private int concurrency = 4;
 }

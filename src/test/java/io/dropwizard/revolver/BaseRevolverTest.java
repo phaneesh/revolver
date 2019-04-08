@@ -37,7 +37,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.optimizer.OptimizerConfigUpdater;
-import io.dropwizard.revolver.optimizer.OptimizerMetricsBuilder;
+import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
@@ -110,7 +110,7 @@ public class BaseRevolverTest {
 
     protected static InlineCallbackHandler callbackHandler;
 
-    protected OptimizerMetricsBuilder optimizerMetricsBuilder;
+    protected OptimizerMetricsCollector optimizerMetricsCollector;
     protected OptimizerConfigUpdater optimizerConfigUpdater;
     protected OptimizerMetricsCache optimizerMetricsCache;
 
@@ -380,7 +380,7 @@ public class BaseRevolverTest {
 
         optimizerMetricsCache = OptimizerMetricsCache.builder().optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig
                 ()).build();
-        optimizerMetricsBuilder = OptimizerMetricsBuilder.builder().metrics(metricRegistry).optimizerMetricsCache(optimizerMetricsCache)
+        optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metricRegistry).optimizerMetricsCache(optimizerMetricsCache)
                 .build();
         optimizerConfigUpdater = OptimizerConfigUpdater.builder().optimizerMetricsCache(optimizerMetricsCache).revolverConfig
                 (revolverConfig).optimizerConfig

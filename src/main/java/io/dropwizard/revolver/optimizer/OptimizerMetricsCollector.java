@@ -20,7 +20,7 @@ import java.util.SortedMap;
 @Builder
 @AllArgsConstructor
 @Data
-public class OptimizerMetricsBuilder implements Runnable {
+public class OptimizerMetricsCollector implements Runnable {
 
     private MetricRegistry metrics;
     private OptimizerMetricsCache optimizerMetricsCache;

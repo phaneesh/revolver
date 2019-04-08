@@ -25,14 +25,14 @@ import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.ROLLING_MAX_
 /***
  Created by nitish.goyal on 30/03/19
  ***/
-public class OptimizerMetricsBuilderTest extends BaseRevolverTest {
+public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
 
     @Before
     public void setup()
             throws CertificateException, InterruptedException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
                    KeyManagementException, IOException {
         super.setup();
-        MetricRegistry metrics = optimizerMetricsBuilder.getMetrics();
+        MetricRegistry metrics = optimizerMetricsCollector.getMetrics();
         metrics.gauge(THREAD_POOL_PREFIX + ".test-without-pool.test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
             @Override
             public Gauge newMetric() {
@@ -60,7 +60,7 @@ public class OptimizerMetricsBuilderTest extends BaseRevolverTest {
 
     @Test
     public void testMetricsBuilder() {
-        optimizerMetricsBuilder.run();
+        optimizerMetricsCollector.run();
         Map<Tuple<Long, String>, OptimizerMetrics> cache = optimizerMetricsCache.getCache();
         AtomicBoolean metricFound = new AtomicBoolean(false);
         cache.forEach((k, v) -> {
@@ -78,7 +78,7 @@ public class OptimizerMetricsBuilderTest extends BaseRevolverTest {
 
     @Test
     public void testOptimizerConfigUpdate(){
-        optimizerMetricsBuilder.run();
+        optimizerMetricsCollector.run();
         optimizerConfigUpdater.run();
         Assert.assertEquals(RevolverBundle.getServiceConfig().get("test").getConnectionPoolSize(), 10);
     }

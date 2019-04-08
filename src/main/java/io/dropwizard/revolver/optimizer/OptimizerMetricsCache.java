@@ -31,7 +31,7 @@ public class OptimizerMetricsCache {
         this.optimizerMetricsCollectorConfig = optimizerMetricsCollectorConfig;
         this.cache = CacheBuilder.newBuilder()
                 .concurrencyLevel(optimizerMetricsCollectorConfig.getConcurrency())
-                .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindow(), TimeUnit.MINUTES)
+                .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(), TimeUnit.MINUTES)
                 .removalListener(new RemovalListener<Tuple<Long, String>, OptimizerMetrics>() {
                     @Override
                     public void onRemoval(RemovalNotification<Tuple<Long, String>, OptimizerMetrics> notification) {

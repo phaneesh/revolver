@@ -39,7 +39,7 @@ public class OptimizerUtils {
                 .metricsCollectorConfig(OptimizerMetricsCollectorConfig.builder()
                                                 .repeatAfter(1)
                                                 .timeUnit(TimeUnit.MINUTES)
-                                                .cachingWindow(30)
+                                                .cachingWindowInMinutes(30)
                                                 .concurrency(3)
                                                 .build())
                 .enabled(true)

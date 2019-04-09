@@ -135,6 +135,8 @@ public class OptimizerConfigUpdater implements Runnable {
         }
         if(maxRollingActiveThreads == 0) {
             threadPoolConfig.setConcurrency(1);
+            log.error("Setting concurrency for : " + poolName + " from : " + concurrency + " to : " + threadPoolConfig.getConcurrency() +
+                      ", maxRollingActiveThreads : " + maxRollingActiveThreads);
             return;
         }
 
@@ -144,6 +146,8 @@ public class OptimizerConfigUpdater implements Runnable {
             int updatedConcurrency = (int)Math.ceil(maxRollingActiveThreads * concurrencyConfig.getBandwidth());
             threadPoolConfig.setConcurrency(updatedConcurrency);
             configUpdated.set(true);
+            log.error("Setting concurrency for : " + poolName + " from : " + concurrency + " to : " + updatedConcurrency +
+                      ", maxRollingActiveThreads : " + maxRollingActiveThreads);
         }
 
     }

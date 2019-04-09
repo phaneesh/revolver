@@ -75,8 +75,4 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
         this.serviceSplitConfig = serviceSplitConfig;
     }
 
-    public boolean equals(Object other) {
-        return other instanceof RevolverHttpServiceConfig
-                && ((RevolverHttpServiceConfig)other).getService().equals(getService());
-    }
 }

@@ -468,6 +468,9 @@ public class RevolverRequestResource {
 
     private void pushMetrics(Response response, String service, String path){
         val apiMap = RevolverBundle.matchPath(service, path);
+        if(apiMap == null){
+            return;
+        }
         String api = apiMap.getApi().getApi();
         metrics.meter(String.format("%s.%s.%s", service, api, response.getStatus()));
     }

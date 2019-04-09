@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import io.dropwizard.Configuration;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.riemann.RiemannConfig;
 import lombok.*;
 import org.hibernate.validator.constraints.NotBlank;
@@ -35,6 +36,7 @@ import java.util.List;
  * @author phaneesh
  */
 @AllArgsConstructor
+@Data
 public class RevolverConfig extends Configuration {
 
     @NotNull
@@ -97,12 +99,13 @@ public class RevolverConfig extends Configuration {
     @Setter
     private RiemannConfig riemann;
 
-
+    private OptimizerConfig optimizerConfig;
 
     @Builder
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
                           ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
-                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox) {
+                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
+                          OptimizerConfig optimizerConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;
@@ -111,6 +114,7 @@ public class RevolverConfig extends Configuration {
         this.mailBox = mailBox;
         this.callbackTimeout = 3000;
         this.dynamicConfig = false;
+        this.optimizerConfig = optimizerConfig;
     }
 
 

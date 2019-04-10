@@ -148,11 +148,13 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         if(optimizerConfig != null && optimizerConfig.isEnabled()){
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();
+
             OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metrics)
                     .optimizerMetricsCache(optimizerMetricsCache).optimizerConfig(optimizerConfig).build();
             scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector, optimizerConfig.getInitialDelay(), optimizerConfig
                                                                  .getMetricsCollectorConfig().getRepeatAfter(),
                                                          optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+
             RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder().optimizerConfig(optimizerConfig)
                     .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig).build();
             scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig

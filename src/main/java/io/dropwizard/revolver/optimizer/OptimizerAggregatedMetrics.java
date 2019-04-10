@@ -16,5 +16,5 @@ public class OptimizerAggregatedMetrics {
 
     private String pool;
 
-    private Map<String, Number> metricsMaxValueMap;
+    private Map<String, Number> metricsAggValueMap;
 }

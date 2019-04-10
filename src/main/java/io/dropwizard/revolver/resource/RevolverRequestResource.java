@@ -97,6 +97,7 @@ public class RevolverRequestResource {
     public Response get(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
         Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
+        log.error("RevolverResponse : " + response.getHeaders());
         pushMetrics(response, service, path);
         return response;
     }
@@ -374,7 +375,12 @@ public class RevolverRequestResource {
                 persistenceProvider.setRequestState(requestId, RevolverRequestState.RESPONDED, mailBoxTtl);
                 saveResponse(requestId, result, callMode, mailBoxTtl);
             }
-            return transform(headers, result, api.getApi(), path, method);
+            Response httpResponse =  transform(headers, result, api.getApi(), path, method);
+            if(api.getLatencyConfig() != null){
+                log.error("retryAfter : " + api.getLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+                httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getLatencyConfig().getLatencyMetricValue());
+            }
+            return httpResponse;
         } else {
             response.thenAcceptAsync( result -> {
                 try {
@@ -391,10 +397,15 @@ public class RevolverRequestResource {
                     log.error("Error setting request state for request id: {}", requestId, e);
                 }
             });
+            if(api.getLatencyConfig() != null){
+                log.error("retryAfter : " + api.getLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+            }
             RevolverAckMessage revolverAckMessage = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             return Response.accepted().entity(ResponseTransformationUtil.transform(revolverAckMessage,
                     headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
-                    jsonObjectMapper, msgPackObjectMapper)).build();
+                    jsonObjectMapper, msgPackObjectMapper)).header(RevolversHttpHeaders.RETRY_AFTER, api.getLatencyConfig() == null ? 0 :
+                                                                                                     api.getLatencyConfig().getLatencyMetricValue())
+                    .build();
         }
     }
 

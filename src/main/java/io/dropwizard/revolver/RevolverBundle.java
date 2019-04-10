@@ -51,10 +51,11 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.http.model.ApiPathMap;
-import io.dropwizard.revolver.optimizer.OptimizerConfigUpdater;
+import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
+import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -141,20 +142,21 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .revolverConfig(revolverConfig)
                 .build();
 
+        //TODO Revert later
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
-
+        optimizerConfig = OptimizerUtils.getDefaultOptimizerConfig();
         if(optimizerConfig != null && optimizerConfig.isEnabled()){
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();
             OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metrics)
-                    .optimizerMetricsCache(optimizerMetricsCache).build();
+                    .optimizerMetricsCache(optimizerMetricsCache).optimizerConfig(optimizerConfig).build();
             scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector, optimizerConfig.getInitialDelay(), optimizerConfig
                                                                  .getMetricsCollectorConfig().getRepeatAfter(),
-                                                         optimizerConfig.getTimeUnit());
-            OptimizerConfigUpdater optimizerConfigUpdater = OptimizerConfigUpdater.builder().optimizerConfig(optimizerConfig)
+                                                         optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder().optimizerConfig(optimizerConfig)
                     .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig).build();
-            scheduledExecutorService.scheduleAtFixedRate(optimizerConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig
-                    .getConfigUpdaterConfig().getRepeatAfter(), optimizerConfig.getTimeUnit());
+            scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig
+                    .getConfigUpdaterConfig().getRepeatAfter(), optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
         }
 
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
@@ -163,7 +165,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 msgPackObjectMapper, persistenceProvider, callbackHandler, metrics));
         environment.jersey().register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
-                msgPackObjectMapper));
+                msgPackObjectMapper, Collections.unmodifiableMap(apiConfig)));
         environment.jersey().register(new RevolverMetadataResource(revolverConfig));
 
         DynamicConfigHandler dynamicConfigHandler = new

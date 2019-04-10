@@ -26,5 +26,4 @@ public class OptimizerConfig {
     private OptimizerConcurrencyConfig concurrencyConfig;
     private OptimizerTimeoutConfig timeoutConfig;
 
-
 }

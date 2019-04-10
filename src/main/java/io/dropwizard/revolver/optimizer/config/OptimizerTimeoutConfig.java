@@ -1,10 +1,14 @@
 package io.dropwizard.revolver.optimizer.config;
 
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
+import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.LATENCY_PERCENTILE_50;
 import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.LATENCY_PERCENTILE_99;
 
 /***
@@ -16,11 +20,12 @@ import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.LATENCY_PERC
 @Builder
 public class OptimizerTimeoutConfig {
 
+    private List<String> latencyMetrics = Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_50);
+
     private String timeoutMetric = LATENCY_PERCENTILE_99;
 
     private double getMethodTimeoutBuffer = 1.2;
 
-    private double allMethodTimeoutBuffer = 1.3;
+    private double allMethodTimeoutBuffer = 1.4;
 
-    private int defaultBufferForFastApisInMs = 50;
 }

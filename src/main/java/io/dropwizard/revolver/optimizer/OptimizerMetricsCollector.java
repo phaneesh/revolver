@@ -1,7 +1,6 @@
 package io.dropwizard.revolver.optimizer;
 
 import com.codahale.metrics.Gauge;
-import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
@@ -11,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.msgpack.jackson.dataformat.Tuple;
 
 import java.util.SortedMap;
 
@@ -31,16 +29,15 @@ public class OptimizerMetricsCollector implements Runnable {
     @Override
     public void run() {
 
-        SortedMap<String, Gauge> gauges = metrics.getGauges(MetricFilter.startsWith(OptimizerUtils.THREAD_POOL_PREFIX));
+        SortedMap<String, Gauge> gauges = metrics.getGauges();
+        Long time = System.currentTimeMillis();
 
-        captureThreadPoolMetrics(gauges);
-
-        captureRunTimeMetrics(gauges);
+        captureThreadPoolMetrics(gauges, time);
+        captureTimeMetrics(gauges, time);
     }
 
 
-    private void captureThreadPoolMetrics(SortedMap<String, Gauge> gauges) {
-        Long time = System.currentTimeMillis();
+    private void captureThreadPoolMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
             if(splits.length < 3) {
@@ -59,10 +56,11 @@ public class OptimizerMetricsCollector implements Runnable {
                 sb.append(splits[i]);
                 delimiter = ".";
             }
-            Tuple<Long, String> key = new Tuple<>(time, sb.toString());
+            OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
             if(optimizerMetricsCache.get(key) == null) {
                 optimizerMetricsCache.put(key, OptimizerMetrics.builder()
                         .metrics(Maps.newHashMap())
+                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.MAX)
                         .build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
@@ -75,8 +73,8 @@ public class OptimizerMetricsCollector implements Runnable {
         });
     }
 
-    private void captureRunTimeMetrics(SortedMap<String, Gauge> gauges) {
-        Long time = System.currentTimeMillis();
+    private void captureTimeMetrics(SortedMap<String, Gauge> gauges, Long time) {
+        log.error("Optimization config : " + optimizerConfig);
         OptimizerTimeoutConfig timeoutConfig = optimizerConfig.getTimeoutConfig();
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
@@ -85,8 +83,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(timeoutConfig.getTimeoutMetric()
-                         .equals(metricName) || !((v.getValue() instanceof Number)))) {
+            if(!(timeoutConfig.getLatencyMetrics()
+                    .contains(metricName)) || !((v.getValue() instanceof Number))) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -96,16 +94,18 @@ public class OptimizerMetricsCollector implements Runnable {
                 sb.append(splits[i]);
                 delimiter = ".";
             }
-            Tuple<Long, String> key = new Tuple<>(time, sb.toString());
+            OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
             if(optimizerMetricsCache.get(key) == null) {
                 optimizerMetricsCache.put(key, OptimizerMetrics.builder()
                         .metrics(Maps.newHashMap())
+                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.AVG)
                         .build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
             if(optimizerMetrics == null) {
                 return;
             }
+            log.error("metricName : " + metricName + ", key : " + key + ", value : " + v.getValue());
             optimizerMetrics.getMetrics()
                     .put(metricName, (Number)v.getValue());
 

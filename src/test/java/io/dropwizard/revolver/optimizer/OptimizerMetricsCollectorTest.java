@@ -8,7 +8,6 @@ import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.msgpack.jackson.dataformat.Tuple;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
@@ -19,8 +18,7 @@ import java.security.cert.CertificateException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.THREAD_POOL_PREFIX;
-import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS;
+import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.*;
 
 /***
  Created by nitish.goyal on 30/03/19
@@ -33,17 +31,20 @@ public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
                    KeyManagementException, IOException {
         super.setup();
         MetricRegistry metrics = optimizerMetricsCollector.getMetrics();
-        metrics.gauge(THREAD_POOL_PREFIX + ".test-without-pool.test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
-            @Override
-            public Gauge newMetric() {
-                return new Gauge() {
-                    @Override
-                    public Object getValue() {
-                        return 10;
-                    }
-                };
-            }
-        });
+        metrics.gauge(THREAD_POOL_PREFIX + ".test-without-pool.test." + ROLLING_MAX_ACTIVE_THREADS,
+                      new MetricRegistry.MetricSupplier<Gauge>() {
+                          @Override
+                          public Gauge newMetric() {
+                              return new Gauge() {
+                                  @Override
+                                  public Object getValue() {
+                                      return 10;
+                                  }
+                              };
+                          }
+                      }
+                     );
+
         metrics.gauge(THREAD_POOL_PREFIX + ".test." + ROLLING_MAX_ACTIVE_THREADS, new MetricRegistry.MetricSupplier<Gauge>() {
             @Override
             public Gauge newMetric() {
@@ -56,12 +57,37 @@ public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
             }
         });
 
+        metrics.gauge("test" + ".test.test." + LATENCY_PERCENTILE_99, new MetricRegistry.MetricSupplier<Gauge>() {
+            @Override
+            public Gauge newMetric() {
+                return new Gauge() {
+                    @Override
+                    public Object getValue() {
+                        return 200;
+                    }
+                };
+            }
+        });
+
+
+        metrics.gauge("test" + ".test.test." + LATENCY_PERCENTILE_50, new MetricRegistry.MetricSupplier<Gauge>() {
+            @Override
+            public Gauge newMetric() {
+                return new Gauge() {
+                    @Override
+                    public Object getValue() {
+                        return 100;
+                    }
+                };
+            }
+        });
+
     }
 
     @Test
     public void testMetricsBuilder() {
         optimizerMetricsCollector.run();
-        Map<Tuple<Long, String>, OptimizerMetrics> cache = optimizerMetricsCache.getCache();
+        Map<OptimizerCacheKey, OptimizerMetrics> cache = optimizerMetricsCache.getCache();
         AtomicBoolean metricFound = new AtomicBoolean(false);
         cache.forEach((k, v) -> {
             if(v.getMetrics()
@@ -77,9 +103,11 @@ public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
 
 
     @Test
-    public void testOptimizerConfigUpdate(){
+    public void testRevolverConfigUpdate() {
         optimizerMetricsCollector.run();
-        optimizerConfigUpdater.run();
-        Assert.assertEquals(RevolverBundle.getServiceConfig().get("test").getConnectionPoolSize(), 19);
+        revolverConfigUpdater.run();
+        Assert.assertEquals(RevolverBundle.getServiceConfig()
+                                    .get("test")
+                                    .getConnectionPoolSize(), 19);
     }
 }

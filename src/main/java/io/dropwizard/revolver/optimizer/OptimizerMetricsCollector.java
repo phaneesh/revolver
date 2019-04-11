@@ -4,7 +4,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
-import io.dropwizard.revolver.optimizer.config.OptimizerTimeoutConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -75,7 +75,7 @@ public class OptimizerMetricsCollector implements Runnable {
 
     private void captureTimeMetrics(SortedMap<String, Gauge> gauges, Long time) {
         log.error("Optimization config : " + optimizerConfig);
-        OptimizerTimeoutConfig timeoutConfig = optimizerConfig.getTimeoutConfig();
+        OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
             if(splits.length < 4) {

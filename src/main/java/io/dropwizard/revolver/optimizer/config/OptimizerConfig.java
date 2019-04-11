@@ -24,6 +24,6 @@ public class OptimizerConfig {
     private OptimizerConfigUpdaterConfig configUpdaterConfig;
     private OptimizerMetricsCollectorConfig metricsCollectorConfig;
     private OptimizerConcurrencyConfig concurrencyConfig;
-    private OptimizerTimeoutConfig timeoutConfig;
+    private OptimizerTimeConfig timeConfig;
 
 }

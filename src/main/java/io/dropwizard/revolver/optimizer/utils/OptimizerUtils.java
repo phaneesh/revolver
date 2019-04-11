@@ -16,6 +16,7 @@ public class OptimizerUtils {
     public static final String THREAD_POOL_PREFIX = "HystrixThreadPool";
     public static final String LATENCY_PERCENTILE_99 = "latencyExecute_percentile_99";
     public static final String LATENCY_PERCENTILE_50 = "latencyExecute_percentile_50";
+    public static final String LATENCY_PERCENTILE_75 = "latencyExecute_percentile_75";
 
     private static final List<String> METRICS_TO_READ = Lists.newArrayList("propertyValue_maximumSize", ROLLING_MAX_ACTIVE_THREADS);
 
@@ -42,12 +43,14 @@ public class OptimizerUtils {
                                                 .cachingWindowInMinutes(15)
                                                 .concurrency(3)
                                                 .build())
-                .timeoutConfig(OptimizerTimeoutConfig.builder()
-                                       .allMethodTimeoutBuffer(1.5)
-                                       .getMethodTimeoutBuffer(1.3)
-                                       .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_50))
-                                       .timeoutMetric(LATENCY_PERCENTILE_99)
-                                       .build())
+                .timeConfig(OptimizerTimeConfig.builder()
+                                    .allMethodTimeoutBuffer(1.5)
+                                    .getMethodTimeoutBuffer(1.3)
+                                    .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_50, LATENCY_PERCENTILE_75))
+                                    .timeoutMetric(LATENCY_PERCENTILE_99)
+                                    .apiLatencyMetric(LATENCY_PERCENTILE_75)
+                                    .appLatencyMetric(LATENCY_PERCENTILE_99)
+                                    .build())
                 .enabled(true)
                 .build();
     }

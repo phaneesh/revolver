@@ -41,7 +41,9 @@ public class RevolverRequestResourceTest extends BaseRevolverTest {
     @ClassRule
     public static final ResourceTestRule resources = ResourceTestRule.builder()
             .addResource(new RevolverRequestResource(environment.getObjectMapper(),
-                    RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry()))
+                                                     RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry(),
+                                                     revolverConfig
+            ))
             .build();
 
     @Test

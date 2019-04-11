@@ -164,7 +164,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 
         environment.jersey().register(new RevolverRequestResource(environment.getObjectMapper(),
-                msgPackObjectMapper, persistenceProvider, callbackHandler, metrics));
+                msgPackObjectMapper, persistenceProvider, callbackHandler, metrics, revolverConfig));
         environment.jersey().register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
         environment.jersey().register(new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
                 msgPackObjectMapper, Collections.unmodifiableMap(apiConfig)));

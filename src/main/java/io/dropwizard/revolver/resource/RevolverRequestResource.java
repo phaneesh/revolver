@@ -30,12 +30,16 @@ import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
+import io.dropwizard.revolver.core.config.ApiLatencyConfig;
+import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.dropwizard.revolver.http.model.ApiPathMap;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
+import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
 import io.swagger.annotations.Api;
@@ -73,21 +77,23 @@ public class RevolverRequestResource {
 
     private final MetricRegistry metrics;
 
+    private final RevolverConfig revolverConfig;
+
     private static final Map<String, String> BAD_REQUEST_RESPONSE = Collections.singletonMap("message", "Bad Request");
 
     private static Map<String, String> SERVICE_UNAVAILABLE_RESPONSE = Collections.singletonMap("message", "Service Unavailable");
 
     private static final Map<String, String> DUPLICATE_REQUEST_RESPONSE = Collections.singletonMap("message", "Duplicate");
 
-    public RevolverRequestResource(final ObjectMapper jsonObjectMapper,
-                                   final ObjectMapper msgPackObjectMapper,
+    public RevolverRequestResource(final ObjectMapper jsonObjectMapper, final ObjectMapper msgPackObjectMapper,
                                    final PersistenceProvider persistenceProvider, final InlineCallbackHandler callbackHandler,
-                                   final MetricRegistry metrics) {
+                                   final MetricRegistry metrics, RevolverConfig revolverConfig) {
         this.jsonObjectMapper = jsonObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
         this.persistenceProvider = persistenceProvider;
         this.callbackHandler = callbackHandler;
         this.metrics = metrics;
+        this.revolverConfig = revolverConfig;
     }
 
     @GET
@@ -187,7 +193,8 @@ public class RevolverRequestResource {
                             jsonObjectMapper, msgPackObjectMapper)
             ).build();
         }
-        val callMode = headers.getRequestHeaders().getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
+        val callMode = getCallMode(apiMap, headers);
+
         if(Strings.isNullOrEmpty(callMode)) {
           return executeInline(service, apiMap.getApi(), method, path, headers, uriInfo, body);
         }
@@ -218,6 +225,24 @@ public class RevolverRequestResource {
                         headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
                         jsonObjectMapper, msgPackObjectMapper)
         ).build();
+    }
+
+    private String getCallMode(ApiPathMap apiMap, HttpHeaders headers) {
+
+        val callMode = headers.getRequestHeaders().getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
+        if(revolverConfig.getOptimizerConfig() == null || !revolverConfig.getOptimizerConfig().isEnabled() || revolverConfig
+                .getOptimizerConfig().getTimeConfig() == null || !Strings.isNullOrEmpty(callMode)){
+            return callMode;
+        }
+        ApiLatencyConfig apiLatencyConfig = apiMap.getApi().getApiLatencyConfig();
+        if(apiLatencyConfig == null){
+            return callMode;
+        }
+        OptimizerTimeConfig timeoutConfig = revolverConfig.getOptimizerConfig().getTimeConfig();
+        if(apiLatencyConfig.getLatencyMetricValue() > timeoutConfig.getAppLatencyThresholdValue()){
+            return RevolverHttpCommand.CALL_MODE_POLLING;
+        }
+        return callMode;
     }
 
     private Response executeInline(final String service, final RevolverHttpApiConfig api, final RevolverHttpApiConfig.RequestMethod method,
@@ -376,9 +401,9 @@ public class RevolverRequestResource {
                 saveResponse(requestId, result, callMode, mailBoxTtl);
             }
             Response httpResponse =  transform(headers, result, api.getApi(), path, method);
-            if(api.getLatencyConfig() != null){
-                log.error("retryAfter : " + api.getLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
-                httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getLatencyConfig().getLatencyMetricValue());
+            if(api.getApiLatencyConfig() != null){
+                log.error("retryAfter : " + api.getApiLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+                httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig().getLatencyMetricValue());
             }
             return httpResponse;
         } else {
@@ -397,14 +422,14 @@ public class RevolverRequestResource {
                     log.error("Error setting request state for request id: {}", requestId, e);
                 }
             });
-            if(api.getLatencyConfig() != null){
-                log.error("retryAfter : " + api.getLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+            if(api.getApiLatencyConfig() != null){
+                log.error("retryAfter : " + api.getApiLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
             }
             RevolverAckMessage revolverAckMessage = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             return Response.accepted().entity(ResponseTransformationUtil.transform(revolverAckMessage,
                     headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
-                    jsonObjectMapper, msgPackObjectMapper)).header(RevolversHttpHeaders.RETRY_AFTER, api.getLatencyConfig() == null ? 0 :
-                                                                                                     api.getLatencyConfig().getLatencyMetricValue())
+                    jsonObjectMapper, msgPackObjectMapper)).header(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig() == null ? 0 :
+                                                                                                     api.getApiLatencyConfig().getLatencyMetricValue())
                     .build();
         }
     }

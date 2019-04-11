@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.ws.rs.DefaultValue;
+
 /***
  Created by nitish.goyal on 09/04/19
  ***/
@@ -12,12 +14,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LatencyConfig {
+public class ApiLatencyConfig {
 
+    @DefaultValue("true")
     private boolean downgradable;
 
     private double latencyMetricValue;
-
-    private double threshold;
 
 }

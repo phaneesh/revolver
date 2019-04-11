@@ -2,7 +2,7 @@ package io.dropwizard.revolver.optimizer;
 
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.core.config.LatencyConfig;
+import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
@@ -10,7 +10,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
-import io.dropwizard.revolver.optimizer.config.OptimizerTimeoutConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +44,9 @@ public class RevolverConfigUpdater implements Runnable {
         if(metricsCache.isEmpty()) {
             return;
         }
+
+        Map<String, Number> aggregatedAppLevelMetricsValues = Maps.newHashMap();
+
         metricsCache.forEach((key, optimizerMetrics) -> {
             if(optimizerAggregatedMetricsMap.get(key.getName()) == null)
                 optimizerAggregatedMetricsMap.put(key.getName(), OptimizerAggregatedMetrics.builder()
@@ -56,32 +59,67 @@ public class RevolverConfigUpdater implements Runnable {
 
             optimizerMetrics.getMetrics()
                     .forEach((metric, value) -> {
-                        OptimizerMetrics.AggregationAlgo aggregationAlgo = optimizerMetrics.getAggregationAlgo();
-                        switch (aggregationAlgo) {
-                            case MAX:
-                                if(aggregatedMetricsValues.get(metric) == null || aggregatedMetricsValues.get(metric)
-                                                                                          .intValue() < value.intValue()) {
-                                    log.error("Max Algo : from " + aggregatedMetricsValues.get(metric) + ", to : " + value);
-                                    aggregatedMetricsValues.put(metric, value);
-                                }
-                                break;
-                            case AVG:
-                                if(aggregatedMetricsValues.get(metric) == null) {
-                                    aggregatedMetricsValues.put(metric, value);
-                                    log.error("Avg Algo for key : " + metric + "to : " + value);
-                                } else {
-                                    log.error("Avg Algo for key : " + metric + " from " + aggregatedMetricsValues.get(metric) + ", to : " +
-                                              ((aggregatedMetricsValues.get(metric)
-                                                        .intValue() + value.intValue()) >> 1));
-                                    aggregatedMetricsValues.put(metric, (aggregatedMetricsValues.get(metric)
-                                                                                 .intValue() + value.intValue()) >> 1);
-                                }
-                        }
+
+                        aggregateAppLevelMetrics(aggregatedAppLevelMetricsValues, metric, value);
+                        aggregateApiLevelMetrics(optimizerMetrics, aggregatedMetricsValues, metric, value);
                     });
 
         });
         updateRevolverConfig(optimizerAggregatedMetricsMap);
+        updateLatencyThreshold(aggregatedAppLevelMetricsValues);
 
+    }
+
+    private void updateLatencyThreshold(Map<String, Number> aggregatedAppLevelMetricsValues) {
+
+        if(revolverConfig.getOptimizerConfig()
+                   .getTimeConfig() == null || aggregatedAppLevelMetricsValues.get(revolverConfig.getOptimizerConfig()
+                                                                                           .getTimeConfig()
+                                                                                           .getAppLatencyMetric()) == null) {
+            return;
+        }
+        int latencyThresholdValue = aggregatedAppLevelMetricsValues.get(revolverConfig.getOptimizerConfig()
+                                                                                .getTimeConfig()
+                                                                                .getAppLatencyMetric())
+                .intValue();
+        revolverConfig.getOptimizerConfig()
+                .getTimeConfig()
+                .setAppLatencyThresholdValue(latencyThresholdValue);
+    }
+
+    private void aggregateAppLevelMetrics(Map<String, Number> aggregatedAppLevelMetricsValues, String metric, Number value) {
+
+        if(aggregatedAppLevelMetricsValues.get(metric) == null) {
+            aggregatedAppLevelMetricsValues.put(metric, value);
+        } else {
+            aggregatedAppLevelMetricsValues.put(metric, (aggregatedAppLevelMetricsValues.get(metric)
+                                                                 .intValue() + value.intValue()) >> 1);
+        }
+    }
+
+    private void aggregateApiLevelMetrics(OptimizerMetrics optimizerMetrics, Map<String, Number> aggregatedMetricsValues, String metric,
+                                          Number value) {
+        OptimizerMetrics.AggregationAlgo aggregationAlgo = optimizerMetrics.getAggregationAlgo();
+        switch (aggregationAlgo) {
+            case MAX:
+                if(aggregatedMetricsValues.get(metric) == null || aggregatedMetricsValues.get(metric)
+                                                                          .intValue() < value.intValue()) {
+                    log.error("Max Algo : from " + aggregatedMetricsValues.get(metric) + ", to : " + value);
+                    aggregatedMetricsValues.put(metric, value);
+                }
+                break;
+            case AVG:
+                if(aggregatedMetricsValues.get(metric) == null) {
+                    aggregatedMetricsValues.put(metric, value);
+                    log.error("Avg Algo for key : " + metric + "to : " + value);
+                } else {
+                    log.error("Avg Algo for key : " + metric + " from " + aggregatedMetricsValues.get(metric) + ", to : " +
+                              ((aggregatedMetricsValues.get(metric)
+                                        .intValue() + value.intValue()) >> 1));
+                    aggregatedMetricsValues.put(metric, (aggregatedMetricsValues.get(metric)
+                                                                 .intValue() + value.intValue()) >> 1);
+                }
+        }
     }
 
     private void updateRevolverConfig(Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap) {
@@ -177,7 +215,7 @@ public class RevolverConfigUpdater implements Runnable {
     private void updateTimeoutSettings(ThreadPoolConfig threadPool, OptimizerAggregatedMetrics optimizerAggregatedMetrics,
                                        AtomicBoolean configUpdated, RevolverHttpApiConfig api) {
 
-        OptimizerTimeoutConfig timeoutConfig = optimizerConfig.getTimeoutConfig();
+        OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
         if(timeoutConfig == null || optimizerAggregatedMetrics.getMetricsAggValueMap()
                                             .get(timeoutConfig.getTimeoutMetric()) == null) {
             return;
@@ -216,21 +254,23 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updateLatencySettings(RevolverHttpApiConfig api, OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
+        String latencyMetric = revolverConfig.getOptimizerConfig()
+                .getTimeConfig()
+                .getApiLatencyMetric();
         int meanLatency = optimizerAggregatedMetrics.getMetricsAggValueMap()
-                                  .get(OptimizerUtils.LATENCY_PERCENTILE_50) ==
-                          null ? 0 : optimizerAggregatedMetrics.getMetricsAggValueMap()
-                                  .get(OptimizerUtils.LATENCY_PERCENTILE_50)
+                                  .get(latencyMetric) == null ? 0 : optimizerAggregatedMetrics.getMetricsAggValueMap()
+                                  .get(latencyMetric)
                                   .intValue();
 
         if(meanLatency <= 0) {
             return;
         }
         log.error("meanLatency : " + meanLatency + " for api : " + api);
-        if(api.getLatencyConfig() == null) {
-            api.setLatencyConfig(LatencyConfig.builder()
-                                         .build());
+        if(api.getApiLatencyConfig() == null) {
+            api.setApiLatencyConfig(ApiLatencyConfig.builder()
+                                            .build());
         }
-        api.getLatencyConfig()
+        api.getApiLatencyConfig()
                 .setLatencyMetricValue(meanLatency);
 
     }

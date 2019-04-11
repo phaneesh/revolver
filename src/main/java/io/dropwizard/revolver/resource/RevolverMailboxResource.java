@@ -231,10 +231,10 @@ public class RevolverMailboxResource {
         RevolverCallbackRequest revolverCallbackRequest = persistenceProvider.request(requestId);
         RevolverHttpApiConfig revolverHttpApiConfig = apiConfig.get(revolverCallbackRequest.getApi());
         double retryAfter;
-        if(revolverHttpApiConfig == null || revolverHttpApiConfig.getLatencyConfig() == null){
+        if(revolverHttpApiConfig == null || revolverHttpApiConfig.getApiLatencyConfig() == null){
             retryAfter = -1.0;
         }else {
-            retryAfter  = revolverHttpApiConfig.getLatencyConfig().getLatencyMetricValue();
+            retryAfter  = revolverHttpApiConfig.getApiLatencyConfig().getLatencyMetricValue();
         }
         if(revolverHttpApiConfig != null){
             log.error("retryAfter : " + retryAfter + ", api : " + revolverHttpApiConfig.getApi());

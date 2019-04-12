@@ -147,16 +147,20 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();
 
-            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metrics)
-                    .optimizerMetricsCache(optimizerMetricsCache).optimizerConfig(optimizerConfig).build();
-            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector, optimizerConfig.getInitialDelay(), optimizerConfig
-                                                                 .getMetricsCollectorConfig().getRepeatAfter(),
-                                                         optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+            if(optimizerConfig.getConcurrencyConfig() != null && optimizerConfig.getConcurrencyConfig().isEnabled()){
+                OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector.builder().metrics(metrics)
+                        .optimizerMetricsCache(optimizerMetricsCache).optimizerConfig(optimizerConfig).build();
+                scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector, optimizerConfig.getInitialDelay(), optimizerConfig
+                                                                     .getMetricsCollectorConfig().getRepeatAfter(),
+                                                             optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+            }
 
-            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder().optimizerConfig(optimizerConfig)
-                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig).build();
-            scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig
-                    .getConfigUpdaterConfig().getRepeatAfter(), optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
+            if(optimizerConfig.getTimeConfig() != null && optimizerConfig.getTimeConfig().isEnabled()){
+                RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder().optimizerConfig(optimizerConfig)
+                        .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig).build();
+                scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater, optimizerConfig.getInitialDelay(), optimizerConfig
+                        .getConfigUpdaterConfig().getRepeatAfter(), optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
+            }
         }
 
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));

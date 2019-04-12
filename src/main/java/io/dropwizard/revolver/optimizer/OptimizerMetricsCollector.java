@@ -74,7 +74,7 @@ public class OptimizerMetricsCollector implements Runnable {
     }
 
     private void captureTimeMetrics(SortedMap<String, Gauge> gauges, Long time) {
-        OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
+        OptimizerTimeConfig timeConfig = optimizerConfig.getTimeConfig();
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
             if(splits.length < 4) {
@@ -82,7 +82,7 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(timeoutConfig.getLatencyMetrics()
+            if(!(timeConfig.getLatencyMetrics()
                     .contains(metricName)) || !((v.getValue() instanceof Number))) {
                 return;
             }

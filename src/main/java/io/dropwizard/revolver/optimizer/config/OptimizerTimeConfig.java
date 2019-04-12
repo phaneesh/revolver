@@ -19,6 +19,8 @@ import static io.dropwizard.revolver.optimizer.utils.OptimizerUtils.*;
 @Builder
 public class OptimizerTimeConfig {
 
+    private boolean enabled;
+
     private List<String> latencyMetrics = Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_50, LATENCY_PERCENTILE_75,
                                                              LATENCY_PERCENTILE_995
                                                             );

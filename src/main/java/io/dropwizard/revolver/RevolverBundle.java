@@ -143,7 +143,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .build();
 
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
-        revolverConfig.setOptimizerConfig(optimizerConfig);
         if(optimizerConfig != null && optimizerConfig.isEnabled()){
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig()).build();

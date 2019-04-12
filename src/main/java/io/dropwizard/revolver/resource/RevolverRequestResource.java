@@ -241,11 +241,7 @@ public class RevolverRequestResource {
         }
         OptimizerTimeConfig timeoutConfig = revolverConfig.getOptimizerConfig().getTimeConfig();
         if(apiLatencyConfig.getLatency() > timeoutConfig.getAppLatencyThresholdValue()){
-            log.error("callMode updated for api : " + apiMap.getApi().getApi() + ", apiLatency : " + apiLatencyConfig.getLatency() + " ," +
-                      "appLatency :"  + timeoutConfig.getAppLatencyThresholdValue() );
-            //TODO Revert later
-            //return RevolverHttpCommand.CALL_MODE_POLLING;
-            return callMode;
+            return RevolverHttpCommand.CALL_MODE_POLLING;
         }
         return callMode;
     }
@@ -407,7 +403,6 @@ public class RevolverRequestResource {
             }
             Response httpResponse =  transform(headers, result, api.getApi(), path, method);
             if(api.getApiLatencyConfig() != null){
-                log.error("retryAfter : " + api.getApiLatencyConfig().getLatency() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
                 httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig().getLatency());
             }
             return httpResponse;
@@ -427,9 +422,6 @@ public class RevolverRequestResource {
                     log.error("Error setting request state for request id: {}", requestId, e);
                 }
             });
-            if(api.getApiLatencyConfig() != null){
-                log.error("retryAfter : " + api.getApiLatencyConfig().getLatency() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
-            }
             RevolverAckMessage revolverAckMessage = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             return Response.accepted().entity(ResponseTransformationUtil.transform(revolverAckMessage,
                     headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),

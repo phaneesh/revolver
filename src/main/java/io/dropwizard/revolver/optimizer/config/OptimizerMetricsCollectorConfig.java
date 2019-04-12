@@ -16,9 +16,9 @@ import java.util.concurrent.TimeUnit;
 @Builder
 public class OptimizerMetricsCollectorConfig {
 
-    private int repeatAfter = 1;
+    private int repeatAfter = 30;
 
-    private TimeUnit timeUnit = TimeUnit.MINUTES;
+    private TimeUnit timeUnit = TimeUnit.SECONDS;
 
     private int cachingWindowInMinutes = 30;
 

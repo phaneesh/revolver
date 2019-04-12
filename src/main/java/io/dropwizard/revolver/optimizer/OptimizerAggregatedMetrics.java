@@ -14,7 +14,5 @@ import java.util.Map;
 @AllArgsConstructor
 public class OptimizerAggregatedMetrics {
 
-    private String pool;
-
     private Map<String, Number> metricsAggValueMap;
 }

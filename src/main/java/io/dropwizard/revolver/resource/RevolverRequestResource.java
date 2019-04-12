@@ -39,6 +39,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.model.ApiPathMap;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
@@ -103,7 +104,6 @@ public class RevolverRequestResource {
     public Response get(@PathParam("service") final String service,
                         @PathParam("path") final String path, @Context final HttpHeaders headers, @Context final UriInfo uriInfo) throws Exception {
         Response response = processRequest(service, RevolverHttpApiConfig.RequestMethod.GET, path, headers, uriInfo, null);
-        log.error("RevolverResponse : " + response.getHeaders());
         pushMetrics(response, service, path);
         return response;
     }
@@ -230,17 +230,22 @@ public class RevolverRequestResource {
     private String getCallMode(ApiPathMap apiMap, HttpHeaders headers) {
 
         val callMode = headers.getRequestHeaders().getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
-        if(revolverConfig.getOptimizerConfig() == null || !revolverConfig.getOptimizerConfig().isEnabled() || revolverConfig
-                .getOptimizerConfig().getTimeConfig() == null || !Strings.isNullOrEmpty(callMode)){
+        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
+        if(optimizerConfig == null || !optimizerConfig.isEnabled() || optimizerConfig.getTimeConfig() == null || !Strings.isNullOrEmpty
+                (callMode) || !(headers.getRequestHeaders().containsKey(RevolversHttpHeaders.DYAMIC_MAILBOX))){
             return callMode;
         }
         ApiLatencyConfig apiLatencyConfig = apiMap.getApi().getApiLatencyConfig();
-        if(apiLatencyConfig == null){
+        if(apiLatencyConfig == null || apiLatencyConfig.isDowngradeDisable()){
             return callMode;
         }
         OptimizerTimeConfig timeoutConfig = revolverConfig.getOptimizerConfig().getTimeConfig();
-        if(apiLatencyConfig.getLatencyMetricValue() > timeoutConfig.getAppLatencyThresholdValue()){
-            return RevolverHttpCommand.CALL_MODE_POLLING;
+        if(apiLatencyConfig.getLatency() > timeoutConfig.getAppLatencyThresholdValue()){
+            log.error("callMode updated for api : " + apiMap.getApi().getApi() + ", apiLatency : " + apiLatencyConfig.getLatency() + " ," +
+                      "appLatency :"  + timeoutConfig.getAppLatencyThresholdValue() );
+            //TODO Revert later
+            //return RevolverHttpCommand.CALL_MODE_POLLING;
+            return callMode;
         }
         return callMode;
     }
@@ -402,8 +407,8 @@ public class RevolverRequestResource {
             }
             Response httpResponse =  transform(headers, result, api.getApi(), path, method);
             if(api.getApiLatencyConfig() != null){
-                log.error("retryAfter : " + api.getApiLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
-                httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig().getLatencyMetricValue());
+                log.error("retryAfter : " + api.getApiLatencyConfig().getLatency() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+                httpResponse.getHeaders().putSingle(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig().getLatency());
             }
             return httpResponse;
         } else {
@@ -423,13 +428,13 @@ public class RevolverRequestResource {
                 }
             });
             if(api.getApiLatencyConfig() != null){
-                log.error("retryAfter : " + api.getApiLatencyConfig().getLatencyMetricValue() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
+                log.error("retryAfter : " + api.getApiLatencyConfig().getLatency() + ", api : " + api + ", isDownstreamAsync" + isDownstreamAsync);
             }
             RevolverAckMessage revolverAckMessage = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
             return Response.accepted().entity(ResponseTransformationUtil.transform(revolverAckMessage,
                     headers.getMediaType() == null ? MediaType.APPLICATION_JSON : headers.getMediaType().toString(),
                     jsonObjectMapper, msgPackObjectMapper)).header(RevolversHttpHeaders.RETRY_AFTER, api.getApiLatencyConfig() == null ? 0 :
-                                                                                                     api.getApiLatencyConfig().getLatencyMetricValue())
+                                                                                                     api.getApiLatencyConfig().getLatency())
                     .build();
         }
     }

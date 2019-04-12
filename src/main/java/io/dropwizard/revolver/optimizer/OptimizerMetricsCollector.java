@@ -74,7 +74,6 @@ public class OptimizerMetricsCollector implements Runnable {
     }
 
     private void captureTimeMetrics(SortedMap<String, Gauge> gauges, Long time) {
-        log.error("Optimization config : " + optimizerConfig);
         OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
@@ -105,7 +104,6 @@ public class OptimizerMetricsCollector implements Runnable {
             if(optimizerMetrics == null) {
                 return;
             }
-            log.error("metricName : " + metricName + ", key : " + key + ", value : " + v.getValue());
             optimizerMetrics.getMetrics()
                     .put(metricName, (Number)v.getValue());
 

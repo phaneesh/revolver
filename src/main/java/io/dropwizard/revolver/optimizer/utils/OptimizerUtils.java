@@ -15,6 +15,7 @@ public class OptimizerUtils {
     public static final String ROLLING_MAX_ACTIVE_THREADS = "rollingMaxActiveThreads";
     public static final String THREAD_POOL_PREFIX = "HystrixThreadPool";
     public static final String LATENCY_PERCENTILE_99 = "latencyExecute_percentile_99";
+    public static final String LATENCY_PERCENTILE_995 = "latencyExecute_percentile_995";
     public static final String LATENCY_PERCENTILE_50 = "latencyExecute_percentile_50";
     public static final String LATENCY_PERCENTILE_75 = "latencyExecute_percentile_75";
 
@@ -26,7 +27,7 @@ public class OptimizerUtils {
 
     public static OptimizerConfig getDefaultOptimizerConfig() {
         return OptimizerConfig.builder()
-                .initialDelay(10)
+                .initialDelay(2)
                 .timeUnit(TimeUnit.MINUTES)
                 .concurrencyConfig(OptimizerConcurrencyConfig.builder()
                                            .bandwidth(1.4)
@@ -34,7 +35,7 @@ public class OptimizerUtils {
                                            .maxThreshold(0.85)
                                            .build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
-                                             .repeatAfter(5)
+                                             .repeatAfter(2)
                                              .timeUnit(TimeUnit.MINUTES)
                                              .build())
                 .metricsCollectorConfig(OptimizerMetricsCollectorConfig.builder()
@@ -46,10 +47,12 @@ public class OptimizerUtils {
                 .timeConfig(OptimizerTimeConfig.builder()
                                     .allMethodTimeoutBuffer(1.5)
                                     .getMethodTimeoutBuffer(1.3)
-                                    .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_50, LATENCY_PERCENTILE_75))
+                                    .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_995, LATENCY_PERCENTILE_50,
+                                                                       LATENCY_PERCENTILE_75
+                                                                      ))
                                     .timeoutMetric(LATENCY_PERCENTILE_99)
                                     .apiLatencyMetric(LATENCY_PERCENTILE_75)
-                                    .appLatencyMetric(LATENCY_PERCENTILE_99)
+                                    .appLatencyMetric(LATENCY_PERCENTILE_995)
                                     .build())
                 .enabled(true)
                 .build();

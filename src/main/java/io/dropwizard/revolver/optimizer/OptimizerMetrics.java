@@ -18,4 +18,12 @@ public class OptimizerMetrics {
 
     private Map<String, Number> metrics;
 
+    private AggregationAlgo aggregationAlgo;
+
+    public enum AggregationAlgo {
+        AVG,
+        MAX
+    }
 }
+
+

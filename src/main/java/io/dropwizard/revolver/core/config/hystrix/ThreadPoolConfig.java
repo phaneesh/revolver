@@ -44,4 +44,5 @@ public class ThreadPoolConfig {
     private String threadPoolName;
 
     private int keepAliveTimeInMinutes = 5;
+
 }

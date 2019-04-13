@@ -24,6 +24,7 @@ import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.base.core.*;
 import io.dropwizard.revolver.exception.RevolverException;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.util.HeaderUtil;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
@@ -42,6 +43,7 @@ import javax.ws.rs.core.*;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author phaneesh
@@ -61,6 +63,8 @@ public class RevolverMailboxResource {
 
     private ObjectMapper msgPackObjectMapper;
 
+    private Map<String, RevolverHttpApiConfig> apiConfig;
+
     private static final RevolverException NOT_FOUND_ERROR = RevolverException.builder()
             .status(Response.Status.NOT_FOUND.getStatusCode())
             .message("Not found")
@@ -71,6 +75,7 @@ public class RevolverMailboxResource {
             .status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode())
             .errorCode("R001")
             .message("Oops! Something went wrong!").build();
+
 
     @Path("/v1/request/status/{requestId}")
     @GET
@@ -176,6 +181,62 @@ public class RevolverMailboxResource {
             log.error("Error getting response", e);
             throw SERVER_ERROR;
         }
+    }
+
+    @Path("/v2/response/{requestId}")
+    @GET
+    @Metered
+    @ApiOperation(value = "Get the response for a request in the mailbox")
+    @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
+    public Response getResponse(@PathParam("requestId") final String requestId,  @Context final HttpHeaders headers) throws RevolverException {
+        try {
+            RevolverRequestState state = persistenceProvider.requestState(requestId);
+            if (state == null) {
+                throw NOT_FOUND_ERROR;
+            }
+            switch (state){
+                case RESPONDED:
+                    RevolverCallbackResponse callbackResponse = persistenceProvider.response(requestId);
+                    if (callbackResponse == null) {
+                        throw NOT_FOUND_ERROR;
+                    }
+                    val response = Response.status(callbackResponse.getStatusCode())
+                            .entity(callbackResponse.getBody());
+                    callbackResponse.getHeaders().forEach((k, v) -> v.forEach(h -> response.header(k, h)));
+                    return response.build();
+
+                default:
+                    RevolverRequestStateResponse revolverRequestStateResponse = RevolverRequestStateResponse.builder()
+                            .requestId(requestId)
+                            .state(state.name())
+                            .build();
+                    double retryAfter = getRetryAfter(requestId);
+                    if (headers.getAcceptableMediaTypes().size() == 0) {
+                        return Response.ok(ResponseTransformationUtil.transform(revolverRequestStateResponse,
+                                                                                MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
+                                           MediaType.APPLICATION_JSON).header(RevolversHttpHeaders.RETRY_AFTER, retryAfter).build();
+                    }
+                    return Response.ok(ResponseTransformationUtil.transform(revolverRequestStateResponse,
+                                                                            headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
+                                       headers.getAcceptableMediaTypes().get(0).toString()).build();
+
+            }
+        } catch (Exception e) {
+            log.error("Error getting response", e);
+            throw SERVER_ERROR;
+        }
+    }
+
+    private double getRetryAfter(@PathParam("requestId") String requestId) {
+        RevolverCallbackRequest revolverCallbackRequest = persistenceProvider.request(requestId);
+        RevolverHttpApiConfig revolverHttpApiConfig = apiConfig.get(revolverCallbackRequest.getApi());
+        double retryAfter;
+        if(revolverHttpApiConfig == null || revolverHttpApiConfig.getApiLatencyConfig() == null){
+            retryAfter = -1.0;
+        }else {
+            retryAfter  = revolverHttpApiConfig.getApiLatencyConfig().getLatency();
+        }
+        return retryAfter;
     }
 
     @Path("/v1/requests")

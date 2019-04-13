@@ -42,4 +42,6 @@ public class CommandHandlerConfig {
 
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 
+
+
 }

@@ -19,6 +19,7 @@ package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
+import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import lombok.*;
@@ -54,6 +55,8 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     private RevolverApiRetryConfig retryConfig;
 
     private RevolverHttpApiSplitConfig splitConfig;
+
+    private ApiLatencyConfig apiLatencyConfig;
 
     @NotNull
     @NotEmpty

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.msgpack.jackson.dataformat.Tuple;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -21,10 +20,10 @@ import java.util.concurrent.TimeUnit;
 @NoArgsConstructor
 public class OptimizerMetricsCache {
 
-    private static LinkedHashMap<Tuple<Long, String>, OptimizerMetrics> poolTimeBasedMetricsMap = new LinkedHashMap<>();
+    private static LinkedHashMap<OptimizerCacheKey, OptimizerMetrics> poolTimeBasedMetricsMap = new LinkedHashMap<>();
 
     private OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig;
-    private LoadingCache<Tuple<Long, String>, OptimizerMetrics> cache;
+    private LoadingCache<OptimizerCacheKey, OptimizerMetrics> cache;
 
     @Builder
     public OptimizerMetricsCache(OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig) {
@@ -32,21 +31,21 @@ public class OptimizerMetricsCache {
         this.cache = CacheBuilder.newBuilder()
                 .concurrencyLevel(optimizerMetricsCollectorConfig.getConcurrency())
                 .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(), TimeUnit.MINUTES)
-                .removalListener(new RemovalListener<Tuple<Long, String>, OptimizerMetrics>() {
+                .removalListener(new RemovalListener<OptimizerCacheKey, OptimizerMetrics>() {
                     @Override
-                    public void onRemoval(RemovalNotification<Tuple<Long, String>, OptimizerMetrics> notification) {
+                    public void onRemoval(RemovalNotification<OptimizerCacheKey, OptimizerMetrics> notification) {
                         poolTimeBasedMetricsMap.remove(notification.getKey());
                     }
                 })
-                .build(new CacheLoader<Tuple<Long, String>, OptimizerMetrics>() {
+                .build(new CacheLoader<OptimizerCacheKey, OptimizerMetrics>() {
                     @Override
-                    public OptimizerMetrics load(@NonNull Tuple<Long, String> key) throws Exception {
+                    public OptimizerMetrics load(@NonNull OptimizerCacheKey key) throws Exception {
                         return poolTimeBasedMetricsMap.get(key);
                     }
                 });
     }
 
-    public OptimizerMetrics get(Tuple<Long, String> key) {
+    public OptimizerMetrics get(OptimizerCacheKey key) {
         try {
             return cache.get(key);
         } catch (CacheLoader.InvalidCacheLoadException e) {
@@ -56,11 +55,11 @@ public class OptimizerMetricsCache {
         }
     }
 
-    public void put(Tuple<Long, String> key, OptimizerMetrics value) {
+    public void put(OptimizerCacheKey key, OptimizerMetrics value) {
         cache.put(key, value);
     }
 
-    public Map<Tuple<Long, String>, OptimizerMetrics> getCache() {
+    public Map<OptimizerCacheKey, OptimizerMetrics> getCache() {
         return Collections.unmodifiableMap(cache.asMap());
     }
 

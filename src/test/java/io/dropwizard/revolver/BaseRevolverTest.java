@@ -133,6 +133,16 @@ public class BaseRevolverTest {
         SplitConfig serviceSplitConfig2 = SplitConfig.builder().service("s2").wrr(0.1).build();
         List<SplitConfig> splitConfigs  = Lists.newArrayList(splitConfigv1, splitConfigv2);
 
+        PathExpressionSplitConfig pathExpressionSplitConfig1 = PathExpressionSplitConfig.builder().expression("(.*)")
+                .order(0)
+                .path("/v1/test").build();
+        PathExpressionSplitConfig pathExpressionSplitConfig2 = PathExpressionSplitConfig.builder().expression("(a-z)(0-9)(.*)").order(2)
+                .path
+                ("/v2/test").build();
+        RevolverHttpApiSplitConfig revolverHttpPathExpressionConfig = RevolverHttpApiSplitConfig.builder().enabled(true).splitStrategy
+                (SplitStrategy.PATH_EXPRESSION).pathExpressionSplitConfigs(Lists.newArrayList(pathExpressionSplitConfig1,
+                                                                                              pathExpressionSplitConfig2)).build();
+
         RevolverSplitServiceConfig s1 = RevolverSplitServiceConfig.builder().name("s1").endpoint(simpleEndpoint).build();
         RevolverSplitServiceConfig s2 = RevolverSplitServiceConfig.builder().name("s2").endpoint(securedEndpoint).build();
 
@@ -174,6 +184,22 @@ public class BaseRevolverTest {
                                               .runtime(HystrixCommandConfig.builder()
                                                                .threadPool(ThreadPoolConfig.builder()
                                                                                    .concurrency(1).timeout(2000)
+                                                                                   .build())
+                                                               .build()).build())
+                                 .api(RevolverHttpApiConfig.configBuilder()
+                                              .api("test_path_expression")
+                                              .method(RevolverHttpApiConfig.RequestMethod.GET)
+                                              .method(RevolverHttpApiConfig.RequestMethod.POST)
+                                              .method(RevolverHttpApiConfig.RequestMethod.DELETE)
+                                              .method(RevolverHttpApiConfig.RequestMethod.PATCH)
+                                              .method(RevolverHttpApiConfig.RequestMethod.PUT)
+                                              .method(RevolverHttpApiConfig.RequestMethod.HEAD)
+                                              .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                              .path("{version}/test_path_expression")
+                                              .splitConfig(revolverHttpPathExpressionConfig)
+                                              .runtime(HystrixCommandConfig.builder()
+                                                               .threadPool(ThreadPoolConfig.builder()
+                                                                                   .concurrency(1).timeout(180000)
                                                                                    .build())
                                                                .build()).build())
                                  .api(RevolverHttpApiConfig.configBuilder()

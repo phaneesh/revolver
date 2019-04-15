@@ -22,4 +22,8 @@ public class RevolverHttpApiSplitConfig {
 
     private List<SplitConfig> splits;
 
+    private List<PathExpressionSplitConfig> pathExpressionSplitConfigs;
+
+    private List<HeaderExpressionSplitConfig> headerExpressionSplitConfigs;
+
 }

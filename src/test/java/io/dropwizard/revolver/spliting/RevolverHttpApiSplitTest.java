@@ -149,4 +149,38 @@ public class RevolverHttpApiSplitTest extends BaseRevolverTest {
 
     }
 
+   /* @Test
+    public void testPathExpressionSplitServiceHttpCommand() throws TimeoutException {
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
+                                                                             .withHeader("Content-Type", "application/json")));
+
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_path_expression");
+        val request = RevolverHttpRequest.builder()
+                .service("test")
+                .api("test_path_expression")
+                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                .path("v1/test_path_expression")
+                .build();
+        val response = httpCommand.execute(request);
+        assertEquals(response.getStatusCode(), 200);
+
+    }*/
+
+    @Test
+    public void testFalsePathExpressionSplitServiceHttpCommand() throws TimeoutException {
+        stubFor(get(urlEqualTo("/v2/test")).willReturn(aResponse().withStatus(200)
+                                                               .withHeader("Content-Type", "application/json")));
+
+        RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_path_expression");
+        val request = RevolverHttpRequest.builder()
+                .service("test")
+                .api("test_path_expression")
+                .method(RevolverHttpApiConfig.RequestMethod.GET)
+                .path("v1/test_path_expression")
+                .build();
+        val response = httpCommand.execute(request);
+        assertEquals(response.getStatusCode(), 404);
+
+    }
+
 }

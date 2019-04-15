@@ -16,6 +16,7 @@
 package io.dropwizard.revolver;
 
 import com.codahale.metrics.json.MetricsModule;
+import com.collections.CollectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.google.common.base.Strings;
@@ -60,6 +61,7 @@ import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 import io.dropwizard.revolver.resource.*;
+import io.dropwizard.revolver.splitting.PathExpressionSplitConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.riemann.RiemannBundle;
 import io.dropwizard.riemann.RiemannConfig;
@@ -77,6 +79,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author phaneesh
@@ -378,7 +381,15 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 apiConfig.put(key, a);
                 if (null != a.getSplitConfig() && a.getSplitConfig().isEnabled()) {
                     updateSplitConfig(a);
+                    if(CollectionUtils.isNotEmpty(a.getSplitConfig().getPathExpressionSplitConfigs())){
+
+                        List<PathExpressionSplitConfig> sortedOnOrder = a.getSplitConfig().getPathExpressionSplitConfigs().stream().sorted
+                                (Comparator.comparing
+                                (PathExpressionSplitConfig::getOrder)).collect(Collectors.toList());
+                        a.getSplitConfig().setPathExpressionSplitConfigs(sortedOnOrder);
+                    }
                 }
+
             });
             generateApiConfigMap((RevolverHttpServiceConfig) config);
             serviceNameResolver.register(revolverHttpServiceConfig.getEndpoint());
@@ -387,8 +398,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private static void updateSplitConfig(RevolverHttpApiConfig apiConfig) {
         double from = 0.0;
-        for (SplitConfig splitConfig : apiConfig.getSplitConfig()
-                .getSplits()) {
+        for (SplitConfig splitConfig : CollectionUtils.nullSafeList(apiConfig.getSplitConfig()
+                .getSplits())) {
             double wrr = splitConfig.getWrr();
             splitConfig.setFrom(from);
             from += wrr;

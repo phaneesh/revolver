@@ -19,6 +19,7 @@ package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.annotation.Metered;
+import com.collections.CollectionUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -42,11 +43,14 @@ import io.dropwizard.revolver.http.model.RevolverHttpResponse;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
+import io.dropwizard.revolver.splitting.*;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
 
 import javax.inject.Singleton;
 import javax.ws.rs.*;
@@ -58,6 +62,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author phaneesh
@@ -177,7 +183,7 @@ public class RevolverRequestResource {
 
     private Response processRequest(final String service, final RevolverHttpApiConfig.RequestMethod method, final String path,
                                     final HttpHeaders headers, final UriInfo uriInfo, final byte[] body) throws Exception {
-        val apiMap = RevolverBundle.matchPath(service, path);
+        val apiMap = resolvePath(service, path, headers);
         if(apiMap == null) {
             return Response.status(Response.Status.BAD_REQUEST).entity(
                     ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
@@ -196,11 +202,12 @@ public class RevolverRequestResource {
         val callMode = getCallMode(apiMap, headers);
 
         if(Strings.isNullOrEmpty(callMode)) {
-          return executeInline(service, apiMap.getApi(), method, path, headers, uriInfo, body);
+          return executeInline(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
         }
         switch (callMode.toUpperCase()) {
             case RevolverHttpCommand.CALL_MODE_POLLING:
-                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(), callMode);
+                return executeCommandAsync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body, apiMap.getApi().isAsync(),
+                                           callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
@@ -209,7 +216,8 @@ public class RevolverRequestResource {
                                     jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
-                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(), callMode);
+                return executeCommandAsync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body, apiMap.getApi().isAsync(),
+                                           callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                     return Response.status(Response.Status.BAD_REQUEST).entity(
@@ -218,13 +226,99 @@ public class RevolverRequestResource {
                                     jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
-                return executeCallbackSync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
+                return executeCallbackSync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
         }
         return Response.status(Response.Status.BAD_REQUEST).entity(
                 ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,
                         headers.getMediaType() != null ? headers.getMediaType().toString() : MediaType.APPLICATION_JSON,
                         jsonObjectMapper, msgPackObjectMapper)
         ).build();
+    }
+
+    private ApiPathMap resolvePath(String service, String path, HttpHeaders headers) {
+        val apiMap = RevolverBundle.matchPath(service, path);
+        if(apiMap == null){
+            return null;
+        }
+
+        String newPath = null;
+
+        RevolverHttpApiConfig httpApiConfiguration = apiMap.getApi();
+        RevolverHttpApiSplitConfig revolverHttpApiSplitConfig = httpApiConfiguration.getSplitConfig();
+        if(null != revolverHttpApiSplitConfig && revolverHttpApiSplitConfig.isEnabled() && revolverHttpApiSplitConfig.getSplitStrategy() != null){
+            SplitStrategy splitStrategy = revolverHttpApiSplitConfig.getSplitStrategy();
+            switch (splitStrategy){
+                case PATH:
+                    newPath = getPathFromSplitConfig(httpApiConfiguration);
+                    break;
+                case PATH_EXPRESSION:
+                    newPath = getPathFromPathExpression(revolverHttpApiSplitConfig, path);
+                    break;
+                case HEADER_EXPRESSION:
+                    newPath = getPathFromHeaderExpression(revolverHttpApiSplitConfig, path, headers);
+                    break;
+            }
+        }
+        if (Strings.isNullOrEmpty(newPath)) {
+            return apiMap;
+        }
+        return RevolverBundle.matchPath(service, newPath);
+    }
+
+    private String getPathFromSplitConfig(RevolverHttpApiConfig httpApiConfiguration) {
+        double random = Math.random();
+        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
+                .getSplits()) {
+            if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
+                return splitConfig.getPath();
+            }
+        }
+        return null;
+    }
+
+    private String getUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
+        String uri = StringUtils.EMPTY;
+        if (Strings.isNullOrEmpty(request.getPath())) {
+            if (null != request.getPathParams()) {
+                uri = StringSubstitutor.replace(httpApiConfiguration.getPath(), request.getPathParams());
+            }
+        } else {
+            uri = request.getPath();
+        }
+        return uri;
+    }
+
+    private String getPathFromPathExpression(RevolverHttpApiSplitConfig revolverHttpApiSplitConfig, String path) {
+
+        List<PathExpressionSplitConfig>  pathExpressionSplitConfigs = revolverHttpApiSplitConfig.getPathExpressionSplitConfigs();
+
+        for(PathExpressionSplitConfig pathExpressionSplitConfig : CollectionUtils.nullSafeList(pathExpressionSplitConfigs)){
+            if(matches(pathExpressionSplitConfig.getExpression(), path)){
+                return pathExpressionSplitConfig.getPath();
+            }
+        }
+        return null;
+    }
+
+    private String getPathFromHeaderExpression(RevolverHttpApiSplitConfig revolverHttpApiSplitConfig, String path, HttpHeaders headers) {
+
+        List<HeaderExpressionSplitConfig>  headerExpressionSplitConfigs = revolverHttpApiSplitConfig.getHeaderExpressionSplitConfigs();
+
+        for(HeaderExpressionSplitConfig headerExpressionSplitConfig : CollectionUtils.nullSafeList(headerExpressionSplitConfigs)){
+            if(!headers.getRequestHeaders().containsKey(headerExpressionSplitConfig.getHeader())){
+                continue;
+            }
+            if(matches(headerExpressionSplitConfig.getExpression(), headers.getHeaderString(headerExpressionSplitConfig.getHeader()))){
+                return headerExpressionSplitConfig.getPath();
+            }
+        }
+        return null;
+    }
+
+    private boolean matches(String expression, String path){
+        Pattern pattern = Pattern.compile(expression);
+        Matcher matcher = pattern.matcher(path);
+        return matcher.matches();
     }
 
     private String getCallMode(ApiPathMap apiMap, HttpHeaders headers) {

@@ -303,25 +303,13 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
 
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
         String uri = null;
-
-        RevolverHttpApiSplitConfig revolverHttpApiSplitConfig = httpApiConfiguration.getSplitConfig();
-        if(null != revolverHttpApiSplitConfig && revolverHttpApiSplitConfig.isEnabled() && revolverHttpApiSplitConfig.getSplitStrategy() != null){
-            SplitStrategy splitStrategy = revolverHttpApiSplitConfig.getSplitStrategy();
-            switch (splitStrategy){
-                case PATH:
-                    uri = getSplitUri(httpApiConfiguration, request);
-                    break;
-                case PATH_EXPRESSION:
-                    uri = getSplitUriFromPathExpression(revolverHttpApiSplitConfig, request);
-                    break;
-                case HEADER_EXPRESSION:
-                    uri = getSplitUriFromHeaderExpression(revolverHttpApiSplitConfig, request);
-                    break;
+        if (Strings.isNullOrEmpty(request.getPath())) {
+            if (null != request.getPathParams()) {
+                uri = StringSubstitutor.replace(httpApiConfiguration.getPath(), request.getPathParams());
             }
         } else {
-            uri = getUri(httpApiConfiguration, request);
+            uri = request.getPath();
         }
-
         if (Strings.isNullOrEmpty(uri)) {
             uri = httpApiConfiguration.getPath();
         }

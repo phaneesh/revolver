@@ -316,53 +316,6 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
         return uri.charAt(0) == '/' ? uri : "/" + uri;
     }
 
-    private String getSplitUriFromPathExpression(RevolverHttpApiSplitConfig revolverHttpApiSplitConfig, RevolverHttpRequest request) {
-
-        String path = request.getPath();
-        List<PathExpressionSplitConfig>  pathExpressionSplitConfigs = revolverHttpApiSplitConfig.getPathExpressionSplitConfigs();
-        if(pathExpressionSplitConfigs.isEmpty()){
-            return null;
-        }
-        for(PathExpressionSplitConfig pathExpressionSplitConfig : CollectionUtils.nullSafeList(pathExpressionSplitConfigs)){
-            if(matches(pathExpressionSplitConfig.getExpression(), path)){
-                return pathExpressionSplitConfig.getPath();
-            }
-        }
-        return null;
-    }
-
-    private String getSplitUriFromHeaderExpression(RevolverHttpApiSplitConfig revolverHttpApiSplitConfig, RevolverHttpRequest request) {
-
-        String path = request.getPath();
-        List<PathExpressionSplitConfig>  pathExpressionSplitConfigs = revolverHttpApiSplitConfig.getPathExpressionSplitConfigs();
-        if(pathExpressionSplitConfigs.isEmpty()){
-            return null;
-        }
-        for(PathExpressionSplitConfig pathExpressionSplitConfig : pathExpressionSplitConfigs){
-            if(matches(pathExpressionSplitConfig.getExpression(), path)){
-                return pathExpressionSplitConfig.getPath();
-            }
-        }
-        return null;
-    }
-
-    private boolean matches(String expression, String path){
-        Pattern pattern = Pattern.compile(expression);
-        Matcher matcher = pattern.matcher(path);
-        return matcher.matches();
-    }
-
-    private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
-        double random = Math.random();
-        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
-                .getSplits()) {
-            if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
-                return splitConfig.getPath();
-            }
-        }
-        return getUri(httpApiConfiguration, request);
-    }
-
     private String getSplitService(RevolverHttpApiConfig httpApiConfiguration) {
         double random = Math.random();
         for (SplitConfig splitConfig : CollectionUtils.nullSafeList(httpApiConfiguration.getSplitConfig()

@@ -276,18 +276,6 @@ public class RevolverRequestResource {
         return null;
     }
 
-    private String getUri(RevolverHttpApiConfig httpApiConfiguration, RevolverHttpRequest request) {
-        String uri = StringUtils.EMPTY;
-        if (Strings.isNullOrEmpty(request.getPath())) {
-            if (null != request.getPathParams()) {
-                uri = StringSubstitutor.replace(httpApiConfiguration.getPath(), request.getPathParams());
-            }
-        } else {
-            uri = request.getPath();
-        }
-        return uri;
-    }
-
     private String getPathFromPathExpression(RevolverHttpApiSplitConfig revolverHttpApiSplitConfig, String path) {
 
         List<PathExpressionSplitConfig>  pathExpressionSplitConfigs = revolverHttpApiSplitConfig.getPathExpressionSplitConfigs();

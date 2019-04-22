@@ -6,5 +6,7 @@ package io.dropwizard.revolver.splitting;
 public enum SplitStrategy {
 
     PATH,
-    SERVICE
+    SERVICE,
+    PATH_EXPRESSION,
+    HEADER_EXPRESSION
 }

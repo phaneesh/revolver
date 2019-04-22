@@ -17,6 +17,7 @@
 
 package io.dropwizard.revolver.http;
 
+import com.collections.CollectionUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.dropwizard.revolver.RevolverBundle;
@@ -32,9 +33,7 @@ import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
 import io.dropwizard.revolver.retry.RetryUtils;
-import io.dropwizard.revolver.splitting.RevolverSplitServiceConfig;
-import io.dropwizard.revolver.splitting.SplitConfig;
-import io.dropwizard.revolver.splitting.SplitStrategy;
+import io.dropwizard.revolver.splitting.*;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -45,7 +44,10 @@ import org.apache.commons.text.StringSubstitutor;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -300,36 +302,24 @@ public class RevolverHttpCommand extends RevolverCommand<RevolverHttpRequest, Re
     }
 
     private String resolvePath(final RevolverHttpApiConfig httpApiConfiguration, final RevolverHttpRequest request) {
-        String uri;
-
-        if (null != httpApiConfiguration.getSplitConfig() && httpApiConfiguration.getSplitConfig().isEnabled() && httpApiConfiguration
-                .getSplitConfig().getSplitStrategy() == SplitStrategy.PATH) {
-            uri = getSplitUri(httpApiConfiguration);
+        String uri = null;
+        if (Strings.isNullOrEmpty(request.getPath())) {
+            if (null != request.getPathParams()) {
+                uri = StringSubstitutor.replace(httpApiConfiguration.getPath(), request.getPathParams());
+            }
         } else {
-            uri = getUri(httpApiConfiguration, request);
+            uri = request.getPath();
         }
-
         if (Strings.isNullOrEmpty(uri)) {
             uri = httpApiConfiguration.getPath();
         }
         return uri.charAt(0) == '/' ? uri : "/" + uri;
     }
 
-    private String getSplitUri(RevolverHttpApiConfig httpApiConfiguration) {
-        double random = Math.random();
-        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
-                .getSplits()) {
-            if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
-                return splitConfig.getPath();
-            }
-        }
-        return StringUtils.EMPTY;
-    }
-
     private String getSplitService(RevolverHttpApiConfig httpApiConfiguration) {
         double random = Math.random();
-        for (SplitConfig splitConfig : httpApiConfiguration.getSplitConfig()
-                .getSplits()) {
+        for (SplitConfig splitConfig : CollectionUtils.nullSafeList(httpApiConfiguration.getSplitConfig()
+                .getSplits())) {
             if (splitConfig.getFrom() <= random && splitConfig.getTo() > random) {
                 return splitConfig.getService();
             }

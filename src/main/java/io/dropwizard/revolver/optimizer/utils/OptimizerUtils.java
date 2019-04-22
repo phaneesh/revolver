@@ -33,6 +33,7 @@ public class OptimizerUtils {
                                            .bandwidth(1.4)
                                            .minThreshold(0.5)
                                            .maxThreshold(0.85)
+                                           .enabled(true)
                                            .build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
                                              .repeatAfter(2)
@@ -47,6 +48,7 @@ public class OptimizerUtils {
                 .timeConfig(OptimizerTimeConfig.builder()
                                     .allMethodTimeoutBuffer(1.5)
                                     .getMethodTimeoutBuffer(1.3)
+                                    .enabled(true)
                                     .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_995, LATENCY_PERCENTILE_50,
                                                                        LATENCY_PERCENTILE_75
                                                                       ))

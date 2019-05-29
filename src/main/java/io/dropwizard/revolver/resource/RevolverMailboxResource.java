@@ -237,7 +237,7 @@ public class RevolverMailboxResource {
             retryAfter  = revolverHttpApiConfig.getApiLatencyConfig().getLatency();
         }
         if(revolverHttpApiConfig != null){
-            log.error("retryAfter : " + retryAfter + ", api : " + revolverHttpApiConfig.getApi());
+            log.info("retryAfter : " + retryAfter + ", api : " + revolverHttpApiConfig.getApi());
         }
         return retryAfter;
     }

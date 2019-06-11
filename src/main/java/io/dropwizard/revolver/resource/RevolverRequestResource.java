@@ -202,11 +202,11 @@ public class RevolverRequestResource {
         val callMode = getCallMode(apiMap, headers);
 
         if(Strings.isNullOrEmpty(callMode)) {
-          return executeInline(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
+          return executeInline(service, apiMap.getApi(), method, path, headers, uriInfo, body);
         }
         switch (callMode.toUpperCase()) {
             case RevolverHttpCommand.CALL_MODE_POLLING:
-                return executeCommandAsync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body, apiMap.getApi().isAsync(),
+                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(),
                                            callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
@@ -216,7 +216,7 @@ public class RevolverRequestResource {
                                     jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
-                return executeCommandAsync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body, apiMap.getApi().isAsync(),
+                return executeCommandAsync(service, apiMap.getApi(), method, path, headers, uriInfo, body, apiMap.getApi().isAsync(),
                                            callMode);
             case RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC:
                 if(Strings.isNullOrEmpty(headers.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
@@ -226,7 +226,7 @@ public class RevolverRequestResource {
                                     jsonObjectMapper, msgPackObjectMapper)
                     ).build();
                 }
-                return executeCallbackSync(service, apiMap.getApi(), method, apiMap.getPath(), headers, uriInfo, body);
+                return executeCallbackSync(service, apiMap.getApi(), method, path, headers, uriInfo, body);
         }
         return Response.status(Response.Status.BAD_REQUEST).entity(
                 ResponseTransformationUtil.transform(BAD_REQUEST_RESPONSE,

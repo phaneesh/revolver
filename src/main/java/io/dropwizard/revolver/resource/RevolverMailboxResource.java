@@ -92,7 +92,7 @@ public class RevolverMailboxResource {
                     .requestId(requestId)
                     .state(state.name())
                     .build();
-            if (headers.getAcceptableMediaTypes().size() == 0) {
+            if (headers.getAcceptableMediaTypes().isEmpty()) {
                 return Response.ok(ResponseTransformationUtil.transform(response,
                         MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
@@ -148,7 +148,7 @@ public class RevolverMailboxResource {
             if (callbackRequest == null) {
                 throw NOT_FOUND_ERROR;
             }
-            if (headers.getAcceptableMediaTypes().size() == 0) {
+            if (headers.getAcceptableMediaTypes().isEmpty()) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackRequest,
                         MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
@@ -211,7 +211,7 @@ public class RevolverMailboxResource {
                             .state(state.name())
                             .build();
                     double retryAfter = getRetryAfter(requestId);
-                    if (headers.getAcceptableMediaTypes().size() == 0) {
+                    if (headers.getAcceptableMediaTypes().isEmpty()) {
                         return Response.ok(ResponseTransformationUtil.transform(revolverRequestStateResponse,
                                                                                 MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                                            MediaType.APPLICATION_JSON).header(RevolversHttpHeaders.RETRY_AFTER, retryAfter).build();
@@ -250,7 +250,7 @@ public class RevolverMailboxResource {
             if (callbackRequests == null) {
                 throw NOT_FOUND_ERROR;
             }
-            if (headers.getAcceptableMediaTypes().size() == 0) {
+            if (headers.getAcceptableMediaTypes().isEmpty()) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackRequests,
                         MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
@@ -283,7 +283,7 @@ public class RevolverMailboxResource {
             if (callbackResponses == null) {
                 throw NOT_FOUND_ERROR;
             }
-            if (headers.getAcceptableMediaTypes().size() == 0) {
+            if (headers.getAcceptableMediaTypes().isEmpty()) {
                 return Response.ok(ResponseTransformationUtil.transform(callbackResponses,
                         MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();
@@ -324,7 +324,7 @@ public class RevolverMailboxResource {
                             .build()
             );
             RevolverAckMessage response = RevolverAckMessage.builder().requestId(requestId).acceptedAt(Instant.now().toEpochMilli()).build();
-            if (headers.getAcceptableMediaTypes().size() == 0) {
+            if (headers.getAcceptableMediaTypes().isEmpty()) {
                 return Response.ok(ResponseTransformationUtil.transform(response,
                         MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
                         MediaType.APPLICATION_JSON).build();

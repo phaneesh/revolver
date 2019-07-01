@@ -62,12 +62,16 @@ public class RevolverConfigUpdater implements Runnable {
             optimizerMetrics.getMetrics()
                     .forEach((metric, value) -> {
                         aggregateAppLevelMetrics(aggregatedAppLevelMetricsValues, metric, value, metricsCount);
-                        aggregateApiLevelMetrics(optimizerMetrics, aggregatedMetricsValues, metric, value, keyVsMetricCount, key);
+                        aggregateApiLevelMetrics(optimizerMetrics, aggregatedMetricsValues, metric, value,
+                                                 keyVsMetricCount, key
+                                                );
                     });
 
         });
 
-        updateAvgOfMetrics(keyVsMetricCount, optimizerAggregatedMetricsMap, aggregatedAppLevelMetricsValues, metricsCount);
+        updateAvgOfMetrics(keyVsMetricCount, optimizerAggregatedMetricsMap, aggregatedAppLevelMetricsValues,
+                           metricsCount
+                          );
 
         updateRevolverConfig(optimizerAggregatedMetricsMap);
         updateLatencyThreshold(aggregatedAppLevelMetricsValues);
@@ -75,8 +79,8 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updateAvgOfMetrics(Map<String, Integer> keyVsMetricCount,
-                                    Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
-                                    Map<String, Number> aggregatedAppLevelMetricsValues, AtomicLong metricsCount) {
+            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
+            Map<String, Number> aggregatedAppLevelMetricsValues, AtomicLong metricsCount) {
 
         keyVsMetricCount.forEach((k, v) -> {
             OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap.get(k);
@@ -89,15 +93,15 @@ public class RevolverConfigUpdater implements Runnable {
                     });
         });
 
-        aggregatedAppLevelMetricsValues.forEach((k, v) -> {
-            aggregatedAppLevelMetricsValues.put(k, v.intValue() / metricsCount.get());
-        });
+        aggregatedAppLevelMetricsValues.forEach(
+                (k, v) -> aggregatedAppLevelMetricsValues.put(k, v.intValue() / metricsCount.get()));
     }
 
     private void updateLatencyThreshold(Map<String, Number> aggregatedAppLevelMetricsValues) {
 
-        if(optimizerConfig.getTimeConfig() == null || aggregatedAppLevelMetricsValues.get(optimizerConfig.getTimeConfig()
-                                                                                                  .getAppLatencyMetric()) == null) {
+        if(optimizerConfig.getTimeConfig() == null || aggregatedAppLevelMetricsValues.get(
+                optimizerConfig.getTimeConfig()
+                        .getAppLatencyMetric()) == null) {
             return;
         }
         int latencyThresholdValue = aggregatedAppLevelMetricsValues.get(optimizerConfig.getTimeConfig()
@@ -107,10 +111,10 @@ public class RevolverConfigUpdater implements Runnable {
                 .setAppLatencyThresholdValue(latencyThresholdValue);
     }
 
-    private void aggregateAppLevelMetrics(Map<String, Number> aggregatedAppLevelMetricsValues, String metric, Number value,
-                                          AtomicLong metricsCount) {
+    private void aggregateAppLevelMetrics(Map<String, Number> aggregatedAppLevelMetricsValues, String metric,
+            Number value, AtomicLong metricsCount) {
 
-        if(!optimizerConfig.getTimeConfig()
+        if(! optimizerConfig.getTimeConfig()
                 .getAppLatencyMetric()
                 .equals(metric) || value.intValue() == 0) {
             return;
@@ -124,26 +128,27 @@ public class RevolverConfigUpdater implements Runnable {
         }
     }
 
-    private void aggregateApiLevelMetrics(OptimizerMetrics optimizerMetrics, Map<String, Number> aggregatedMetricsValues, String metric,
-                                          Number value, Map<String, Integer> keyVsMetricCount, OptimizerCacheKey key) {
+    private void aggregateApiLevelMetrics(OptimizerMetrics optimizerMetrics,
+            Map<String, Number> aggregatedMetricsValues, String metric, Number value,
+            Map<String, Integer> keyVsMetricCount, OptimizerCacheKey key) {
         OptimizerMetrics.AggregationAlgo aggregationAlgo = optimizerMetrics.getAggregationAlgo();
-        switch (aggregationAlgo) {
-            case MAX:
-                if(aggregatedMetricsValues.get(metric) == null || aggregatedMetricsValues.get(metric)
-                                                                          .intValue() < value.intValue()) {
-                    aggregatedMetricsValues.put(metric, value);
-                }
-                break;
-            case AVG:
-                keyVsMetricCount.putIfAbsent(key.getName(), 0);
-                if(aggregatedMetricsValues.get(metric) == null) {
-                    aggregatedMetricsValues.put(metric, value);
-                    keyVsMetricCount.put(key.getName(), 1);
-                } else {
-                    keyVsMetricCount.put(key.getName(), keyVsMetricCount.get(key.getName()) + 1);
-                    aggregatedMetricsValues.put(metric, (aggregatedMetricsValues.get(metric)
-                                                                 .intValue() + value.intValue()));
-                }
+
+        if(aggregationAlgo == OptimizerMetrics.AggregationAlgo.MAX) {
+            if(aggregatedMetricsValues.get(metric) == null || aggregatedMetricsValues.get(metric)
+                                                                      .intValue() < value.intValue()) {
+                aggregatedMetricsValues.put(metric, value);
+            }
+
+        } else if(aggregationAlgo == OptimizerMetrics.AggregationAlgo.AVG) {
+            keyVsMetricCount.putIfAbsent(key.getName(), 0);
+            if(aggregatedMetricsValues.get(metric) == null) {
+                aggregatedMetricsValues.put(metric, value);
+                keyVsMetricCount.put(key.getName(), 1);
+            } else {
+                keyVsMetricCount.put(key.getName(), keyVsMetricCount.get(key.getName()) + 1);
+                aggregatedMetricsValues.put(metric, (aggregatedMetricsValues.get(metric)
+                                                             .intValue() + value.intValue()));
+            }
         }
     }
 
@@ -154,15 +159,16 @@ public class RevolverConfigUpdater implements Runnable {
                     if(revolverServiceConfig.getThreadPoolGroupConfig() != null) {
                         revolverServiceConfig.getThreadPoolGroupConfig()
                                 .getThreadPools()
-                                .forEach(threadPoolConfig -> {
-                                    updatedPoolSettings(threadPoolConfig, optimizerAggregatedMetricsMap, configUpdated);
-                                });
+                                .forEach(threadPoolConfig -> updatedPoolSettings(threadPoolConfig,
+                                                                                 optimizerAggregatedMetricsMap,
+                                                                                 configUpdated
+                                                                                ));
                     }
                     if(revolverServiceConfig instanceof RevolverHttpServiceConfig) {
                         ((RevolverHttpServiceConfig)revolverServiceConfig).getApis()
-                                .forEach(api -> {
-                                    updatedApiSettings(revolverServiceConfig, api, optimizerAggregatedMetricsMap, configUpdated);
-                                });
+                                .forEach(api -> updatedApiSettings(revolverServiceConfig, api,
+                                                                   optimizerAggregatedMetricsMap, configUpdated
+                                                                  ));
                     }
                 });
 
@@ -173,19 +179,20 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updatedPoolSettings(ThreadPoolConfig threadPoolConfig,
-                                     Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap, AtomicBoolean configUpdated) {
+            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap, AtomicBoolean configUpdated) {
 
-        OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap.get(threadPoolConfig.getThreadPoolName());
+        OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap.get(
+                threadPoolConfig.getThreadPoolName());
 
         if(optimizerAggregatedMetrics == null) {
             return;
         }
-        updateConcurrencySetting(threadPoolConfig, optimizerAggregatedMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
+        updateConcurrencySetting(threadPoolConfig, optimizerAggregatedMetrics, configUpdated);
 
     }
 
     private void updatedApiSettings(RevolverServiceConfig revolverServiceConfig, RevolverHttpApiConfig api,
-                                    Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap, AtomicBoolean configUpdated) {
+            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap, AtomicBoolean configUpdated) {
 
         String key = revolverServiceConfig.getService() + "." + api.getApi();
         OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap.get(key);
@@ -194,15 +201,15 @@ public class RevolverConfigUpdater implements Runnable {
             return;
         }
         updateConcurrencySetting(api.getRuntime()
-                                         .getThreadPool(), optimizerAggregatedMetrics, configUpdated, api.getApi());
+                                         .getThreadPool(), optimizerAggregatedMetrics, configUpdated);
         updateTimeoutSettings(api.getRuntime()
                                       .getThreadPool(), optimizerAggregatedMetrics, configUpdated, api);
 
         updateLatencySettings(api, optimizerAggregatedMetrics);
     }
 
-    private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig, OptimizerAggregatedMetrics optimizerAggregatedMetrics,
-                                          AtomicBoolean configUpdated, String poolName) {
+    private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig,
+            OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated) {
         if(optimizerAggregatedMetrics.getMetricsAggValueMap()
                    .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS) == null) {
             return;
@@ -228,8 +235,9 @@ public class RevolverConfigUpdater implements Runnable {
 
     }
 
-    private void updateTimeoutSettings(ThreadPoolConfig threadPool, OptimizerAggregatedMetrics optimizerAggregatedMetrics,
-                                       AtomicBoolean configUpdated, RevolverHttpApiConfig api) {
+    private void updateTimeoutSettings(ThreadPoolConfig threadPool,
+            OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
+            RevolverHttpApiConfig api) {
 
         OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
         if(timeoutConfig == null || optimizerAggregatedMetrics.getMetricsAggValueMap()
@@ -250,16 +258,13 @@ public class RevolverConfigUpdater implements Runnable {
         Set<RevolverHttpApiConfig.RequestMethod> methods = api.getMethods();
         double timeoutBuffer;
 
-        if(methods.isEmpty() || !(methods.contains(RevolverHttpApiConfig.RequestMethod.GET))) {
+        if(methods.isEmpty() || ! (methods.contains(RevolverHttpApiConfig.RequestMethod.GET))) {
             timeoutBuffer = timeoutConfig.getAllMethodTimeoutBuffer();
         } else {
             timeoutBuffer = timeoutConfig.getGetMethodTimeoutBuffer();
         }
 
-        if(currentTimeout < meanTimeoutValue) {
-            newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
-            configUpdated.set(true);
-        } else if(currentTimeout > (meanTimeoutValue * timeoutBuffer)) {
+        if(currentTimeout < meanTimeoutValue || currentTimeout > (meanTimeoutValue * timeoutBuffer)) {
             newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
             configUpdated.set(true);
         }
@@ -267,7 +272,8 @@ public class RevolverConfigUpdater implements Runnable {
 
     }
 
-    private void updateLatencySettings(RevolverHttpApiConfig api, OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
+    private void updateLatencySettings(RevolverHttpApiConfig api,
+            OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
         String latencyMetric = optimizerConfig.getTimeConfig()
                 .getApiLatencyMetric();
         int apiLatency = optimizerAggregatedMetrics.getMetricsAggValueMap()

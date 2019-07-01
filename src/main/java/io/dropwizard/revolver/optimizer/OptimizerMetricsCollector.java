@@ -45,8 +45,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(OptimizerUtils.getMetricsToRead()
-                    .contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if(! (OptimizerUtils.getMetricsToRead()
+                    .contains(metricName)) || ! (v.getValue() instanceof Number)) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -82,8 +82,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(timeConfig.getLatencyMetrics()
-                    .contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if(! (timeConfig.getLatencyMetrics()
+                    .contains(metricName)) || ! (v.getValue() instanceof Number)) {
                 return;
             }
             StringBuilder sb = new StringBuilder();

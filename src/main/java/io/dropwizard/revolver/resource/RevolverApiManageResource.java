@@ -49,12 +49,12 @@ public class RevolverApiManageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getStatus(@PathParam("service") final String service, @PathParam("api") final String api) {
         String key = service +"." +api;
-        if(RevolverBundle.apiStatus.containsKey(key)) {
+        if(RevolverBundle.API_STATUS.containsKey(key)) {
             return Response.ok(
                     ImmutableMap.<String, Object>builder()
                             .put("service", service)
                             .put("api", api)
-                            .put("status", RevolverBundle.apiStatus.get(service +"." +api))
+                            .put("status", RevolverBundle.API_STATUS.get(service + "." + api))
                             .build()
             ).build();
         } else {
@@ -75,13 +75,13 @@ public class RevolverApiManageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response enable(@PathParam("service") final String service, @PathParam("api") final String api) {
         String key = service +"." +api;
-        if(RevolverBundle.apiStatus.containsKey(key)) {
-            RevolverBundle.apiStatus.put(key, true);
+        if(RevolverBundle.API_STATUS.containsKey(key)) {
+            RevolverBundle.API_STATUS.put(key, true);
             return Response.ok(
                     ImmutableMap.<String, Object>builder()
                             .put("service", service)
                             .put("api", api)
-                            .put("status", RevolverBundle.apiStatus.get(service +"." +api))
+                            .put("status", RevolverBundle.API_STATUS.get(service + "." + api))
                             .build()
             ).build();
         } else {
@@ -102,13 +102,13 @@ public class RevolverApiManageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response disable(@PathParam("service") final String service, @PathParam("api") final String api) {
         String key = service +"." +api;
-        if(RevolverBundle.apiStatus.containsKey(key)) {
-            RevolverBundle.apiStatus.put(key, false);
+        if(RevolverBundle.API_STATUS.containsKey(key)) {
+            RevolverBundle.API_STATUS.put(key, false);
             return Response.ok(
                     ImmutableMap.<String, Object>builder()
                             .put("service", service)
                             .put("api", api)
-                            .put("status", RevolverBundle.apiStatus.get(service +"." +api))
+                            .put("status", RevolverBundle.API_STATUS.get(service + "." + api))
                             .build()
             ).build();
         } else {
@@ -128,7 +128,7 @@ public class RevolverApiManageResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response status() {
         return Response.ok(
-                RevolverBundle.apiStatus.entrySet().stream()
+                RevolverBundle.API_STATUS.entrySet().stream()
                     .map( e -> {
                         String[] key = e.getKey().split("\\.");
                         return ImmutableMap.<String, Object>builder()

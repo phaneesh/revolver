@@ -48,6 +48,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RevolverHttpClientFactory {
 
+    private RevolverHttpClientFactory() {
+    }
+
     private static final LoadingCache<String, OkHttpClient> clientCache = Caffeine.newBuilder()
             .removalListener((RemovalListener<String, OkHttpClient>) (service, client, cause) -> {
                 if(Objects.nonNull(client)) {

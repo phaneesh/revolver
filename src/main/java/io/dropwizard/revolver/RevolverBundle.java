@@ -88,7 +88,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     public static final ObjectMapper msgPackObjectMapper = new ObjectMapper(new MessagePackFactory());
     public static RevolverServiceResolver serviceNameResolver = null;
-    public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
+    public static final Map<String, Boolean> API_STATUS = new ConcurrentHashMap<>();
 
     private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
@@ -316,7 +316,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     public abstract ConfigSource getConfigSource();
 
-    public void onConfigChange(final String configData) {
+    public void onConfigChange(String config) {
         log.info("Config changed! Override to propagate config changes to other bundles");
     }
 
@@ -429,7 +429,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             ((RevolverHttpServiceConfig)config).getApis()
                     .forEach(a -> {
                         final String key = config.getService() + "." + a.getApi();
-                        apiStatus.put(key, true);
+                        API_STATUS.put(key, true);
                         apiConfig.put(key, a);
                         if(null != a.getSplitConfig() && a.getSplitConfig()
                                 .isEnabled()) {
@@ -497,7 +497,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         return serviceToPathMap;
     }
 
-    public static ConcurrentHashMap<String, RevolverHttpServiceConfig> getServiceConfig() {
+    public static Map<String, RevolverHttpServiceConfig> getServiceConfig() {
         return serviceConfig;
     }
 

@@ -25,5 +25,4 @@ import org.apache.http.impl.client.CloseableHttpClient;
  */
 public class RevolverHttpContext extends RevolverContext {
 
-    private CloseableHttpClient httpClient;
 }

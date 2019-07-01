@@ -56,7 +56,6 @@ import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
-import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -87,20 +86,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public abstract class RevolverBundle<T extends Configuration> implements ConfiguredBundle<T> {
 
-    private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
-
-    private static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
-
-    private static MultivaluedMap<String, ApiPathMap> serviceToPathMap = new MultivaluedHashMap<>();
-
     public static final ObjectMapper msgPackObjectMapper = new ObjectMapper(new MessagePackFactory());
-
     public static RevolverServiceResolver serviceNameResolver = null;
-
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
 
+    private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
+    private static MultivaluedMap<String, ApiPathMap> serviceToPathMap = new MultivaluedHashMap<>();
     private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
-
     private static RevolverConfig revolverConfig;
 
     @Override
@@ -130,7 +123,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
-        final RevolverConfig revolverConfig = getRevolverConfig(configuration);
         if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, "/hystrix.stream");
         } else {
@@ -198,7 +190,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         bootstrap.getObjectMapper().registerSubtypes(new NamedType(AerospikeMailBoxConfig.class, "aerospike"));
     }
 
-    private static Map<String, RevolverHttpApiConfig> generateApiConfigMap(final RevolverHttpServiceConfig serviceConfiguration) {
+    private static void generateApiConfigMap(final RevolverHttpServiceConfig serviceConfiguration) {
         val tokenMatch = Pattern.compile("\\{(([^/])+\\})");
         List<RevolverHttpApiConfig> apis = new ArrayList<>(serviceConfiguration.getApis());
         apis.sort((o1, o2) -> {
@@ -222,7 +214,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         });
         final ImmutableMap.Builder<String, RevolverHttpApiConfig> configMapBuilder = ImmutableMap.builder();
         apis.forEach(apiConfig -> configMapBuilder.put(apiConfig.getApi(), apiConfig));
-        return configMapBuilder.build();
     }
 
     private static String generatePathExpression(final String path) {
@@ -257,19 +248,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .build();
     }
 
-    private static RevolverHttpCommand getTestHttpCommand(final RevolverHttpServiceConfig serviceConfig) {
-        return RevolverHttpCommand.builder()
-                .apiConfiguration(RevolverHttpApiConfig.configBuilder()
-                            .method(RevolverHttpApiConfig.RequestMethod.GET)
-                            .api("test")
-                            .path("/")
-                        .build())
-                .clientConfiguration(revolverConfig.getClientConfig())
-                .runtimeConfig(revolverConfig.getGlobal())
-                .serviceConfiguration(serviceConfig)
-                .build();
-    }
-
     public static RevolverServiceResolver getServiceNameResolver() {
         return serviceNameResolver;
     }
@@ -296,8 +274,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             case "aerospike":
                 AerospikeConnectionManager.init((AerospikeMailBoxConfig) revolverConfig.getMailBox());
                 return new AeroSpikePersistenceProvider((AerospikeMailBoxConfig) revolverConfig.getMailBox(), environment.getObjectMapper());
+                default:
+                    throw new IllegalArgumentException("Invalid mailbox configuration");
         }
-        throw new IllegalArgumentException("Invalid mailbox configuration");
     }
 
     public abstract CuratorFramework getCurator();

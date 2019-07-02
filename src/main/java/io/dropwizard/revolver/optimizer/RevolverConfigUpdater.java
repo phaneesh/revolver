@@ -235,8 +235,8 @@ public class RevolverConfigUpdater implements Runnable {
             return;
         }
 
-        if(maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold() ||
-           maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold() || maxRollingActiveThreads <
+        if((maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold() ||
+            maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold()) && maxRollingActiveThreads <
                                                                                           threadPoolConfig
                                                                                                   .getInitialConcurrency() *
                                                                                           concurrencyConfig
@@ -287,8 +287,7 @@ public class RevolverConfigUpdater implements Runnable {
             newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
             configUpdated.set(true);
         }
-        log.error(
-                "Setting timeout for : " + api.getApi() + " from : " + threadPool.getTimeout() + " to : " + newTimeout +
+        log.info("Setting timeout for : " + api.getApi() + " from : " + threadPool.getTimeout() + " to : " + newTimeout +
                 ", " + "meanTimeoutValue : " + meanTimeoutValue + ", with timeout buffer : " + timeoutBuffer);
         //threadPool.setTimeout(newTimeout);
 
@@ -306,7 +305,6 @@ public class RevolverConfigUpdater implements Runnable {
         if(apiLatency <= 0) {
             return;
         }
-        log.info("apiLatency : " + apiLatency + " for api : " + api);
         if(api.getApiLatencyConfig() == null) {
             api.setApiLatencyConfig(ApiLatencyConfig.builder()
                                             .build());

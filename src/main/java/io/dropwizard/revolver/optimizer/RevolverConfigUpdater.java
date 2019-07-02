@@ -223,6 +223,9 @@ public class RevolverConfigUpdater implements Runnable {
             return;
         }
         OptimizerConcurrencyConfig concurrencyConfig = optimizerConfig.getConcurrencyConfig();
+        log.info("Enabled : {}, MaxThreadsMultiplier : {}, MaxThreshold : {}", concurrencyConfig.isEnabled(),
+                 concurrencyConfig.getMaxThreadsMultiplier(), concurrencyConfig.getMaxThreshold()
+                );
         int maxRollingActiveThreads = optimizerAggregatedMetrics.getMetricsAggValueMap()
                 .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS)
                 .intValue();
@@ -237,16 +240,17 @@ public class RevolverConfigUpdater implements Runnable {
 
         if((maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold() ||
             maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold()) && maxRollingActiveThreads <
-                                                                                          threadPoolConfig
-                                                                                                  .getInitialConcurrency() *
-                                                                                          concurrencyConfig
-                                                                                                  .getMaxThreadsMultiplier()) {
+                                                                                            threadPoolConfig
+                                                                                                    .getInitialConcurrency() *
+                                                                                            concurrencyConfig
+                                                                                                    .getMaxThreadsMultiplier()) {
 
             int updatedConcurrency = (int)Math.ceil(maxRollingActiveThreads * concurrencyConfig.getBandwidth());
             threadPoolConfig.setConcurrency(updatedConcurrency);
             configUpdated.set(true);
-            log.info("Setting concurrency for : " + poolName + " from : " + concurrency + " to : " + updatedConcurrency +
-                      ", maxRollingActiveThreads : " + maxRollingActiveThreads);
+            log.info(
+                    "Setting concurrency for : " + poolName + " from : " + concurrency + " to : " + updatedConcurrency +
+                    ", maxRollingActiveThreads : " + maxRollingActiveThreads);
         }
 
     }
@@ -280,10 +284,7 @@ public class RevolverConfigUpdater implements Runnable {
             timeoutBuffer = timeoutConfig.getGetMethodTimeoutBuffer();
         }
 
-        if(currentTimeout < meanTimeoutValue) {
-            newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
-            configUpdated.set(true);
-        } else if(currentTimeout > (meanTimeoutValue * timeoutBuffer)) {
+        if(currentTimeout < meanTimeoutValue || currentTimeout > (meanTimeoutValue * timeoutBuffer)) {
             newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
             configUpdated.set(true);
         }

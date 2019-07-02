@@ -128,28 +128,12 @@ public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
 
 
     @Test
-    public void testRevolverConfigUpdate() {
+    public void testNoConfigUpdateInRevolver() {
         optimizerMetricsCollector.run();
         revolverConfigUpdater.run();
-        Assert.assertEquals(RevolverBundle.getServiceConfig()
+        Assert.assertEquals(10, RevolverBundle.getServiceConfig()
                                     .get("test")
-                                    .getConnectionPoolSize(), 21);
+                                    .getConnectionPoolSize());
     }
 
-    @Test
-    public void testRevolverConfigTimeUpdate() {
-        optimizerMetricsCollector.run();
-        revolverConfigUpdater.run();
-        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
-                                                               .withHeader("Content-Type", "application/json")));
-        Assert.assertEquals(resources.client()
-                                    .target("/apis/test/v1/test")
-                                    .request()
-                                    .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID()
-                                            .toString())
-                                    .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID()
-                                            .toString())
-                                    .get()
-                                    .getStatus(), 200);
-    }
 }

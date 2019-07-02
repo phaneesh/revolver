@@ -56,7 +56,6 @@ import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
-import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -130,7 +129,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
-        final RevolverConfig revolverConfig = getRevolverConfig(configuration);
         if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, "/hystrix.stream");
         } else {
@@ -336,7 +334,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
             }
         }
-        RevolverBundle.revolverConfig = revolverConfig;
     }
 
     private static void registerHttpsCommand(RevolverServiceConfig config) {

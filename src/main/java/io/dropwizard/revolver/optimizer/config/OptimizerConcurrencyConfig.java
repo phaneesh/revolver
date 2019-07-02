@@ -22,6 +22,6 @@ public class OptimizerConcurrencyConfig {
 
     private double bandwidth = 1.4;
 
-    private int maxThreadsMultiplier = 2;
+    private double maxThreadsMultiplier = 1.8;
 
 }

@@ -287,8 +287,9 @@ public class RevolverConfigUpdater implements Runnable {
             newTimeout = (int)(meanTimeoutValue * timeoutBuffer);
             configUpdated.set(true);
         }
-        log.error("Setting timeout for : " + api.getApi() + " from : " + threadPool.getTimeout() + " to : " + newTimeout + ", " +
-                  "meanTimeoutValue : " + meanTimeoutValue + ", with timeout buffer : " + timeoutBuffer);
+        log.error(
+                "Setting timeout for : " + api.getApi() + " from : " + threadPool.getTimeout() + " to : " + newTimeout +
+                ", " + "meanTimeoutValue : " + meanTimeoutValue + ", with timeout buffer : " + timeoutBuffer);
         //threadPool.setTimeout(newTimeout);
 
     }

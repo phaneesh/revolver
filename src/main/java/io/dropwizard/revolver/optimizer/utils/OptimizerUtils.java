@@ -34,7 +34,7 @@ public class OptimizerUtils {
                                            .minThreshold(0.5)
                                            .maxThreshold(0.85)
                                            .enabled(true)
-                                           .maxThreadsMultiplier(2)
+                                           .maxThreadsMultiplier(1.8)
                                            .build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
                                              .repeatAfter(2)

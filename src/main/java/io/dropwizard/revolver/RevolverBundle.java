@@ -365,9 +365,15 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             //1. Add concurrency from thread pool groups
             //2. Add concurrency from apis which do not belong to any thread pool group
             int totalConcurrency = 0;
-            if (config.getThreadPoolGroupConfig() != null) {
-                totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools()
-                        .stream().mapToInt(ThreadPoolConfig::getConcurrency).sum();
+            if(config.getThreadPoolGroupConfig() != null) {
+                totalConcurrency = config.getThreadPoolGroupConfig()
+                        .getThreadPools()
+                        .stream()
+                        .mapToInt(ThreadPoolConfig::getConcurrency)
+                        .sum();
+                config.getThreadPoolGroupConfig()
+                        .getThreadPools()
+                        .forEach(a -> a.setInitialConcurrency(a.getConcurrency()));
             }
             totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
                     .filter(a -> Strings.isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
@@ -379,6 +385,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 final String key = config.getService() + "." + a.getApi();
                 apiStatus.put(key, true);
                 apiConfig.put(key, a);
+                if(a.getRuntime() != null && a.getRuntime().getThreadPool() != null){
+                    a.getRuntime().getThreadPool().setInitialConcurrency(a.getRuntime().getThreadPool().getConcurrency());
+                }
                 if (null != a.getSplitConfig() && a.getSplitConfig().isEnabled()) {
                     updateSplitConfig(a);
                     if(CollectionUtils.isNotEmpty(a.getSplitConfig().getPathExpressionSplitConfigs())){

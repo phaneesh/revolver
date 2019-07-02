@@ -33,6 +33,8 @@ public class OptimizerUtils {
                                            .bandwidth(1.4)
                                            .minThreshold(0.5)
                                            .maxThreshold(0.85)
+                                           .enabled(true)
+                                           .maxThreadsMultiplier(2)
                                            .build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
                                              .repeatAfter(2)

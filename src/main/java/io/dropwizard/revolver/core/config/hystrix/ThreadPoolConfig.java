@@ -45,4 +45,6 @@ public class ThreadPoolConfig {
 
     private int keepAliveTimeInMinutes = 5;
 
+    private int initialConcurrency = 10;
+
 }

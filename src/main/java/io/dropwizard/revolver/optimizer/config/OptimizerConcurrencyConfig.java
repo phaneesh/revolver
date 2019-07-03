@@ -14,12 +14,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class OptimizerConcurrencyConfig {
 
-    private boolean enabled;
+    private boolean enabled = true;
 
     private double maxThreshold = 0.85;
 
     private double minThreshold = 0.5;
 
     private double bandwidth = 1.4;
+
+    private double maxThreadsMultiplier = 1.8;
 
 }

@@ -30,6 +30,7 @@ import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.*;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
 import io.dropwizard.revolver.handler.ConfigSource;
@@ -373,6 +374,11 @@ public class BaseRevolverTest {
                                                                .build()).build())
                                  .build())
                 .build();
+
+        RevolverBundle.serviceNameResolver = RevolverServiceResolver.builder()
+                .objectMapper(environment.getObjectMapper())
+                .build();
+        RevolverBundle.loadServiceConfiguration(revolverConfig);
 
     }
 

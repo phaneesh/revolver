@@ -56,7 +56,6 @@ import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
-import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -130,7 +129,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
-        final RevolverConfig revolverConfig = getRevolverConfig(configuration);
         if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
             environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class, "/hystrix.stream");
         } else {
@@ -336,7 +334,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
             }
         }
-        RevolverBundle.revolverConfig = revolverConfig;
     }
 
     private static void registerHttpsCommand(RevolverServiceConfig config) {
@@ -365,9 +362,15 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             //1. Add concurrency from thread pool groups
             //2. Add concurrency from apis which do not belong to any thread pool group
             int totalConcurrency = 0;
-            if (config.getThreadPoolGroupConfig() != null) {
-                totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools()
-                        .stream().mapToInt(ThreadPoolConfig::getConcurrency).sum();
+            if(config.getThreadPoolGroupConfig() != null) {
+                totalConcurrency = config.getThreadPoolGroupConfig()
+                        .getThreadPools()
+                        .stream()
+                        .mapToInt(ThreadPoolConfig::getConcurrency)
+                        .sum();
+                config.getThreadPoolGroupConfig()
+                        .getThreadPools()
+                        .forEach(a -> a.setInitialConcurrency(a.getConcurrency()));
             }
             totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
                     .filter(a -> Strings.isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
@@ -379,6 +382,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 final String key = config.getService() + "." + a.getApi();
                 apiStatus.put(key, true);
                 apiConfig.put(key, a);
+                if(a.getRuntime() != null && a.getRuntime().getThreadPool() != null){
+                    a.getRuntime().getThreadPool().setInitialConcurrency(a.getRuntime().getThreadPool().getConcurrency());
+                }
                 if (null != a.getSplitConfig() && a.getSplitConfig().isEnabled()) {
                     updateSplitConfig(a);
                     if(CollectionUtils.isNotEmpty(a.getSplitConfig().getPathExpressionSplitConfigs())){

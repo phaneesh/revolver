@@ -26,37 +26,6 @@ public class OptimizerUtils {
     }
 
     public static OptimizerConfig getDefaultOptimizerConfig() {
-        return OptimizerConfig.builder()
-                .initialDelay(2)
-                .timeUnit(TimeUnit.MINUTES)
-                .concurrencyConfig(OptimizerConcurrencyConfig.builder()
-                                           .bandwidth(1.4)
-                                           .minThreshold(0.5)
-                                           .maxThreshold(0.85)
-                                           .enabled(true)
-                                           .maxThreadsMultiplier(1.8)
-                                           .build())
-                .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder()
-                                             .repeatAfter(2)
-                                             .timeUnit(TimeUnit.MINUTES)
-                                             .build())
-                .metricsCollectorConfig(OptimizerMetricsCollectorConfig.builder()
-                                                .repeatAfter(30)
-                                                .timeUnit(TimeUnit.SECONDS)
-                                                .cachingWindowInMinutes(15)
-                                                .concurrency(3)
-                                                .build())
-                .timeConfig(OptimizerTimeConfig.builder()
-                                    .allMethodTimeoutBuffer(1.5)
-                                    .getMethodTimeoutBuffer(1.3)
-                                    .latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_995, LATENCY_PERCENTILE_50,
-                                                                       LATENCY_PERCENTILE_75
-                                                                      ))
-                                    .timeoutMetric(LATENCY_PERCENTILE_99)
-                                    .apiLatencyMetric(LATENCY_PERCENTILE_75)
-                                    .appLatencyMetric(LATENCY_PERCENTILE_995)
-                                    .build())
-                .enabled(true)
-                .build();
+        return OptimizerConfig.builder().initialDelay(2).timeUnit(TimeUnit.MINUTES).concurrencyConfig(OptimizerConcurrencyConfig.builder().bandwidth(1.4).minThreshold(0.5).maxThreshold(0.85).enabled(true).maxThreadsMultiplier(1.8).build()).configUpdaterConfig(OptimizerConfigUpdaterConfig.builder().repeatAfter(2).timeUnit(TimeUnit.MINUTES).build()).metricsCollectorConfig(OptimizerMetricsCollectorConfig.builder().repeatAfter(30).timeUnit(TimeUnit.SECONDS).cachingWindowInMinutes(15).concurrency(3).build()).timeConfig(OptimizerTimeConfig.builder().allMethodTimeoutBuffer(1.5).getMethodTimeoutBuffer(1.3).latencyMetrics(Lists.newArrayList(LATENCY_PERCENTILE_99, LATENCY_PERCENTILE_995, LATENCY_PERCENTILE_50, LATENCY_PERCENTILE_75)).timeoutMetric(LATENCY_PERCENTILE_99).apiLatencyMetric(LATENCY_PERCENTILE_75).appLatencyMetric(LATENCY_PERCENTILE_995).build()).enabled(true).build();
     }
 }

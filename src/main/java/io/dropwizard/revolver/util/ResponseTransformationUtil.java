@@ -28,11 +28,10 @@ import java.io.IOException;
  */
 public interface ResponseTransformationUtil {
 
-    static byte[] transform(Object response, String mediaType, ObjectMapper jsonObjectMapper,
-                            ObjectMapper msgPackObjectMapper) throws IOException {
-        if(mediaType.startsWith(MediaType.APPLICATION_JSON))
+    static byte[] transform(Object response, String mediaType, ObjectMapper jsonObjectMapper, ObjectMapper msgPackObjectMapper) throws IOException {
+        if (mediaType.startsWith(MediaType.APPLICATION_JSON))
             return jsonObjectMapper.writeValueAsBytes(response);
-        if(mediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK))
+        if (mediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK))
             return msgPackObjectMapper.writeValueAsBytes(response);
         return jsonObjectMapper.writeValueAsBytes(response);
     }

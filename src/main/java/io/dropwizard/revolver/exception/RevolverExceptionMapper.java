@@ -52,19 +52,13 @@ public class RevolverExceptionMapper implements ExceptionMapper<RevolverExceptio
 
     @Override
     public Response toResponse(RevolverException exception) {
-        Map response = ImmutableMap.builder()
-                .put("errorCode", exception.getErrorCode())
-                .put("message", exception.getMessage()).build();
+        Map response = ImmutableMap.builder().put("errorCode", exception.getErrorCode()).put("message", exception.getMessage()).build();
         try {
-            if(headers.getAcceptableMediaTypes().size() == 0) {
-                return Response.ok(ResponseTransformationUtil.transform(response,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper),
-                        MediaType.APPLICATION_JSON).build();
+            if (headers.getAcceptableMediaTypes().size() == 0) {
+                return Response.ok(ResponseTransformationUtil.transform(response, MediaType.APPLICATION_JSON, jsonObjectMapper, msgPackObjectMapper), MediaType.APPLICATION_JSON).build();
             }
-            return Response.ok(ResponseTransformationUtil.transform(response,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper),
-                    headers.getAcceptableMediaTypes().get(0).toString()).build();
-        } catch(Exception e) {
+            return Response.ok(ResponseTransformationUtil.transform(response, headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, msgPackObjectMapper), headers.getAcceptableMediaTypes().get(0).toString()).build();
+        } catch (Exception e) {
             return Response.serverError().entity("Server Error".getBytes()).build();
         }
     }

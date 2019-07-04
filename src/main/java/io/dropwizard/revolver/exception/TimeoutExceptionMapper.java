@@ -46,14 +46,8 @@ public class TimeoutExceptionMapper implements ExceptionMapper<TimeoutException>
     @Override
     public Response toResponse(TimeoutException exception) {
         try {
-            return Response.status(Response.Status.GATEWAY_TIMEOUT)
-                    .entity(objectMapper.writeValueAsBytes(
-                            ImmutableMap.builder()
-                                    .put("errorCode", "R000")
-                                    .put("message", "Service timeout").build()
-                    ))
-                    .build();
-        } catch(Exception e) {
+            return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(objectMapper.writeValueAsBytes(ImmutableMap.builder().put("errorCode", "R000").put("message", "Service timeout").build())).build();
+        } catch (Exception e) {
             return Response.serverError().entity("Server Error".getBytes()).build();
         }
     }

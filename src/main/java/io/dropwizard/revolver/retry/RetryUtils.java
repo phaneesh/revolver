@@ -20,9 +20,7 @@ public class RetryUtils {
 
     private static final long INITIAL_WAIT_IN_MILLS = 200;
 
-    private static final LoadingCache<RevolverApiRetryConfig, Retryer<Response>> retryerCache =
-            Caffeine.newBuilder()
-            .build(RetryUtils::build);
+    private static final LoadingCache<RevolverApiRetryConfig, Retryer<Response>> retryerCache = Caffeine.newBuilder().build(RetryUtils::build);
 
     public static Retryer<Response> getRetryer(RevolverHttpApiConfig revolverHttpApiConfig) {
         return retryerCache.get(revolverHttpApiConfig.getRetryConfig());
@@ -30,66 +28,41 @@ public class RetryUtils {
 
     public static Retryer<Response> build(RevolverApiRetryConfig revolverApiRetryConfig) {
         int maximumTimeInSeconds = revolverApiRetryConfig.getMaximumTimeInSeconds();
-        if(maximumTimeInSeconds == 0) {
+        if (maximumTimeInSeconds == 0) {
             maximumTimeInSeconds = RevolverApiRetryConfig.MAXIMUM_WAIT_TIME_IN_SECONDS;
         }
 
         int maxRetry = revolverApiRetryConfig.getMaxRetry();
-        if(maxRetry == 0) {
+        if (maxRetry == 0) {
             maxRetry = RevolverApiRetryConfig.MAX_RETRY;
         }
 
         long incrementByInMillis = revolverApiRetryConfig.getIncrementByInMillis();
-        if(incrementByInMillis == 0) {
+        if (incrementByInMillis == 0) {
             incrementByInMillis = RevolverApiRetryConfig.INCREMENT_BY_IN_MILLIS;
         }
         WaitStrategy waitStrategy = revolverApiRetryConfig.getWaitStrategy();
-        if(waitStrategy == null) {
+        if (waitStrategy == null) {
             waitStrategy = WaitStrategy.EXPONENTIAL;
         }
 
         switch (waitStrategy) {
             case FIXED:
-                return RetryerBuilder.<Response>newBuilder()
-                        .retryIfResult(new ValidResponseFilter())
-                        .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
-                        .withWaitStrategy(WaitStrategies.fixedWait(maximumTimeInSeconds, TimeUnit.SECONDS))
-                        .build();
+                return RetryerBuilder.<Response>newBuilder().retryIfResult(new ValidResponseFilter()).withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry)).withWaitStrategy(WaitStrategies.fixedWait(maximumTimeInSeconds, TimeUnit.SECONDS)).build();
 
             case NO_WAIT:
-                return RetryerBuilder.<Response>newBuilder()
-                        .retryIfResult(new ValidResponseFilter())
-                        .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
-                        .withWaitStrategy(WaitStrategies.noWait())
-                        .build();
+                return RetryerBuilder.<Response>newBuilder().retryIfResult(new ValidResponseFilter()).withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry)).withWaitStrategy(WaitStrategies.noWait()).build();
 
             case EXPONENTIAL:
-                return RetryerBuilder.<Response>newBuilder()
-                        .retryIfResult(new ValidResponseFilter())
-                        .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
-                        .withWaitStrategy(WaitStrategies.exponentialWait(maximumTimeInSeconds, TimeUnit.SECONDS))
-                        .build();
+                return RetryerBuilder.<Response>newBuilder().retryIfResult(new ValidResponseFilter()).withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry)).withWaitStrategy(WaitStrategies.exponentialWait(maximumTimeInSeconds, TimeUnit.SECONDS)).build();
 
             case INCREMENTAL:
-                return RetryerBuilder.<Response>newBuilder()
-                        .retryIfResult(new ValidResponseFilter())
-                        .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
-                        .withWaitStrategy(WaitStrategies.incrementingWait(INITIAL_WAIT_IN_MILLS, TimeUnit.MILLISECONDS, incrementByInMillis,
-                                                                          TimeUnit.MILLISECONDS
-                                                                         ))
-                        .build();
+                return RetryerBuilder.<Response>newBuilder().retryIfResult(new ValidResponseFilter()).withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry)).withWaitStrategy(WaitStrategies.incrementingWait(INITIAL_WAIT_IN_MILLS, TimeUnit.MILLISECONDS, incrementByInMillis, TimeUnit.MILLISECONDS)).build();
 
             case FIBONACCI:
-                return RetryerBuilder.<Response>newBuilder()
-                        .retryIfResult(new ValidResponseFilter())
-                        .withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry))
-                        .withWaitStrategy(WaitStrategies.fibonacciWait(maximumTimeInSeconds, TimeUnit.SECONDS))
-                        .build();
+                return RetryerBuilder.<Response>newBuilder().retryIfResult(new ValidResponseFilter()).withStopStrategy(StopStrategies.stopAfterAttempt(maxRetry)).withWaitStrategy(WaitStrategies.fibonacciWait(maximumTimeInSeconds, TimeUnit.SECONDS)).build();
         }
-        return RetryerBuilder.<Response>newBuilder().retryIfException()
-                .withStopStrategy(StopStrategies.stopAfterAttempt(RevolverApiRetryConfig.MAX_RETRY))
-                .withWaitStrategy(WaitStrategies.exponentialWait(RevolverApiRetryConfig.MAXIMUM_WAIT_TIME_IN_SECONDS, TimeUnit.SECONDS))
-                .build();
+        return RetryerBuilder.<Response>newBuilder().retryIfException().withStopStrategy(StopStrategies.stopAfterAttempt(RevolverApiRetryConfig.MAX_RETRY)).withWaitStrategy(WaitStrategies.exponentialWait(RevolverApiRetryConfig.MAXIMUM_WAIT_TIME_IN_SECONDS, TimeUnit.SECONDS)).build();
 
     }
 }

@@ -49,47 +49,19 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
 
     private static final String IDX_MAILBOX_ID = "idx_mailbox_id";
-
-    private abstract static class BinNames {
-
-        private BinNames() {}
-
-        static final String MAILBOX_ID = "mailbox_id";
-        static final String SERVICE = "service";
-        static final String API = "api";
-        static final String MODE = "mode";
-        static final String METHOD = "method";
-        static final String PATH = "path";
-        static final String QUERY_PARAMS = "query_params";
-        static final String CALLBACK_URI = "callback_uri";
-        static final String REQUEST_HEADERS = "req_headers";
-        static final String REQUEST_BODY = "req_body";
-        static final String REQUEST_TIME = "req_time";
-        static final String RESPONSE_HEADERS = "resp_headers";
-        static final String RESPONSE_BODY = "resp_body";
-        static final String RESPONSE_TIME = "resp_time";
-        static final String RESPONSE_STATUS_CODE = "resp_code";
-        static final String CREATED = "created";
-        static final String UPDATED = "updated";
-        static final String STATE = "state";
-
-    }
-
-    private final AerospikeMailBoxConfig mailBoxConfig;
-
-    private final ObjectMapper objectMapper;
-
     private static final String MAILBOX_SET_NAME = "mailbox_messages";
+    private static final TypeReference<Map<String, List<String>>> headerAndQueryParamTypeReference = new TypeReference<Map<String, List<String>>>() {
+    };
+    private final AerospikeMailBoxConfig mailBoxConfig;
+    private final ObjectMapper objectMapper;
 
     public AeroSpikePersistenceProvider(AerospikeMailBoxConfig mailBoxConfig, final ObjectMapper objectMapper) {
         this.mailBoxConfig = mailBoxConfig;
         this.objectMapper = objectMapper;
         try {
-            final IndexTask idxMailboxId = AerospikeConnectionManager.getClient().createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME,
-                    IDX_MAILBOX_ID, BinNames.MAILBOX_ID, IndexType.STRING);
+            final IndexTask idxMailboxId = AerospikeConnectionManager.getClient().createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, IDX_MAILBOX_ID, BinNames.MAILBOX_ID, IndexType.STRING);
             idxMailboxId.waitTillComplete();
-            final IndexTask idxMessageState = AerospikeConnectionManager.getClient().createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME,
-                    "idx_message_state", BinNames.STATE, IndexType.STRING);
+            final IndexTask idxMessageState = AerospikeConnectionManager.getClient().createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, "idx_message_state", BinNames.STATE, IndexType.STRING);
             idxMailboxId.waitTillComplete();
             idxMessageState.waitTillComplete();
         } catch (AerospikeException e) {
@@ -122,9 +94,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             final Bin updated = new Bin(BinNames.UPDATED, Instant.now().toEpochMilli());
             final Bin state = new Bin(BinNames.STATE, RevolverRequestState.RECEIVED.name());
             WritePolicy wp = ttl <= 0 ? AerospikeConnectionManager.writePolicy : AerospikeConnectionManager.getWritePolicy(ttl);
-            AerospikeConnectionManager.getClient().put(wp, key,
-                    service, api, mode, method, path, mailBoxId, queryParams, callbackUri, requestHeaders, requestBody, requestTime,
-                    created, updated, state);
+            AerospikeConnectionManager.getClient().put(wp, key, service, api, mode, method, path, mailBoxId, queryParams, callbackUri, requestHeaders, requestBody, requestTime, created, updated, state);
             log.info("Mailbox Message saved. Key: {} | TTL: {}", requestId, ttl);
         } catch (JsonProcessingException e) {
             log.warn("Error encoding request", e);
@@ -149,9 +119,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             final Bin created = new Bin(BinNames.CREATED, Instant.now().toEpochMilli());
             final Bin updated = new Bin(BinNames.UPDATED, Instant.now().toEpochMilli());
             final Bin state = new Bin(BinNames.STATE, RevolverRequestState.RECEIVED.name());
-            AerospikeConnectionManager.getClient().put(AerospikeConnectionManager.writePolicy, key,
-                    service, api, mode, method, path, mailBoxId, queryParams, callbackUri, requestHeaders, requestBody, requestTime,
-                    created, updated, state);
+            AerospikeConnectionManager.getClient().put(AerospikeConnectionManager.writePolicy, key, service, api, mode, method, path, mailBoxId, queryParams, callbackUri, requestHeaders, requestBody, requestTime, created, updated, state);
         } catch (JsonProcessingException e) {
             log.warn("Error encoding request", e);
         }
@@ -166,8 +134,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             WritePolicy wp = ttl <= 0 ? AerospikeConnectionManager.writePolicy : AerospikeConnectionManager.getWritePolicy(ttl);
             final Bin binState = new Bin(BinNames.STATE, state.name());
             final Bin updated = new Bin(BinNames.UPDATED, Instant.now().toEpochMilli());
-            AerospikeConnectionManager.getClient().operate(wp, key,
-                    Operation.put(binState), Operation.put(updated));
+            AerospikeConnectionManager.getClient().operate(wp, key, Operation.put(binState), Operation.put(updated));
         }
     }
 
@@ -183,13 +150,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             final Bin responseTime = new Bin(BinNames.RESPONSE_TIME, Instant.now().toEpochMilli());
             final Bin updated = new Bin(BinNames.UPDATED, Instant.now().toEpochMilli());
             WritePolicy wp = ttl <= 0 ? AerospikeConnectionManager.writePolicy : AerospikeConnectionManager.getWritePolicy(ttl);
-            AerospikeConnectionManager.getClient().operate(wp, key,
-                    Operation.put(state),
-                    Operation.put(responseHeaders),
-                    Operation.put(responseBody),
-                    Operation.put(responseStatusCode),
-                    Operation.put(responseTime),
-                    Operation.put(updated));
+            AerospikeConnectionManager.getClient().operate(wp, key, Operation.put(state), Operation.put(responseHeaders), Operation.put(responseBody), Operation.put(responseStatusCode), Operation.put(responseTime), Operation.put(updated));
             log.info("Response save complete for request id: {} in {} ms", requestId, (System.currentTimeMillis() - start));
         } catch (JsonProcessingException e) {
             log.warn("Error encoding response headers", e);
@@ -200,7 +161,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
     public RevolverRequestState requestState(String requestId) {
         final Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         final Record record = AerospikeConnectionManager.getClient().get(AerospikeConnectionManager.readPolicy, key, BinNames.STATE);
-        if(record == null) {
+        if (record == null) {
             return RevolverRequestState.UNKNOWN;
         }
         return RevolverRequestState.valueOf(record.getString(BinNames.STATE));
@@ -210,7 +171,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
     public RevolverCallbackResponse response(String requestId) {
         final Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         final Record record = AerospikeConnectionManager.getClient().get(AerospikeConnectionManager.readPolicy, key);
-        if(record == null) {
+        if (record == null) {
             return null;
         }
         return recordToResponse(record);
@@ -226,7 +187,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         List<RevolverCallbackResponses> responses = new ArrayList<>();
         try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
             while (records.next()) {
-                Record record =  records.getRecord();
+                Record record = records.getRecord();
 
                 RevolverRequestState state = RevolverRequestState.valueOf(record.getString(BinNames.STATE));
                 if (state == RevolverRequestState.ERROR || state == RevolverRequestState.RESPONDED) {
@@ -242,7 +203,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         long start = System.currentTimeMillis();
         final Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         final Record record = AerospikeConnectionManager.getClient().get(AerospikeConnectionManager.readPolicy, key);
-        if(record == null) {
+        if (record == null) {
             return null;
         }
         RevolverCallbackRequest request = recordToRequest(record);
@@ -266,8 +227,6 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         return requests;
     }
 
-    private static final  TypeReference<Map<String, List<String>>> headerAndQueryParamTypeReference = new TypeReference<Map<String, List<String>>>(){};
-
     private RevolverCallbackRequest recordToRequest(Record record) {
         Map<String, List<String>> headers = new HashMap<>();
         Map<String, List<String>> queryParams = new HashMap<>();
@@ -281,45 +240,53 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         Map<String, List<String>> queryParamsKeyIgnoreCaseMap = new StringKeyIgnoreCaseMultivaluedMap<>();
         headers.forEach(headersKeyIgnoreCaseMap::put);
         queryParams.forEach(queryParamsKeyIgnoreCaseMap::put);
-        return RevolverCallbackRequest.builder()
-                .headers(headersKeyIgnoreCaseMap)
-                .api(record.getString(BinNames.API))
-                .callbackUri(record.getString(BinNames.CALLBACK_URI))
-                .body(record.getValue(BinNames.REQUEST_BODY) == null ? null : (byte[])record.getValue(BinNames.REQUEST_BODY))
-                .method(record.getString(BinNames.METHOD))
-                .mode(record.getString(BinNames.MODE))
-                .path(record.getString(BinNames.PATH))
-                .queryParams(queryParamsKeyIgnoreCaseMap)
-                .service(record.getString(BinNames.SERVICE))
-                .build();
+        return RevolverCallbackRequest.builder().headers(headersKeyIgnoreCaseMap).api(record.getString(BinNames.API)).callbackUri(record.getString(BinNames.CALLBACK_URI)).body(record.getValue(BinNames.REQUEST_BODY) == null ? null : (byte[]) record.getValue(BinNames.REQUEST_BODY)).method(record.getString(BinNames.METHOD)).mode(record.getString(BinNames.MODE)).path(record.getString(BinNames.PATH)).queryParams(queryParamsKeyIgnoreCaseMap).service(record.getString(BinNames.SERVICE)).build();
     }
 
     private RevolverCallbackResponse recordToResponse(Record record) {
         Map<String, List<String>> headers = new HashMap<>();
         try {
-            headers = objectMapper.readValue(record.getString(BinNames.RESPONSE_HEADERS), new TypeReference<Map<String, List<String>>>(){});
+            headers = objectMapper.readValue(record.getString(BinNames.RESPONSE_HEADERS), new TypeReference<Map<String, List<String>>>() {
+            });
         } catch (IOException e) {
             log.warn("Error decoding response headers", e);
         }
-        return RevolverCallbackResponse.builder()
-                .body((byte[])record.getValue(BinNames.RESPONSE_BODY))
-                .statusCode(record.getInt(BinNames.RESPONSE_STATUS_CODE))
-                .headers(headers)
-                .build();
+        return RevolverCallbackResponse.builder().body((byte[]) record.getValue(BinNames.RESPONSE_BODY)).statusCode(record.getInt(BinNames.RESPONSE_STATUS_CODE)).headers(headers).build();
     }
 
     private RevolverCallbackResponses recordToResponses(Record record, Key key) {
         Map<String, List<String>> headers = new HashMap<>();
         try {
-            headers = objectMapper.readValue(record.getString(BinNames.RESPONSE_HEADERS), new TypeReference<Map<String, List<String>>>(){});
+            headers = objectMapper.readValue(record.getString(BinNames.RESPONSE_HEADERS), new TypeReference<Map<String, List<String>>>() {
+            });
         } catch (IOException e) {
             log.warn("Error decoding response headers", e);
         }
-        return RevolverCallbackResponses.builder()
-                .body(Base64.getEncoder().encodeToString((byte[])(record.getValue(BinNames.RESPONSE_BODY))))
-                .statusCode(record.getInt(BinNames.RESPONSE_STATUS_CODE))
-                .headers(headers)
-                .requestId((String)key.userKey.getObject())
-                .build();
+        return RevolverCallbackResponses.builder().body(Base64.getEncoder().encodeToString((byte[]) (record.getValue(BinNames.RESPONSE_BODY)))).statusCode(record.getInt(BinNames.RESPONSE_STATUS_CODE)).headers(headers).requestId((String) key.userKey.getObject()).build();
+    }
+
+    private abstract static class BinNames {
+
+        static final String MAILBOX_ID = "mailbox_id";
+        static final String SERVICE = "service";
+        static final String API = "api";
+        static final String MODE = "mode";
+        static final String METHOD = "method";
+        static final String PATH = "path";
+        static final String QUERY_PARAMS = "query_params";
+        static final String CALLBACK_URI = "callback_uri";
+        static final String REQUEST_HEADERS = "req_headers";
+        static final String REQUEST_BODY = "req_body";
+        static final String REQUEST_TIME = "req_time";
+        static final String RESPONSE_HEADERS = "resp_headers";
+        static final String RESPONSE_BODY = "resp_body";
+        static final String RESPONSE_TIME = "resp_time";
+        static final String RESPONSE_STATUS_CODE = "resp_code";
+        static final String CREATED = "created";
+        static final String UPDATED = "updated";
+        static final String STATE = "state";
+        private BinNames() {
+        }
+
     }
 }

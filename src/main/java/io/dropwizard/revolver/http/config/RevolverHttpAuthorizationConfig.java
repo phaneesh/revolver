@@ -24,6 +24,7 @@ import java.util.Set;
 /**
  * A metadata element that can be used to supply authorization info to any external authorization system
  * for basic role based authorizations
+ *
  * @author phaneesh
  */
 @Data

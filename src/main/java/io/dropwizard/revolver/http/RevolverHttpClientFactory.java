@@ -48,18 +48,16 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RevolverHttpClientFactory {
 
-    private static final LoadingCache<String, OkHttpClient> clientCache = Caffeine.newBuilder()
-            .removalListener((RemovalListener<String, OkHttpClient>) (service, client, cause) -> {
-                if(Objects.nonNull(client)) {
-                    try {
-                        client.dispatcher().executorService().shutdown();
-                        client.connectionPool().evictAll();
-                    } catch (Exception e) {
-                        log.error("Error cleaning up stale client for service: {}", service, e);
-                    }
-                }
-            })
-            .build(RevolverHttpClientFactory::getOkHttpClient);
+    private static final LoadingCache<String, OkHttpClient> clientCache = Caffeine.newBuilder().removalListener((RemovalListener<String, OkHttpClient>) (service, client, cause) -> {
+        if (Objects.nonNull(client)) {
+            try {
+                client.dispatcher().executorService().shutdown();
+                client.connectionPool().evictAll();
+            } catch (Exception e) {
+                log.error("Error cleaning up stale client for service: {}", service, e);
+            }
+        }
+    }).build(RevolverHttpClientFactory::getOkHttpClient);
 
     static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) {
         Preconditions.checkNotNull(serviceConfiguration);
@@ -92,21 +90,15 @@ public class RevolverHttpClientFactory {
                     }
                     builder.authenticator((route, response) -> {
                         String credentials = Credentials.basic(basicAuthConfig.getUsername(), basicAuthConfig.getPassword());
-                        return response.request().newBuilder()
-                                .addHeader(HttpHeaders.AUTHORIZATION, credentials)
-                                .build();
+                        return response.request().newBuilder().addHeader(HttpHeaders.AUTHORIZATION, credentials).build();
                     });
                     break;
                 case "token":
                     val tokenAuthConfig = (TokenAuthConfig) serviceConfiguration.getAuth();
                     if (Strings.isNullOrEmpty(tokenAuthConfig.getPrefix())) { //No prefix check
-                        builder.authenticator((route, response) -> response.request().newBuilder()
-                                .addHeader(HttpHeaders.AUTHORIZATION, tokenAuthConfig.getToken())
-                                .build());
+                        builder.authenticator((route, response) -> response.request().newBuilder().addHeader(HttpHeaders.AUTHORIZATION, tokenAuthConfig.getToken()).build());
                     } else { //with configured prefix
-                        builder.authenticator((route, response) -> response.request().newBuilder()
-                                .addHeader(HttpHeaders.AUTHORIZATION, String.format("%s %s", tokenAuthConfig.getPrefix(), tokenAuthConfig.getToken()))
-                                .build());
+                        builder.authenticator((route, response) -> response.request().newBuilder().addHeader(HttpHeaders.AUTHORIZATION, String.format("%s %s", tokenAuthConfig.getPrefix(), tokenAuthConfig.getToken())).build());
                     }
                     break;
                 default:
@@ -114,10 +106,7 @@ public class RevolverHttpClientFactory {
             }
         }
         if (serviceConfiguration.isSecured()) {
-            final ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .allEnabledTlsVersions()
-                    .allEnabledCipherSuites()
-                    .build();
+            final ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS).allEnabledTlsVersions().allEnabledCipherSuites().build();
             builder.connectionSpecs(Collections.singletonList(spec));
             final String keystorePath = serviceConfiguration.getKeyStorePath();
             final String keystorePassword = (serviceConfiguration.getKeystorePassword() == null) ? "" : serviceConfiguration.getKeystorePassword();

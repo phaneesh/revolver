@@ -21,15 +21,9 @@ public class RevolverApiRetryTest extends BaseRevolverTest {
 
     @Test
     public void testRetryHttpCommand() throws TimeoutException {
-        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200)
-                                                               .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_retry");
-        val request = RevolverHttpRequest.builder()
-                .service("test")
-                .api("test_retry")
-                .method(RevolverHttpApiConfig.RequestMethod.GET)
-                .path("v1/test")
-                .build();
+        val request = RevolverHttpRequest.builder().service("test").api("test_retry").method(RevolverHttpApiConfig.RequestMethod.GET).path("v1/test").build();
         val response = httpCommand.execute(request);
         assertEquals(response.getStatusCode(), 200);
     }
@@ -37,15 +31,9 @@ public class RevolverApiRetryTest extends BaseRevolverTest {
 
     @Test(expected = RevolverExecutionException.class)
     public void testFailedRetryHttpCommand() throws TimeoutException {
-        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(503)
-                                                               .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(503).withHeader("Content-Type", "application/json")));
         RevolverHttpCommand httpCommand = RevolverBundle.getHttpCommand("test", "test_retry");
-        val request = RevolverHttpRequest.builder()
-                .service("test")
-                .api("test_retry")
-                .method(RevolverHttpApiConfig.RequestMethod.GET)
-                .path("v1/test")
-                .build();
+        val request = RevolverHttpRequest.builder().service("test").api("test_retry").method(RevolverHttpApiConfig.RequestMethod.GET).path("v1/test").build();
         httpCommand.execute(request);
     }
 }

@@ -22,8 +22,8 @@ public class ValidResponseFilter implements Predicate<Response> {
         return validateResponse(input);
     }
 
-    private boolean validateResponse(@Nullable  Response response) {
-        if(response == null) return false;
+    private boolean validateResponse(@Nullable Response response) {
+        if (response == null) return false;
         return response.code() == 503 || response.code() == 504;
     }
 }

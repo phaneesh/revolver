@@ -39,32 +39,28 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class AerospikeConnectionManager {
 
-    private AerospikeConnectionManager() {}
-
-    private static IAerospikeClient client;
-
-    private static AerospikeMailBoxConfig config;
-
     public static WritePolicy writePolicy;
-
     public static Policy readPolicy;
+    private static IAerospikeClient client;
+    private static AerospikeMailBoxConfig config;
+    private static LoadingCache<Integer, WritePolicy> writePolicyCache = CacheBuilder.newBuilder().build(new CacheLoader<Integer, WritePolicy>() {
+        @Override
+        public WritePolicy load(Integer key) {
+            WritePolicy wp = new WritePolicy();
+            wp.maxRetries = config.getRetries();
+            wp.consistencyLevel = ConsistencyLevel.CONSISTENCY_ALL;
+            wp.replica = Replica.MASTER_PROLES;
+            wp.sleepBetweenRetries = config.getSleepBetweenRetries();
+            wp.commitLevel = CommitLevel.COMMIT_ALL;
+            wp.totalTimeout = config.getTimeout();
+            wp.sendKey = true;
+            wp.expiration = key;
+            return wp;
+        }
+    });
 
-    private static LoadingCache<Integer, WritePolicy> writePolicyCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<Integer, WritePolicy>() {
-                @Override
-                public WritePolicy load(Integer key) {
-                    WritePolicy wp = new WritePolicy();
-                    wp.maxRetries = config.getRetries();
-                    wp.consistencyLevel = ConsistencyLevel.CONSISTENCY_ALL;
-                    wp.replica = Replica.MASTER_PROLES;
-                    wp.sleepBetweenRetries = config.getSleepBetweenRetries();
-                    wp.commitLevel = CommitLevel.COMMIT_ALL;
-                    wp.totalTimeout = config.getTimeout();
-                    wp.sendKey = true;
-                    wp.expiration = key;
-                    return wp;
-                }
-            });
+    private AerospikeConnectionManager() {
+    }
 
     public static void init(AerospikeMailBoxConfig aerospikeConfig) {
         config = aerospikeConfig;
@@ -107,7 +103,7 @@ public class AerospikeConnectionManager {
                 return new Host(host[0], 3000);
             }
         }).toArray(Host[]::new));
-        log.info("Aerospike connection status: " +client.isConnected());
+        log.info("Aerospike connection status: " + client.isConnected());
     }
 
     public static IAerospikeClient getClient() {
@@ -120,7 +116,7 @@ public class AerospikeConnectionManager {
     }
 
     public static void close() {
-        if(null != client) {
+        if (null != client) {
             client.close();
         }
     }

@@ -21,8 +21,7 @@ public class OptimizerMetrics {
     private AggregationAlgo aggregationAlgo;
 
     public enum AggregationAlgo {
-        AVG,
-        MAX
+        AVG, MAX
     }
 }
 

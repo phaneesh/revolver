@@ -54,8 +54,7 @@ public class DynamicConfigHandler implements Managed {
 
     private RevolverBundle revolverBundle;
 
-    public DynamicConfigHandler(final String configAttribute, RevolverConfig revolverConfig, ObjectMapper objectMapper,
-                                ConfigSource configSource, RevolverBundle revolverBundle) {
+    public DynamicConfigHandler(final String configAttribute, RevolverConfig revolverConfig, ObjectMapper objectMapper, ConfigSource configSource, RevolverBundle revolverBundle) {
         this.configAttribute = configAttribute;
         this.revolverConfig = revolverConfig;
         this.configSource = configSource;
@@ -65,7 +64,7 @@ public class DynamicConfigHandler implements Managed {
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.revolverBundle = revolverBundle;
         try {
-            if(configSource == null) {
+            if (configSource == null) {
                 prevConfigHash = "unknown";
             } else {
                 prevConfigHash = computeHash(loadConfigData(false));
@@ -83,7 +82,7 @@ public class DynamicConfigHandler implements Managed {
     }
 
     public String refreshConfig() {
-        if(configSource == null) {
+        if (configSource == null) {
             return "unknown";
         }
         try {
@@ -109,17 +108,14 @@ public class DynamicConfigHandler implements Managed {
     }
 
     public Map<String, Object> configLoadInfo() {
-        return ImmutableMap.<String, Object>builder()
-                .put("hash", prevConfigHash)
-                .put("loadTime", new Date(prevLoadTime))
-                .build();
+        return ImmutableMap.<String, Object>builder().put("hash", prevConfigHash).put("loadTime", new Date(prevLoadTime)).build();
     }
 
     private String loadConfigData(boolean fullConfig) throws Exception {
         log.info("Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}", prevConfigHash, new Date(prevLoadTime));
         JsonNode node = objectMapper.readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
         EnvironmentVariableSubstitutor substitute = new EnvironmentVariableSubstitutor(false, true);
-        if(fullConfig) {
+        if (fullConfig) {
             return substitute.replace(node.toString());
         }
         return substitute.replace(node.get(configAttribute).toString());

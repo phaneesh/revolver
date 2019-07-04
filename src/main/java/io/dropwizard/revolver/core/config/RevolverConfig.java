@@ -102,10 +102,7 @@ public class RevolverConfig extends Configuration {
     private OptimizerConfig optimizerConfig;
 
     @Builder
-    public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
-                          ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
-                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
-                          OptimizerConfig optimizerConfig) {
+    public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global, ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath, @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox, OptimizerConfig optimizerConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;

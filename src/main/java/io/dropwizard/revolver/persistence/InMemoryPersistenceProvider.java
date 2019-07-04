@@ -52,16 +52,14 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     @Override
     public void saveRequest(final String requestId, final String mailBoxId, final RevolverCallbackRequest request) {
         callbackRequests.put(requestId, request);
-        if (!StringUtils.isBlank(mailBoxId))
-            mailbox.add(mailBoxId, requestId);
+        if (!StringUtils.isBlank(mailBoxId)) mailbox.add(mailBoxId, requestId);
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
     public void saveRequest(final String requestId, final String mailBoxId, final RevolverCallbackRequest request, final int ttl) {
         callbackRequests.put(requestId, request);
-        if (!StringUtils.isBlank(mailBoxId))
-            mailbox.add(mailBoxId, requestId);
+        if (!StringUtils.isBlank(mailBoxId)) mailbox.add(mailBoxId, requestId);
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
@@ -97,8 +95,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
         } else {
-            return requestIds.stream().filter(callbackRequests::containsKey)
-                    .map(callbackRequests::get).collect(Collectors.toList());
+            return requestIds.stream().filter(callbackRequests::containsKey).map(callbackRequests::get).collect(Collectors.toList());
         }
     }
 
@@ -108,13 +105,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
         } else {
-            return requestIds.stream().filter(callbackResponse::containsKey)
-                    .map(callbackResponse::get).map(e -> RevolverCallbackResponses
-                            .builder()
-                            .headers(e.getHeaders())
-                            .statusCode(e.getStatusCode()).body(Base64.getEncoder()
-                                    .encodeToString(e.getBody())).build())
-                    .collect(Collectors.toList());
+            return requestIds.stream().filter(callbackResponse::containsKey).map(callbackResponse::get).map(e -> RevolverCallbackResponses.builder().headers(e.getHeaders()).statusCode(e.getStatusCode()).body(Base64.getEncoder().encodeToString(e.getBody())).build()).collect(Collectors.toList());
         }
     }
 }

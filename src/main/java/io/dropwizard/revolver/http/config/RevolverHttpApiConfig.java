@@ -17,9 +17,9 @@
 
 package io.dropwizard.revolver.http.config;
 
+import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
-import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import lombok.*;
@@ -50,7 +50,7 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private String acceptType = MediaType.APPLICATION_JSON;
 
-    private  String acceptEncoding = "identity";
+    private String acceptEncoding = "identity";
 
     private RevolverApiRetryConfig retryConfig;
 
@@ -70,10 +70,7 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     private RevolverHttpAuthorizationConfig authorization;
 
     @Builder(builderMethodName = "configBuilder")
-    public RevolverHttpApiConfig(final String api, final HystrixCommandConfig runtime, final String path,
-                                 @Singular final Set<RequestMethod> methods, final Set<Integer>
-                                             acceptableResponseCodes, final boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
-                                 final RevolverApiRetryConfig retryConfig) {
+    public RevolverHttpApiConfig(String api, HystrixCommandConfig runtime, String path, @Singular Set<RequestMethod> methods, Set<Integer> acceptableResponseCodes, boolean sharedPool, RevolverHttpApiSplitConfig splitConfig, RevolverApiRetryConfig retryConfig) {
         super(api, sharedPool, runtime);
         this.path = path;
         this.methods = methods;
@@ -83,12 +80,6 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     }
 
     public enum RequestMethod {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        HEAD,
-        PATCH,
-        OPTIONS
+        GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS
     }
 }

@@ -54,11 +54,7 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
     private RevolverHttpServiceSplitConfig serviceSplitConfig;
 
     @Builder
-    public RevolverHttpServiceConfig(final String type, final String service, final EndpointSpec enpoint, final int connectionPoolSize,
-                                     final boolean authEnabled, final boolean secured, final AuthConfig auth, final String keyStorePath,
-                                     final String keystorePassword, @Singular("api") final Set<RevolverHttpApiConfig> apis, final boolean trackingHeaders,
-                                     final boolean compression, final int connectionKeepAliveInMillis,
-                                     ThreadPoolGroupConfig threadPoolGroupConfig, final RevolverHttpServiceSplitConfig serviceSplitConfig) {
+    public RevolverHttpServiceConfig(String type, String service, EndpointSpec enpoint, int connectionPoolSize, boolean authEnabled, boolean secured, AuthConfig auth, String keyStorePath, String keystorePassword, @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders, boolean compression, int connectionKeepAliveInMillis, ThreadPoolGroupConfig threadPoolGroupConfig, RevolverHttpServiceSplitConfig serviceSplitConfig) {
         super(type, service);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;

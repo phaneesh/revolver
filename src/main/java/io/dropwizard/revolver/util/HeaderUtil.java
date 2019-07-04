@@ -31,7 +31,7 @@ public interface HeaderUtil {
     static int getTTL(RevolverCallbackRequest callbackRequest) {
         List<String> ttl = callbackRequest.getHeaders().getOrDefault(RevolversHttpHeaders.MAILBOX_TTL_HEADER, Collections.emptyList());
         int mailboxTtl = -1;
-        if(!ttl.isEmpty()) {
+        if (!ttl.isEmpty()) {
             mailboxTtl = Integer.parseInt(ttl.get(0));
         }
         return mailboxTtl;

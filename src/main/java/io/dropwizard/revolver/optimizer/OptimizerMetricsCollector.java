@@ -40,35 +40,30 @@ public class OptimizerMetricsCollector implements Runnable {
     private void captureThreadPoolMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
-            if(splits.length < 3) {
+            if (splits.length < 3) {
                 return;
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(OptimizerUtils.getMetricsToRead()
-                    .contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if (!(OptimizerUtils.getMetricsToRead().contains(metricName)) || !((v.getValue() instanceof Number))) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
             String delimiter = "";
-            for(int i = 1; i < length - 1; i++) {
+            for (int i = 1; i < length - 1; i++) {
                 sb.append(delimiter);
                 sb.append(splits[i]);
                 delimiter = ".";
             }
             OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
-            if(optimizerMetricsCache.get(key) == null) {
-                optimizerMetricsCache.put(key, OptimizerMetrics.builder()
-                        .metrics(Maps.newHashMap())
-                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.MAX)
-                        .build());
+            if (optimizerMetricsCache.get(key) == null) {
+                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap()).aggregationAlgo(OptimizerMetrics.AggregationAlgo.MAX).build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
-            if(optimizerMetrics == null) {
+            if (optimizerMetrics == null) {
                 return;
             }
-            optimizerMetrics.getMetrics()
-                    .put(metricName, (Number)v.getValue());
+            optimizerMetrics.getMetrics().put(metricName, (Number) v.getValue());
 
         });
     }
@@ -77,35 +72,30 @@ public class OptimizerMetricsCollector implements Runnable {
         OptimizerTimeConfig timeConfig = optimizerConfig.getTimeConfig();
         gauges.forEach((k, v) -> {
             String[] splits = k.split("\\.");
-            if(splits.length < 4) {
+            if (splits.length < 4) {
                 return;
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if(!(timeConfig.getLatencyMetrics()
-                    .contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if (!(timeConfig.getLatencyMetrics().contains(metricName)) || !((v.getValue() instanceof Number))) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
             String delimiter = "";
-            for(int i = 1; i < length - 1; i++) {
+            for (int i = 1; i < length - 1; i++) {
                 sb.append(delimiter);
                 sb.append(splits[i]);
                 delimiter = ".";
             }
             OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
-            if(optimizerMetricsCache.get(key) == null) {
-                optimizerMetricsCache.put(key, OptimizerMetrics.builder()
-                        .metrics(Maps.newHashMap())
-                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.AVG)
-                        .build());
+            if (optimizerMetricsCache.get(key) == null) {
+                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap()).aggregationAlgo(OptimizerMetrics.AggregationAlgo.AVG).build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
-            if(optimizerMetrics == null) {
+            if (optimizerMetrics == null) {
                 return;
             }
-            optimizerMetrics.getMetrics()
-                    .put(metricName, (Number)v.getValue());
+            optimizerMetrics.getMetrics().put(metricName, (Number) v.getValue());
 
         });
     }

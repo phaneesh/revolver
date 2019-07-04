@@ -28,21 +28,17 @@ public class OptimizerMetricsCache {
     @Builder
     public OptimizerMetricsCache(OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig) {
         this.optimizerMetricsCollectorConfig = optimizerMetricsCollectorConfig;
-        this.cache = CacheBuilder.newBuilder()
-                .concurrencyLevel(optimizerMetricsCollectorConfig.getConcurrency())
-                .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(), TimeUnit.MINUTES)
-                .removalListener(new RemovalListener<OptimizerCacheKey, OptimizerMetrics>() {
-                    @Override
-                    public void onRemoval(RemovalNotification<OptimizerCacheKey, OptimizerMetrics> notification) {
-                        poolTimeBasedMetricsMap.remove(notification.getKey());
-                    }
-                })
-                .build(new CacheLoader<OptimizerCacheKey, OptimizerMetrics>() {
-                    @Override
-                    public OptimizerMetrics load(@NonNull OptimizerCacheKey key) throws Exception {
-                        return poolTimeBasedMetricsMap.get(key);
-                    }
-                });
+        this.cache = CacheBuilder.newBuilder().concurrencyLevel(optimizerMetricsCollectorConfig.getConcurrency()).expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(), TimeUnit.MINUTES).removalListener(new RemovalListener<OptimizerCacheKey, OptimizerMetrics>() {
+            @Override
+            public void onRemoval(RemovalNotification<OptimizerCacheKey, OptimizerMetrics> notification) {
+                poolTimeBasedMetricsMap.remove(notification.getKey());
+            }
+        }).build(new CacheLoader<OptimizerCacheKey, OptimizerMetrics>() {
+            @Override
+            public OptimizerMetrics load(@NonNull OptimizerCacheKey key) throws Exception {
+                return poolTimeBasedMetricsMap.get(key);
+            }
+        });
     }
 
     public OptimizerMetrics get(OptimizerCacheKey key) {

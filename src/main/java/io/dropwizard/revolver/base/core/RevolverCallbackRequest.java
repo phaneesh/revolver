@@ -30,7 +30,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@ToString (exclude = "body")
+@ToString(exclude = "body")
 public class RevolverCallbackRequest {
 
     private String service;

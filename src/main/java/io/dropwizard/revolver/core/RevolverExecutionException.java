@@ -47,9 +47,7 @@ public class RevolverExecutionException extends RuntimeException {
     }
 
     public enum Type {
-        SERVICE_ERROR,
-        DOWNSTREAM_SERVICE_CALL_FAILURE,
-        BAD_REQUEST;
+        SERVICE_ERROR, DOWNSTREAM_SERVICE_CALL_FAILURE, BAD_REQUEST;
 
         Type() {
         }

@@ -65,31 +65,23 @@ public class RevolverCallbackResource {
     @ApiOperation(value = "Callback for updating responses for a given mailbox request")
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML})
     @Consumes({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML})
-    public Response handleCallback(@PathParam("requestId") final String requestId,
-                                   @HeaderParam(RESPONSE_CODE_HEADER) final String responseCode,
-                                   @Context final HttpHeaders headers,
-                                   @Context final HttpServletRequest request) {
+    public Response handleCallback(@PathParam("requestId") final String requestId, @HeaderParam(RESPONSE_CODE_HEADER) final String responseCode, @Context final HttpHeaders headers, @Context final HttpServletRequest request) {
         long start = System.currentTimeMillis();
         try {
             final val callbackRequest = persistenceProvider.request(requestId);
-            if(callbackRequest == null) {
+            if (callbackRequest == null) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
             byte[] responseBody = ByteStreams.toByteArray(request.getInputStream());
-            val response = RevolverCallbackResponse.builder()
-                    .body(responseBody)
-                    .headers(headers.getRequestHeaders())
-                    .statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode())
-                    .build();
+            val response = RevolverCallbackResponse.builder().body(responseBody).headers(headers.getRequestHeaders()).statusCode(responseCode != null ? Integer.parseInt(responseCode) : Response.Status.OK.getStatusCode()).build();
             val mailboxTtl = HeaderUtil.getTTL(callbackRequest);
             persistenceProvider.saveResponse(requestId, response, mailboxTtl);
-            if(callbackRequest.getMode() != null && (callbackRequest.getMode().equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callbackRequest.getMode().equals(RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC)) && !Strings.isNullOrEmpty(callbackRequest.getCallbackUri())) {
+            if (callbackRequest.getMode() != null && (callbackRequest.getMode().equals(RevolverHttpCommand.CALL_MODE_CALLBACK) || callbackRequest.getMode().equals(RevolverHttpCommand.CALL_MODE_CALLBACK_SYNC)) && !Strings.isNullOrEmpty(callbackRequest.getCallbackUri())) {
                 callbackHandler.handle(requestId, response);
             }
-            log.info("Callback processing for request id: {} with response size: {} bytes completed in {} ms", requestId,
-                    responseBody.length, (System.currentTimeMillis() - start));
+            log.info("Callback processing for request id: {} with response size: {} bytes completed in {} ms", requestId, responseBody.length, (System.currentTimeMillis() - start));
             return Response.accepted().build();
-        } catch(Exception e) {
+        } catch (Exception e) {
             log.error("Callback error", e);
             return Response.serverError().build();
         }

@@ -56,15 +56,10 @@ public class RevolverConfigResource {
         long start = System.currentTimeMillis();
         String hash = dynamicConfigHandler.refreshConfig();
         long end = System.currentTimeMillis() - start;
-        if(hash == null) {
+        if (hash == null) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
-        return Response.ok(
-                ImmutableMap.<String, Object>builder()
-                    .put("hash", hash)
-                    .put("timeTaken", end )
-                    .build()
-        ).build();
+        return Response.ok(ImmutableMap.<String, Object>builder().put("hash", hash).put("timeTaken", end).build()).build();
     }
 
     @Path("/v1/config/info")

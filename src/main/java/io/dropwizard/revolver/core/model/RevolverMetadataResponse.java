@@ -30,8 +30,7 @@ import java.util.List;
 @NoArgsConstructor
 public class RevolverMetadataResponse {
 
-    private String clientId;
-
     @Singular
     List<RevolverServiceMetadata> services;
+    private String clientId;
 }

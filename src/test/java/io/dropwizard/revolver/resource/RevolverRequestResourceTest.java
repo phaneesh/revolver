@@ -39,95 +39,48 @@ import static org.junit.Assert.assertEquals;
 public class RevolverRequestResourceTest extends BaseRevolverTest {
 
     @ClassRule
-    public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new RevolverRequestResource(environment.getObjectMapper(),
-                                                     RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry(),
-                                                     revolverConfig
-            ))
-            .build();
+    public static final ResourceTestRule resources = ResourceTestRule.builder().addResource(new RevolverRequestResource(environment.getObjectMapper(), RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider, callbackHandler, new MetricRegistry(), revolverConfig)).build();
 
     @Test
     public void testGetRequest() {
-        stubFor(get(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .get().getStatus(), 200);
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).get().getStatus(), 200);
     }
 
     @Test
     public void testPostRequest() {
-        stubFor(post(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .post(null).getStatus(), 200);
+        stubFor(post(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).post(null).getStatus(), 200);
     }
 
     @Test
     public void testPutRequest() {
-        stubFor(put(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON)).getStatus(), 200);
+        stubFor(put(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON)).getStatus(), 200);
     }
 
     @Test
     public void testDeleteRequest() {
-        stubFor(delete(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(200, resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .delete().getStatus());
+        stubFor(delete(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(200, resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).delete().getStatus());
     }
 
     @Test
     public void testHeadRequest() {
-        stubFor(head(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(200, resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .head().getStatus());
+        stubFor(head(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(200, resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).head().getStatus());
     }
 
     @Test
     public void testPatchRequest() {
-        stubFor(patch(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(200, resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .method("PATCH").getStatus());
+        stubFor(patch(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(200, resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).method("PATCH").getStatus());
     }
 
     @Test
     public void testOptionsRequest() {
-        stubFor(options(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
-        assertEquals(200, resources.client().target("/apis/test/v1/test").request()
-                .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .options().getStatus());
+        stubFor(options(urlEqualTo("/v1/test")).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
+        assertEquals(200, resources.client().target("/apis/test/v1/test").request().header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString()).header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).options().getStatus());
     }
 
 

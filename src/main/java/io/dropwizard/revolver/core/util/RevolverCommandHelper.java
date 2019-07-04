@@ -76,7 +76,7 @@ public class RevolverCommandHelper {
         final RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
         final CommandHandlerConfig config = commandHandler.getApiConfiguration();
         CircuitBreakerConfig circuitBreakerConfig;
-        if(null != runtimeConfig) {
+        if (null != runtimeConfig) {
             circuitBreakerConfig = runtimeConfig.getCircuitBreaker();
         } else if (null != config.getRuntime() && null != config.getRuntime().getCircuitBreaker()) {
             circuitBreakerConfig = config.getRuntime().getCircuitBreaker();
@@ -86,57 +86,51 @@ public class RevolverCommandHelper {
             circuitBreakerConfig = new CircuitBreakerConfig();
         }
         ThreadPoolConfig serviceThreadPoolConfig = null;
-        if(null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool()){
+        if (null != serviceConfiguration.getRuntime() && null != serviceConfiguration.getRuntime().getThreadPool()) {
             serviceThreadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
         }
         String keyName = StringUtils.EMPTY;
 
         MetricsConfig metricsConfig;
-        if(null != runtimeConfig) {
+        if (null != runtimeConfig) {
             metricsConfig = runtimeConfig.getMetrics();
         } else {
             metricsConfig = new MetricsConfig();
         }
 
         Map<String, ThreadPoolConfig> threadPoolConfigMap;
-        if(null != serviceConfiguration.getThreadPoolGroupConfig() &&
-           null != serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()) {
-            threadPoolConfigMap = serviceConfiguration.getThreadPoolGroupConfig()
-                    .getThreadPools()
-                    .stream()
-                    .collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t -> t));
-        }else {
+        if (null != serviceConfiguration.getThreadPoolGroupConfig() && null != serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()) {
+            threadPoolConfigMap = serviceConfiguration.getThreadPoolGroupConfig().getThreadPools().stream().collect(Collectors.toMap(ThreadPoolConfig::getThreadPoolName, t -> t));
+        } else {
             threadPoolConfigMap = Maps.newHashMap();
         }
 
         ThreadPoolConfig threadPoolConfig;
 
-        if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()
-           && StringUtils.isNotEmpty(config.getRuntime().getThreadPool().getThreadPoolName())
-                && null != threadPoolConfigMap.get(config.getRuntime().getThreadPool().getThreadPoolName())){
+        if (null != config.getRuntime() && null != config.getRuntime().getThreadPool() && StringUtils.isNotEmpty(config.getRuntime().getThreadPool().getThreadPoolName()) && null != threadPoolConfigMap.get(config.getRuntime().getThreadPool().getThreadPoolName())) {
 
             threadPoolConfig = threadPoolConfigMap.get(config.getRuntime().getThreadPool().getThreadPoolName());
             keyName = threadPoolConfig.getThreadPoolName();
 
-        }else if(config.isSharedPool() && null != serviceThreadPoolConfig){
+        } else if (config.isSharedPool() && null != serviceThreadPoolConfig) {
 
             threadPoolConfig = serviceThreadPoolConfig;
-            if(StringUtils.isEmpty(keyName)){
+            if (StringUtils.isEmpty(keyName)) {
                 keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), "shared");
             }
 
-        }else if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()) {
+        } else if (null != config.getRuntime() && null != config.getRuntime().getThreadPool()) {
 
             threadPoolConfig = config.getRuntime().getThreadPool();
             keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
 
-        }else if (null != serviceThreadPoolConfig) {
+        } else if (null != serviceThreadPoolConfig) {
             threadPoolConfig = serviceConfiguration.getRuntime().getThreadPool();
-            if(StringUtils.isEmpty(keyName)){
+            if (StringUtils.isEmpty(keyName)) {
                 keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
             }
 
-        } else if(null != runtimeConfig) {
+        } else if (null != runtimeConfig) {
             threadPoolConfig = runtimeConfig.getThreadPool();
             keyName = Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api);
 
@@ -146,34 +140,12 @@ public class RevolverCommandHelper {
         }
 
         //Setting timeout from api thread pool config
-        if(null != config.getRuntime() && null != config.getRuntime().getThreadPool()){
+        if (null != config.getRuntime() && null != config.getRuntime().getThreadPool()) {
             threadPoolConfig.setTimeout(config.getRuntime().getThreadPool().getTimeout());
         }
 
         int concurrency = threadPoolConfig.getConcurrency();
-        int coreSize = (int)Math.ceil(concurrency * metricsConfig.getCorePoolSizeReductionParam());
-        return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory
-            .asKey(serviceConfiguration.getService()))
-                .andCommandPropertiesDefaults(HystrixCommandProperties.Setter()
-                        .withExecutionIsolationStrategy(threadPoolConfig.isSemaphoreIsolated() ? HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE : HystrixCommandProperties.ExecutionIsolationStrategy.THREAD)
-                        .withExecutionIsolationSemaphoreMaxConcurrentRequests(threadPoolConfig.getConcurrency())
-                        .withFallbackIsolationSemaphoreMaxConcurrentRequests(threadPoolConfig.getConcurrency())
-                        .withFallbackEnabled(commandHandler.isFallbackEnabled())
-                        .withCircuitBreakerErrorThresholdPercentage(circuitBreakerConfig.getErrorThresholdPercentage())
-                        .withCircuitBreakerRequestVolumeThreshold(circuitBreakerConfig.getNumAcceptableFailuresInTimeWindow())
-                        .withCircuitBreakerSleepWindowInMilliseconds(circuitBreakerConfig.getWaitTimeBeforeRetry())
-                        .withExecutionTimeoutInMilliseconds(threadPoolConfig.getTimeout())
-                        .withMetricsHealthSnapshotIntervalInMilliseconds(metricsConfig.getHealthCheckInterval())
-                        .withMetricsRollingPercentileBucketSize(metricsConfig.getPercentileBucketSize())
-                        .withMetricsRollingPercentileWindowInMilliseconds(metricsConfig.getPercentileTimeInMillis()))
-                .andCommandKey(HystrixCommandKey.Factory.asKey(Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api)))
-                .andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(keyName))
-                .andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter()
-                        .withCoreSize(coreSize).withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize())
-                        .withMaximumSize(concurrency).withKeepAliveTimeMinutes(threadPoolConfig.getKeepAliveTimeInMinutes())
-                        .withQueueSizeRejectionThreshold(threadPoolConfig.getDynamicRequestQueueSize())
-                        .withAllowMaximumSizeToDivergeFromCoreSize(true)
-                        .withMetricsRollingStatisticalWindowBuckets(metricsConfig.getStatsBucketSize())
-                        .withMetricsRollingStatisticalWindowInMilliseconds(metricsConfig.getStatsTimeInMillis()));
+        int coreSize = (int) Math.ceil(concurrency * metricsConfig.getCorePoolSizeReductionParam());
+        return HystrixCommand.Setter.withGroupKey(HystrixCommandGroupKey.Factory.asKey(serviceConfiguration.getService())).andCommandPropertiesDefaults(HystrixCommandProperties.Setter().withExecutionIsolationStrategy(threadPoolConfig.isSemaphoreIsolated() ? HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE : HystrixCommandProperties.ExecutionIsolationStrategy.THREAD).withExecutionIsolationSemaphoreMaxConcurrentRequests(threadPoolConfig.getConcurrency()).withFallbackIsolationSemaphoreMaxConcurrentRequests(threadPoolConfig.getConcurrency()).withFallbackEnabled(commandHandler.isFallbackEnabled()).withCircuitBreakerErrorThresholdPercentage(circuitBreakerConfig.getErrorThresholdPercentage()).withCircuitBreakerRequestVolumeThreshold(circuitBreakerConfig.getNumAcceptableFailuresInTimeWindow()).withCircuitBreakerSleepWindowInMilliseconds(circuitBreakerConfig.getWaitTimeBeforeRetry()).withExecutionTimeoutInMilliseconds(threadPoolConfig.getTimeout()).withMetricsHealthSnapshotIntervalInMilliseconds(metricsConfig.getHealthCheckInterval()).withMetricsRollingPercentileBucketSize(metricsConfig.getPercentileBucketSize()).withMetricsRollingPercentileWindowInMilliseconds(metricsConfig.getPercentileTimeInMillis())).andCommandKey(HystrixCommandKey.Factory.asKey(Joiner.on(".").join(commandHandler.getServiceConfiguration().getService(), api))).andThreadPoolKey(HystrixThreadPoolKey.Factory.asKey(keyName)).andThreadPoolPropertiesDefaults(HystrixThreadPoolProperties.Setter().withCoreSize(coreSize).withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize()).withMaximumSize(concurrency).withKeepAliveTimeMinutes(threadPoolConfig.getKeepAliveTimeInMinutes()).withQueueSizeRejectionThreshold(threadPoolConfig.getDynamicRequestQueueSize()).withAllowMaximumSizeToDivergeFromCoreSize(true).withMetricsRollingStatisticalWindowBuckets(metricsConfig.getStatsBucketSize()).withMetricsRollingStatisticalWindowInMilliseconds(metricsConfig.getStatsTimeInMillis()));
     }
 }

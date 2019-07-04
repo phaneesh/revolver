@@ -6,12 +6,11 @@ import com.google.common.collect.Maps;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
+import java.util.SortedMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.SortedMap;
 
 /***
  Created by nitish.goyal on 29/03/19
@@ -45,7 +44,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if (!(OptimizerUtils.getMetricsToRead().contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if (!(OptimizerUtils.getMetricsToRead().contains(metricName)) || !((v
+                    .getValue() instanceof Number))) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -57,7 +57,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
             if (optimizerMetricsCache.get(key) == null) {
-                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap()).aggregationAlgo(OptimizerMetrics.AggregationAlgo.MAX).build());
+                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap())
+                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.MAX).build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
             if (optimizerMetrics == null) {
@@ -77,7 +78,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             int length = splits.length;
             String metricName = splits[length - 1];
-            if (!(timeConfig.getLatencyMetrics().contains(metricName)) || !((v.getValue() instanceof Number))) {
+            if (!(timeConfig.getLatencyMetrics().contains(metricName)) || !((v
+                    .getValue() instanceof Number))) {
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -89,7 +91,8 @@ public class OptimizerMetricsCollector implements Runnable {
             }
             OptimizerCacheKey key = new OptimizerCacheKey(time, sb.toString());
             if (optimizerMetricsCache.get(key) == null) {
-                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap()).aggregationAlgo(OptimizerMetrics.AggregationAlgo.AVG).build());
+                optimizerMetricsCache.put(key, OptimizerMetrics.builder().metrics(Maps.newHashMap())
+                        .aggregationAlgo(OptimizerMetrics.AggregationAlgo.AVG).build());
             }
             OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(key);
             if (optimizerMetrics == null) {

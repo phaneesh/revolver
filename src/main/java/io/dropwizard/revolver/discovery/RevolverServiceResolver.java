@@ -27,17 +27,16 @@ import io.dropwizard.discovery.common.ShardInfo;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author phaneesh
@@ -54,12 +53,16 @@ public class RevolverServiceResolver {
     private Map<String, ServiceDiscoveryClient> serviceFinders = Maps.newConcurrentMap();
 
     @Builder
-    public RevolverServiceResolver(ServiceResolverConfig resolverConfig, ObjectMapper objectMapper) {
+    public RevolverServiceResolver(ServiceResolverConfig resolverConfig,
+            ObjectMapper objectMapper) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
         if (resolverConfig != null) {
             if (!Strings.isNullOrEmpty(resolverConfig.getZkConnectionString())) {
-                this.curatorFramework = CuratorFrameworkFactory.builder().connectString(resolverConfig.getZkConnectionString()).namespace(resolverConfig.getNamespace()).retryPolicy(new RetryNTimes(1000, 500)).build();
+                this.curatorFramework = CuratorFrameworkFactory.builder()
+                        .connectString(resolverConfig.getZkConnectionString())
+                        .namespace(resolverConfig.getNamespace())
+                        .retryPolicy(new RetryNTimes(1000, 500)).build();
                 this.curatorFramework.start();
                 this.discoverEnabled = true;
             } else {
@@ -73,7 +76,8 @@ public class RevolverServiceResolver {
     }
 
     @Builder(builderMethodName = "usingCurator")
-    public RevolverServiceResolver(ServiceResolverConfig resolverConfig, ObjectMapper objectMapper, CuratorFramework curatorFramework) {
+    public RevolverServiceResolver(ServiceResolverConfig resolverConfig, ObjectMapper objectMapper,
+            CuratorFramework curatorFramework) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
         this.curatorFramework = curatorFramework;
@@ -81,7 +85,8 @@ public class RevolverServiceResolver {
     }
 
     public Endpoint resolve(EndpointSpec endpointSpecification) {
-        return new SpecResolver(this.discoverEnabled, this.serviceFinders).resolve(endpointSpecification);
+        return new SpecResolver(this.discoverEnabled, this.serviceFinders)
+                .resolve(endpointSpecification);
     }
 
 
@@ -97,48 +102,63 @@ public class RevolverServiceResolver {
             @SuppressWarnings("unchecked")
             public void visit(RangerEndpointSpec rangerEndpointSpecification) {
                 try {
-                    if (!serviceFinders.containsKey(rangerEndpointSpecification.getService())) { //Avoid duplicate registration
-                        ServiceDiscoveryClient discoveryClient = ServiceDiscoveryClient.fromCurator().curator(curatorFramework).environment(rangerEndpointSpecification.getEnvironment()).namespace(resolverConfig.getNamespace()).objectMapper(objectMapper).serviceName(rangerEndpointSpecification.getService()).build();
-                        serviceFinders.put(rangerEndpointSpecification.getService(), discoveryClient);
+                    if (!serviceFinders.containsKey(rangerEndpointSpecification
+                            .getService())) { //Avoid duplicate registration
+                        ServiceDiscoveryClient discoveryClient = ServiceDiscoveryClient
+                                .fromCurator().curator(curatorFramework)
+                                .environment(rangerEndpointSpecification.getEnvironment())
+                                .namespace(resolverConfig.getNamespace()).objectMapper(objectMapper)
+                                .serviceName(rangerEndpointSpecification.getService()).build();
+                        serviceFinders
+                                .put(rangerEndpointSpecification.getService(), discoveryClient);
                         executorService.submit(() -> {
                             try {
-                                log.info("Service finder starting for: " + rangerEndpointSpecification.getService());
+                                log.info("Service finder starting for: "
+                                        + rangerEndpointSpecification.getService());
                                 discoveryClient.start();
-                                log.info("Initialized ZK service: " + rangerEndpointSpecification.getService());
+                                log.info("Initialized ZK service: " + rangerEndpointSpecification
+                                        .getService());
                             } catch (Exception e) {
-                                log.error("Error registering service finder started for: " + rangerEndpointSpecification.getService(), e);
+                                log.error("Error registering service finder started for: "
+                                        + rangerEndpointSpecification.getService(), e);
                             }
                             return null;
                         });
                     }
                 } catch (Exception e) {
-                    log.error("Error registering hander for service: " + rangerEndpointSpecification.getService(), e);
+                    log.error("Error registering hander for service: " + rangerEndpointSpecification
+                            .getService(), e);
                 }
             }
         });
     }
 
     private static class SpecResolver implements SpecVisitor {
+
         private final boolean discoverEnabled;
         private final Map<String, ServiceDiscoveryClient> serviceDiscoveryClients;
         private Endpoint endpoint;
 
-        private SpecResolver(boolean discoverEnabled, Map<String, ServiceDiscoveryClient> serviceDiscoveryClients) {
+        private SpecResolver(boolean discoverEnabled,
+                Map<String, ServiceDiscoveryClient> serviceDiscoveryClients) {
             this.discoverEnabled = discoverEnabled;
             this.serviceDiscoveryClients = serviceDiscoveryClients;
         }
 
         @Override
         public void visit(SimpleEndpointSpec simpleEndpointSpecification) {
-            this.endpoint = Endpoint.builder().host(simpleEndpointSpecification.getHost()).port(simpleEndpointSpecification.getPort()).build();
+            this.endpoint = Endpoint.builder().host(simpleEndpointSpecification.getHost())
+                    .port(simpleEndpointSpecification.getPort()).build();
         }
 
         @Override
         public void visit(RangerEndpointSpec rangerEndpointSpecification) {
             if (!this.discoverEnabled) {
-                throw new IllegalAccessError("Zookeeper is not initialized in config. Discovery based lookups will not be possible.");
+                throw new IllegalAccessError(
+                        "Zookeeper is not initialized in config. Discovery based lookups will not be possible.");
             }
-            Optional<ServiceNode<ShardInfo>> node = serviceDiscoveryClients.get(rangerEndpointSpecification.getService()).getNode();
+            Optional<ServiceNode<ShardInfo>> node = serviceDiscoveryClients
+                    .get(rangerEndpointSpecification.getService()).getNode();
             //Get only the nodes that are healthy
             node.ifPresent(n -> {
                 if (n.getHealthcheckStatus() == HealthcheckStatus.healthy) {

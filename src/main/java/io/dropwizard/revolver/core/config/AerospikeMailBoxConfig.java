@@ -45,7 +45,9 @@ public class AerospikeMailBoxConfig extends MailBoxConfig {
     private int ttl;
 
     @Builder
-    public AerospikeMailBoxConfig(final String hosts, final String namespace, final int maxConnectionsPerNode, final int timeout, final int retries, final int sleepBetweenRetries, final int ttl) {
+    public AerospikeMailBoxConfig(final String hosts, final String namespace,
+            final int maxConnectionsPerNode, final int timeout, final int retries,
+            final int sleepBetweenRetries, final int ttl) {
         super("aerospike");
         this.hosts = hosts;
         this.namespace = namespace;
@@ -58,6 +60,7 @@ public class AerospikeMailBoxConfig extends MailBoxConfig {
 
     //Default values
     public static class AerospikeMailBoxConfigBuilder {
+
         private int ttl = 10800;
     }
 }

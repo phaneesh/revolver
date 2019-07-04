@@ -22,13 +22,18 @@ import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
-import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.Set;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
+import lombok.ToString;
+import org.hibernate.validator.constraints.NotEmpty;
 
 /**
  * @author phaneesh
@@ -70,7 +75,10 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     private RevolverHttpAuthorizationConfig authorization;
 
     @Builder(builderMethodName = "configBuilder")
-    public RevolverHttpApiConfig(String api, HystrixCommandConfig runtime, String path, @Singular Set<RequestMethod> methods, Set<Integer> acceptableResponseCodes, boolean sharedPool, RevolverHttpApiSplitConfig splitConfig, RevolverApiRetryConfig retryConfig) {
+    public RevolverHttpApiConfig(String api, HystrixCommandConfig runtime, String path,
+            @Singular Set<RequestMethod> methods, Set<Integer> acceptableResponseCodes,
+            boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
+            RevolverApiRetryConfig retryConfig) {
         super(api, sharedPool, runtime);
         this.path = path;
         this.methods = methods;

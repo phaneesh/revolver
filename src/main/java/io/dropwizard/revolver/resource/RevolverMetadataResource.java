@@ -35,18 +35,21 @@ import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.swagger.annotations.ApiOperation;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.inject.Singleton;
-import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.inject.Singleton;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author phaneesh
@@ -71,11 +74,17 @@ public class RevolverMetadataResource {
     @ApiOperation(value = "Get the status & metadata of revolver api gateway")
     @Produces(MediaType.APPLICATION_JSON)
     public RevolverMetadataResponse status() {
-        RevolverMetadataResponse.RevolverMetadataResponseBuilder metadataResponse = RevolverMetadataResponse.builder();
+        RevolverMetadataResponse.RevolverMetadataResponseBuilder metadataResponse = RevolverMetadataResponse
+                .builder();
         metadataResponse.clientId(config.getClientConfig().getClientName());
-        List<RevolverHttpServiceConfig> services = config.getServices().stream().filter(service -> service instanceof RevolverHttpServiceConfig).map(service -> ((RevolverHttpServiceConfig) service)).sorted(Comparator.comparing(RevolverServiceConfig::getService)).collect(Collectors.toList());
+        List<RevolverHttpServiceConfig> services = config.getServices().stream()
+                .filter(service -> service instanceof RevolverHttpServiceConfig)
+                .map(service -> ((RevolverHttpServiceConfig) service))
+                .sorted(Comparator.comparing(RevolverServiceConfig::getService))
+                .collect(Collectors.toList());
         services.forEach(s -> {
-            RevolverServiceMetadata.RevolverServiceMetadataBuilder serviceMetadataBuilder = RevolverServiceMetadata.builder();
+            RevolverServiceMetadata.RevolverServiceMetadataBuilder serviceMetadataBuilder = RevolverServiceMetadata
+                    .builder();
             serviceMetadataBuilder.name(s.getService()).type(s.getType()).apis(apiMetadataList(s));
             if (s.getEndpoint() instanceof RangerEndpointSpec) {
                 instanceStats((RangerEndpointSpec) s.getEndpoint(), serviceMetadataBuilder);
@@ -94,7 +103,8 @@ public class RevolverMetadataResource {
     @Produces(MediaType.APPLICATION_JSON)
     public List<ServiceNode<ShardInfo>> serviceStatus(@PathParam("service") String service) {
         RevolverServiceResolver serviceResolver = RevolverBundle.getServiceNameResolver();
-        ServiceDiscoveryClient serviceDiscoveryClient = serviceResolver.getServiceFinders().getOrDefault(service, null);
+        ServiceDiscoveryClient serviceDiscoveryClient = serviceResolver.getServiceFinders()
+                .getOrDefault(service, null);
         if (serviceDiscoveryClient == null) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
@@ -121,30 +131,41 @@ public class RevolverMetadataResource {
         int sharedThreads = 0;
         for (RevolverServiceConfig s : config.getServices()) {
             if (s instanceof RevolverHttpServiceConfig) {
-                if (((RevolverHttpServiceConfig) s).getApis().stream().noneMatch(CommandHandlerConfig::isSharedPool)) {
+                if (((RevolverHttpServiceConfig) s).getApis().stream()
+                        .noneMatch(CommandHandlerConfig::isSharedPool)) {
                     sharedThreads += s.getRuntime().getThreadPool().getConcurrency();
                 } else {
                     Set<RevolverHttpApiConfig> apis = ((RevolverHttpServiceConfig) s).getApis();
-                    apiThreads += apis.stream().filter(a -> !a.isSharedPool()).mapToInt(a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
+                    apiThreads += apis.stream().filter(a -> !a.isSharedPool())
+                            .mapToInt(a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
                 }
             }
         }
-        return Response.ok(ImmutableMap.<String, Object>builder().put("apiThreads", apiThreads).put("sharedThreads", sharedThreads).build()).build();
+        return Response.ok(ImmutableMap.<String, Object>builder().put("apiThreads", apiThreads)
+                .put("sharedThreads", sharedThreads).build()).build();
     }
 
     private List<RevolverApiMetadata> apiMetadataList(RevolverHttpServiceConfig httpServiceConfig) {
-        return httpServiceConfig.getApis().parallelStream().map(a -> RevolverApiMetadata.builder().async(a.isAsync()).name(a.getApi()).path(a.getPath()).methods(a.getMethods()).secured(!a.isWhitelist()).build()).sorted(Comparator.comparing(RevolverApiMetadata::getPath)).collect(Collectors.toList());
+        return httpServiceConfig.getApis().parallelStream()
+                .map(a -> RevolverApiMetadata.builder().async(a.isAsync()).name(a.getApi())
+                        .path(a.getPath()).methods(a.getMethods()).secured(!a.isWhitelist())
+                        .build()).sorted(Comparator.comparing(RevolverApiMetadata::getPath))
+                .collect(Collectors.toList());
     }
 
-    private void instanceStats(RangerEndpointSpec endpoint, RevolverServiceMetadata.RevolverServiceMetadataBuilder serviceMetadataBuilder) {
+    private void instanceStats(RangerEndpointSpec endpoint,
+            RevolverServiceMetadata.RevolverServiceMetadataBuilder serviceMetadataBuilder) {
         RevolverServiceResolver serviceResolver = RevolverBundle.getServiceNameResolver();
         if (serviceResolver == null) {
             serviceMetadataBuilder.status(UNKNOWN);
         } else {
             if (serviceResolver.getServiceFinders().containsKey(endpoint.getService())) {
-                List<ServiceNode<ShardInfo>> serviceNodes = serviceResolver.getServiceFinders().get(endpoint.getService()).getAllNodes();
-                long healthy = serviceNodes.parallelStream().filter(n -> n.getHealthcheckStatus() == HealthcheckStatus.healthy).count();
-                serviceMetadataBuilder.instances(serviceNodes.size()).healthy(healthy).unhealthy(serviceNodes.size() - healthy);
+                List<ServiceNode<ShardInfo>> serviceNodes = serviceResolver.getServiceFinders()
+                        .get(endpoint.getService()).getAllNodes();
+                long healthy = serviceNodes.parallelStream()
+                        .filter(n -> n.getHealthcheckStatus() == HealthcheckStatus.healthy).count();
+                serviceMetadataBuilder.instances(serviceNodes.size()).healthy(healthy)
+                        .unhealthy(serviceNodes.size() - healthy);
                 serviceMetadataBuilder.status(healthy > 0 ? "HEALTHY" : UNKNOWN);
             } else {
                 serviceMetadataBuilder.status(UNKNOWN);

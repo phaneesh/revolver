@@ -18,9 +18,12 @@
 package io.dropwizard.revolver.http.model;
 
 import io.dropwizard.revolver.core.model.RevolverResponse;
-import lombok.*;
-
 import javax.ws.rs.core.MultivaluedMap;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author phaneesh
@@ -34,7 +37,8 @@ public class RevolverHttpResponse extends RevolverResponse {
     private int statusCode;
 
     @Builder
-    public RevolverHttpResponse(final MultivaluedMap<String, String> headers, final byte[] body, final int statusCode) {
+    public RevolverHttpResponse(MultivaluedMap<String, String> headers, byte[] body,
+            int statusCode) {
         super(headers, body);
         this.statusCode = statusCode;
     }

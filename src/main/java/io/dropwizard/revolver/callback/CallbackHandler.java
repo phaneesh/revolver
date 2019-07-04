@@ -27,10 +27,11 @@ public abstract class CallbackHandler {
 
     protected RevolverConfig revolverConfig;
 
-    public CallbackHandler(final PersistenceProvider persistenceProvider, final RevolverConfig revolverConfig) {
+    public CallbackHandler(PersistenceProvider persistenceProvider,
+            RevolverConfig revolverConfig) {
         this.persistenceProvider = persistenceProvider;
         this.revolverConfig = revolverConfig;
     }
 
-    public abstract void handle(final String requestId, RevolverCallbackResponse response);
+    public abstract void handle(String requestId, RevolverCallbackResponse response);
 }

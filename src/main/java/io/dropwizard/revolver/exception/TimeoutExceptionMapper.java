@@ -20,20 +20,20 @@ package io.dropwizard.revolver.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.msgpack.MsgPackMediaType;
-
+import java.util.concurrent.TimeoutException;
 import javax.inject.Singleton;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author phaneesh
  */
 @Provider
-@Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML})
+@Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
+        MediaType.APPLICATION_XML})
 @Singleton
 public class TimeoutExceptionMapper implements ExceptionMapper<TimeoutException> {
 
@@ -46,7 +46,9 @@ public class TimeoutExceptionMapper implements ExceptionMapper<TimeoutException>
     @Override
     public Response toResponse(TimeoutException exception) {
         try {
-            return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(objectMapper.writeValueAsBytes(ImmutableMap.builder().put("errorCode", "R000").put("message", "Service timeout").build())).build();
+            return Response.status(Response.Status.GATEWAY_TIMEOUT).entity(objectMapper
+                    .writeValueAsBytes(ImmutableMap.builder().put("errorCode", "R000")
+                            .put("message", "Service timeout").build())).build();
         } catch (Exception e) {
             return Response.serverError().entity("Server Error".getBytes()).build();
         }

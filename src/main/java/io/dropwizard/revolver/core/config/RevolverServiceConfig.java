@@ -18,13 +18,12 @@
 package io.dropwizard.revolver.core.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.validator.constraints.NotBlank;
-
-import javax.validation.constraints.NotNull;
 
 /**
  * @author phaneesh

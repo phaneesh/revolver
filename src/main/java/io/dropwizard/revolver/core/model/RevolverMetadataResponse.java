@@ -17,9 +17,12 @@
 
 package io.dropwizard.revolver.core.model;
 
-import lombok.*;
-
 import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
 
 /**
  * @author phaneesh

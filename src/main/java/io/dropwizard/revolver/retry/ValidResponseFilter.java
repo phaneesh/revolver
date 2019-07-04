@@ -2,9 +2,8 @@ package io.dropwizard.revolver.retry;
 
 
 import com.google.common.base.Predicate;
-import okhttp3.Response;
-
 import javax.annotation.Nullable;
+import okhttp3.Response;
 
 /***
  Created by nitish.goyal on 25/02/19
@@ -23,7 +22,9 @@ public class ValidResponseFilter implements Predicate<Response> {
     }
 
     private boolean validateResponse(@Nullable Response response) {
-        if (response == null) return false;
+        if (response == null) {
+            return false;
+        }
         return response.code() == 503 || response.code() == 504;
     }
 }

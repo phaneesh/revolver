@@ -17,11 +17,11 @@
 
 package io.dropwizard.revolver.transform;
 
+import static org.junit.Assert.assertTrue;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import io.dropwizard.revolver.BaseRevolverTest;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author phaneesh

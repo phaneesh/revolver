@@ -22,11 +22,15 @@ import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
-import lombok.*;
-
+import java.util.Set;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
+import lombok.ToString;
 
 /**
  * @author phaneesh
@@ -54,7 +58,13 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
     private RevolverHttpServiceSplitConfig serviceSplitConfig;
 
     @Builder
-    public RevolverHttpServiceConfig(String type, String service, EndpointSpec enpoint, int connectionPoolSize, boolean authEnabled, boolean secured, AuthConfig auth, String keyStorePath, String keystorePassword, @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders, boolean compression, int connectionKeepAliveInMillis, ThreadPoolGroupConfig threadPoolGroupConfig, RevolverHttpServiceSplitConfig serviceSplitConfig) {
+    public RevolverHttpServiceConfig(String type, String service, EndpointSpec enpoint,
+            int connectionPoolSize, boolean authEnabled, boolean secured, AuthConfig auth,
+            String keyStorePath, String keystorePassword,
+            @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders,
+            boolean compression, int connectionKeepAliveInMillis,
+            ThreadPoolGroupConfig threadPoolGroupConfig,
+            RevolverHttpServiceSplitConfig serviceSplitConfig) {
         super(type, service);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;

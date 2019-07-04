@@ -19,14 +19,13 @@ package io.dropwizard.revolver.core.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 
 /**
  * @author phaneesh

@@ -19,9 +19,8 @@ package io.dropwizard.revolver.filters;
 import com.google.common.base.Strings;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
+import java.time.Instant;
+import java.util.UUID;
 import javax.annotation.Priority;
 import javax.inject.Singleton;
 import javax.ws.rs.Priorities;
@@ -30,8 +29,8 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
-import java.time.Instant;
-import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 /**
  * @author phaneesh
@@ -49,37 +48,53 @@ public class RevolverRequestFilter implements ContainerRequestFilter {
     }
 
     @Override
-    public void filter(final ContainerRequestContext containerRequestContext) {
+    public void filter(ContainerRequestContext containerRequestContext) {
         if (!containerRequestContext.getUriInfo().getPath().startsWith("revolver/v1")) {
-            String requestId = containerRequestContext.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
-            val transactionId = containerRequestContext.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
+            String requestId = containerRequestContext
+                    .getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
+            val transactionId = containerRequestContext
+                    .getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
             if (Strings.isNullOrEmpty(requestId)) {
                 requestId = UUID.randomUUID().toString();
-                containerRequestContext.getHeaders().add(RevolversHttpHeaders.REQUEST_ID_HEADER, requestId);
+                containerRequestContext.getHeaders()
+                        .add(RevolversHttpHeaders.REQUEST_ID_HEADER, requestId);
             }
             if (Strings.isNullOrEmpty(transactionId)) {
-                containerRequestContext.getHeaders().add(RevolversHttpHeaders.TXN_ID_HEADER, requestId);
+                containerRequestContext.getHeaders()
+                        .add(RevolversHttpHeaders.TXN_ID_HEADER, requestId);
             }
-            if (Strings.isNullOrEmpty(containerRequestContext.getHeaderString(RevolversHttpHeaders.TIMESTAMP_HEADER))) {
-                containerRequestContext.getHeaders().add(RevolversHttpHeaders.TIMESTAMP_HEADER, Instant.now().toString());
+            if (Strings.isNullOrEmpty(containerRequestContext
+                    .getHeaderString(RevolversHttpHeaders.TIMESTAMP_HEADER))) {
+                containerRequestContext.getHeaders()
+                        .add(RevolversHttpHeaders.TIMESTAMP_HEADER, Instant.now().toString());
             }
             //Default Accept & Content-Type to application/json
-            if (Strings.isNullOrEmpty(containerRequestContext.getHeaderString(HttpHeaders.ACCEPT))) {
-                containerRequestContext.getHeaders().add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
+            if (Strings
+                    .isNullOrEmpty(containerRequestContext.getHeaderString(HttpHeaders.ACCEPT))) {
+                containerRequestContext.getHeaders()
+                        .add(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
             }
-            if (Strings.isNullOrEmpty(containerRequestContext.getHeaderString(HttpHeaders.CONTENT_TYPE))) {
-                containerRequestContext.getHeaders().add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+            if (Strings.isNullOrEmpty(
+                    containerRequestContext.getHeaderString(HttpHeaders.CONTENT_TYPE))) {
+                containerRequestContext.getHeaders()
+                        .add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
             }
         } else {
             //Check if callback is enabled
-            if (!Strings.isNullOrEmpty(containerRequestContext.getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
+            if (!Strings.isNullOrEmpty(containerRequestContext
+                    .getHeaderString(RevolversHttpHeaders.CALLBACK_URI_HEADER))) {
                 //Add timeout header if it is absent
-                if (Strings.isNullOrEmpty(containerRequestContext.getHeaderString(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER))) {
-                    containerRequestContext.getHeaders().add(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER, String.valueOf(config.getCallbackTimeout()));
+                if (Strings.isNullOrEmpty(containerRequestContext
+                        .getHeaderString(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER))) {
+                    containerRequestContext.getHeaders()
+                            .add(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER,
+                                    String.valueOf(config.getCallbackTimeout()));
                 }
                 //Add callback method header if it is absent
-                if (Strings.isNullOrEmpty(containerRequestContext.getHeaderString(RevolversHttpHeaders.CALLBACK_METHOD_HEADER))) {
-                    containerRequestContext.getHeaders().add(RevolversHttpHeaders.CALLBACK_METHOD_HEADER, "POST");
+                if (Strings.isNullOrEmpty(containerRequestContext
+                        .getHeaderString(RevolversHttpHeaders.CALLBACK_METHOD_HEADER))) {
+                    containerRequestContext.getHeaders()
+                            .add(RevolversHttpHeaders.CALLBACK_METHOD_HEADER, "POST");
                 }
             }
         }

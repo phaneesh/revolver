@@ -18,7 +18,12 @@
 package io.dropwizard.revolver.http.model;
 
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author phaneesh

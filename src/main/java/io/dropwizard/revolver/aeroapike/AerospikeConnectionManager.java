@@ -20,18 +20,22 @@ package io.dropwizard.revolver.aeroapike;
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.Host;
 import com.aerospike.client.IAerospikeClient;
-import com.aerospike.client.policy.*;
+import com.aerospike.client.policy.ClientPolicy;
+import com.aerospike.client.policy.CommitLevel;
+import com.aerospike.client.policy.ConsistencyLevel;
+import com.aerospike.client.policy.Policy;
+import com.aerospike.client.policy.Replica;
+import com.aerospike.client.policy.WritePolicy;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 /**
  * @author phaneesh
@@ -43,21 +47,22 @@ public class AerospikeConnectionManager {
     public static Policy readPolicy;
     private static IAerospikeClient client;
     private static AerospikeMailBoxConfig config;
-    private static LoadingCache<Integer, WritePolicy> writePolicyCache = CacheBuilder.newBuilder().build(new CacheLoader<Integer, WritePolicy>() {
-        @Override
-        public WritePolicy load(Integer key) {
-            WritePolicy wp = new WritePolicy();
-            wp.maxRetries = config.getRetries();
-            wp.consistencyLevel = ConsistencyLevel.CONSISTENCY_ALL;
-            wp.replica = Replica.MASTER_PROLES;
-            wp.sleepBetweenRetries = config.getSleepBetweenRetries();
-            wp.commitLevel = CommitLevel.COMMIT_ALL;
-            wp.totalTimeout = config.getTimeout();
-            wp.sendKey = true;
-            wp.expiration = key;
-            return wp;
-        }
-    });
+    private static LoadingCache<Integer, WritePolicy> writePolicyCache = CacheBuilder.newBuilder()
+            .build(new CacheLoader<Integer, WritePolicy>() {
+                @Override
+                public WritePolicy load(Integer key) {
+                    WritePolicy wp = new WritePolicy();
+                    wp.maxRetries = config.getRetries();
+                    wp.consistencyLevel = ConsistencyLevel.CONSISTENCY_ALL;
+                    wp.replica = Replica.MASTER_PROLES;
+                    wp.sleepBetweenRetries = config.getSleepBetweenRetries();
+                    wp.commitLevel = CommitLevel.COMMIT_ALL;
+                    wp.totalTimeout = config.getTimeout();
+                    wp.sendKey = true;
+                    wp.expiration = key;
+                    return wp;
+                }
+            });
 
     private AerospikeConnectionManager() {
     }
@@ -82,7 +87,6 @@ public class AerospikeConnectionManager {
         writePolicy.totalTimeout = config.getTimeout();
         writePolicy.sendKey = true;
         writePolicy.expiration = config.getTtl();
-
 
         val clientPolicy = new ClientPolicy();
         clientPolicy.maxConnsPerNode = config.getMaxConnectionsPerNode();

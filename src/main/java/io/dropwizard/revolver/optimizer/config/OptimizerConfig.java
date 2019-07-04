@@ -1,11 +1,10 @@
 package io.dropwizard.revolver.optimizer.config;
 
+import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.concurrent.TimeUnit;
 
 /***
  Created by nitish.goyal on 29/03/19

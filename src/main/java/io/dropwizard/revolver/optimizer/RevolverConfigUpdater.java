@@ -101,13 +101,15 @@ public class RevolverConfigUpdater implements Runnable {
 
     private void updateLatencyThreshold(Map<String, Number> aggregatedAppLevelMetricsValues) {
 
-        if (optimizerConfig.getTimeConfig() == null || aggregatedAppLevelMetricsValues
-                .get(optimizerConfig.getTimeConfig().getAppLatencyMetric()) == null) {
+        OptimizerTimeConfig optimizerTimeConfig = optimizerConfig.getTimeConfig();
+        if (optimizerTimeConfig == null || !optimizerTimeConfig.isEnabled()
+                || aggregatedAppLevelMetricsValues
+                .get(optimizerTimeConfig.getAppLatencyMetric()) == null) {
             return;
         }
         int latencyThresholdValue = aggregatedAppLevelMetricsValues
-                .get(optimizerConfig.getTimeConfig().getAppLatencyMetric()).intValue();
-        optimizerConfig.getTimeConfig().setAppLatencyThresholdValue(latencyThresholdValue);
+                .get(optimizerTimeConfig.getAppLatencyMetric()).intValue();
+        optimizerTimeConfig.setAppLatencyThresholdValue(latencyThresholdValue);
     }
 
     private void aggregateAppLevelMetrics(Map<String, Number> aggregatedAppLevelMetricsValues,
@@ -182,6 +184,9 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
             AtomicBoolean configUpdated) {
 
+        if (!optimizerConfig.getConcurrencyConfig().isEnabled()) {
+            return;
+        }
         OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
                 .get(threadPoolConfig.getThreadPoolName());
 
@@ -209,13 +214,15 @@ public class RevolverConfigUpdater implements Runnable {
                 configUpdated, api.getApi());
         updateTimeoutSettings(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
                 configUpdated, api);
-
         updateLatencySettings(api, optimizerAggregatedMetrics);
     }
 
     private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig,
             OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
             String poolName) {
+        if (!optimizerConfig.getConcurrencyConfig().isEnabled()) {
+            return;
+        }
         if (optimizerAggregatedMetrics.getMetricsAggValueMap()
                 .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS) == null) {
             return;
@@ -258,7 +265,8 @@ public class RevolverConfigUpdater implements Runnable {
             RevolverHttpApiConfig api) {
 
         OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
-        if (timeoutConfig == null || optimizerAggregatedMetrics.getMetricsAggValueMap()
+        if (timeoutConfig == null || !timeoutConfig.isEnabled()
+                || optimizerAggregatedMetrics.getMetricsAggValueMap()
                 .get(timeoutConfig.getTimeoutMetric()) == null) {
             return;
         }
@@ -295,7 +303,11 @@ public class RevolverConfigUpdater implements Runnable {
 
     private void updateLatencySettings(RevolverHttpApiConfig api,
             OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
-        String latencyMetric = optimizerConfig.getTimeConfig().getApiLatencyMetric();
+        OptimizerTimeConfig optimizerTimeConfig = optimizerConfig.getTimeConfig();
+        if (!optimizerTimeConfig.isEnabled()) {
+            return;
+        }
+        String latencyMetric = optimizerTimeConfig.getApiLatencyMetric();
         int apiLatency =
                 optimizerAggregatedMetrics.getMetricsAggValueMap().get(latencyMetric) == null ? 0
                         : optimizerAggregatedMetrics.getMetricsAggValueMap().get(latencyMetric)

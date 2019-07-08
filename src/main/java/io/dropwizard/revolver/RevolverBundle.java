@@ -56,6 +56,7 @@ import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
 import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerMetricsCollectorConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -352,32 +353,31 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
         if (optimizerConfig != null && optimizerConfig.isEnabled()) {
+            log.info("Concurrency config enabled");
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
                     optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig())
                     .build();
 
-            if (optimizerConfig.getConcurrencyConfig() != null && optimizerConfig
-                    .getConcurrencyConfig().isEnabled()) {
-                OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
-                        .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
-                        .optimizerConfig(optimizerConfig).build();
-                scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                        optimizerConfig.getInitialDelay(),
-                        optimizerConfig.getMetricsCollectorConfig().getRepeatAfter(),
-                        optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
-            }
+            OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
+                    .getMetricsCollectorConfig();
+            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
+                    .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
+                    .optimizerConfig(optimizerConfig).build();
+            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
+                    .optimizerConfig(optimizerConfig)
+                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                    .build();
 
-            if (optimizerConfig.getTimeConfig() != null && optimizerConfig.getTimeConfig()
-                    .isEnabled()) {
-                RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
-                        .optimizerConfig(optimizerConfig)
-                        .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
-                        .build();
-                scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
-                        optimizerConfig.getInitialDelay(),
-                        optimizerConfig.getConfigUpdaterConfig().getRepeatAfter(),
-                        optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
-            }
+            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
+                    optimizerConfig.getInitialDelay(),
+                    optimizerMetricsCollectorConfig.getRepeatAfter(),
+                    optimizerMetricsCollectorConfig.getTimeUnit());
+
+            scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
+                    optimizerConfig.getInitialDelay(),
+                    optimizerConfig.getConfigUpdaterConfig().getRepeatAfter(),
+                    optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
+
         }
 
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));

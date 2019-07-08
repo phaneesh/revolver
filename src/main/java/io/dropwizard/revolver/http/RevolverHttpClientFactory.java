@@ -170,10 +170,13 @@ public class RevolverHttpClientFactory {
             Optional maxTimeout = serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()
                     .stream().max(Comparator
                             .comparing(ThreadPoolConfig::getTimeout));
-            if (maxTimeout.isPresent()) {
-                builder.connectTimeout((Integer) maxTimeout.get(), TimeUnit.MILLISECONDS);
-                builder.readTimeout((Integer) maxTimeout.get(), TimeUnit.MILLISECONDS);
-                builder.writeTimeout((Integer) maxTimeout.get(), TimeUnit.MILLISECONDS);
+            if (maxTimeout.isPresent() && maxTimeout.get() instanceof ThreadPoolConfig) {
+                builder.connectTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.readTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.writeTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
                 timeoutSet = true;
             }
         }

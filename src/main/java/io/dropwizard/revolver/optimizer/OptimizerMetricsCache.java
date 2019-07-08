@@ -1,17 +1,20 @@
 package io.dropwizard.revolver.optimizer;
 
-import com.google.common.cache.*;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 import io.dropwizard.revolver.optimizer.config.OptimizerMetricsCollectorConfig;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 /***
  Created by nitish.goyal on 29/03/19
@@ -30,14 +33,15 @@ public class OptimizerMetricsCache {
         this.optimizerMetricsCollectorConfig = optimizerMetricsCollectorConfig;
         this.cache = CacheBuilder.newBuilder()
                 .concurrencyLevel(optimizerMetricsCollectorConfig.getConcurrency())
-                .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(), TimeUnit.MINUTES)
+                .expireAfterWrite(optimizerMetricsCollectorConfig.getCachingWindowInMinutes(),
+                        TimeUnit.MINUTES)
                 .removalListener(new RemovalListener<OptimizerCacheKey, OptimizerMetrics>() {
                     @Override
-                    public void onRemoval(RemovalNotification<OptimizerCacheKey, OptimizerMetrics> notification) {
+                    public void onRemoval(
+                            RemovalNotification<OptimizerCacheKey, OptimizerMetrics> notification) {
                         poolTimeBasedMetricsMap.remove(notification.getKey());
                     }
-                })
-                .build(new CacheLoader<OptimizerCacheKey, OptimizerMetrics>() {
+                }).build(new CacheLoader<OptimizerCacheKey, OptimizerMetrics>() {
                     @Override
                     public OptimizerMetrics load(@NonNull OptimizerCacheKey key) throws Exception {
                         return poolTimeBasedMetricsMap.get(key);
@@ -51,7 +55,8 @@ public class OptimizerMetricsCache {
         } catch (CacheLoader.InvalidCacheLoadException e) {
             return null;
         } catch (ExecutionException e) {
-            throw new RuntimeException("Error while getting value from the cache for the key : " + key);
+            throw new RuntimeException(
+                    "Error while getting value from the cache for the key : " + key);
         }
     }
 

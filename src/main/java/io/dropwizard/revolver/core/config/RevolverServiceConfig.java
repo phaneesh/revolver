@@ -18,13 +18,12 @@
 package io.dropwizard.revolver.core.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.validator.constraints.NotBlank;
-
-import javax.validation.constraints.NotNull;
 
 /**
  * @author phaneesh
@@ -36,21 +35,17 @@ import javax.validation.constraints.NotNull;
 @ToString
 public class RevolverServiceConfig {
 
+    protected ThreadPoolGroupConfig threadPoolGroupConfig;
     @NotNull
     @NotBlank
     private String type;
-
     @NotNull
     @NotBlank
     private String service;
-
     private String fallbackAddress;
-
-    protected ThreadPoolGroupConfig threadPoolGroupConfig;
-
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 
-    public RevolverServiceConfig(final String type, final String service) {
+    public RevolverServiceConfig(String type, String service) {
         this.type = type;
         this.service = service;
     }

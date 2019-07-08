@@ -17,18 +17,23 @@
 
 package io.dropwizard.revolver.http.config;
 
+import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
-import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
-import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.Set;
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.core.MediaType;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
+import lombok.ToString;
+import org.hibernate.validator.constraints.NotEmpty;
 
 /**
  * @author phaneesh
@@ -50,7 +55,7 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private String acceptType = MediaType.APPLICATION_JSON;
 
-    private  String acceptEncoding = "identity";
+    private String acceptEncoding = "identity";
 
     private RevolverApiRetryConfig retryConfig;
 
@@ -70,10 +75,10 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     private RevolverHttpAuthorizationConfig authorization;
 
     @Builder(builderMethodName = "configBuilder")
-    public RevolverHttpApiConfig(final String api, final HystrixCommandConfig runtime, final String path,
-                                 @Singular final Set<RequestMethod> methods, final Set<Integer>
-                                             acceptableResponseCodes, final boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
-                                 final RevolverApiRetryConfig retryConfig) {
+    public RevolverHttpApiConfig(String api, HystrixCommandConfig runtime, String path,
+            @Singular Set<RequestMethod> methods, Set<Integer> acceptableResponseCodes,
+            boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
+            RevolverApiRetryConfig retryConfig) {
         super(api, sharedPool, runtime);
         this.path = path;
         this.methods = methods;
@@ -83,12 +88,6 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     }
 
     public enum RequestMethod {
-        GET,
-        POST,
-        PUT,
-        DELETE,
-        HEAD,
-        PATCH,
-        OPTIONS
+        GET, POST, PUT, DELETE, HEAD, PATCH, OPTIONS
     }
 }

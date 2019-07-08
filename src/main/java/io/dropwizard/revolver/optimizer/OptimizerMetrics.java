@@ -1,11 +1,10 @@
 package io.dropwizard.revolver.optimizer;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 /***
  Created by nitish.goyal on 29/03/19
@@ -21,8 +20,7 @@ public class OptimizerMetrics {
     private AggregationAlgo aggregationAlgo;
 
     public enum AggregationAlgo {
-        AVG,
-        MAX
+        AVG, MAX
     }
 }
 

@@ -1,10 +1,9 @@
 package io.dropwizard.revolver.optimizer;
 
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.Map;
 
 /***
  Created by nitish.goyal on 30/03/19

@@ -23,14 +23,18 @@ import io.dropwizard.Configuration;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.riemann.RiemannConfig;
-import lombok.*;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
-
+import java.util.List;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotNull;
-import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.Singular;
+import org.hibernate.validator.constraints.NotBlank;
+import org.hibernate.validator.constraints.NotEmpty;
 
 /**
  * @author phaneesh
@@ -103,9 +107,9 @@ public class RevolverConfig extends Configuration {
 
     @Builder
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
-                          ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
-                          @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
-                          OptimizerConfig optimizerConfig) {
+            ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
+            @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
+            OptimizerConfig optimizerConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;

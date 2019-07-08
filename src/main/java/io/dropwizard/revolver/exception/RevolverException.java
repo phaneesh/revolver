@@ -17,7 +17,11 @@
 
 package io.dropwizard.revolver.exception;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 /**
  * @author phaneesh
@@ -29,6 +33,7 @@ import lombok.*;
 @Builder
 public class RevolverException extends Exception {
 
+    private static final long serialVersionUID = 2592521467952958234L;
     private int status;
 
     private String errorCode;

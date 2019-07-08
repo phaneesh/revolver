@@ -21,10 +21,6 @@ import com.codahale.metrics.annotation.Metered;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.revolver.handler.DynamicConfigHandler;
 import io.swagger.annotations.ApiOperation;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import javax.inject.Singleton;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -32,6 +28,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 
 @Path("/revolver")
@@ -56,15 +55,12 @@ public class RevolverConfigResource {
         long start = System.currentTimeMillis();
         String hash = dynamicConfigHandler.refreshConfig();
         long end = System.currentTimeMillis() - start;
-        if(hash == null) {
+        if (hash == null) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
         }
-        return Response.ok(
-                ImmutableMap.<String, Object>builder()
-                    .put("hash", hash)
-                    .put("timeTaken", end )
-                    .build()
-        ).build();
+        return Response
+                .ok(ImmutableMap.<String, Object>builder().put("hash", hash).put("timeTaken", end)
+                        .build()).build();
     }
 
     @Path("/v1/config/info")

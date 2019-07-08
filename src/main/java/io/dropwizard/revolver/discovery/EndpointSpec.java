@@ -19,7 +19,6 @@ package io.dropwizard.revolver.discovery;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dropwizard.revolver.discovery.model.EndpointSpecType;
-
 import javax.validation.constraints.NotNull;
 
 /**
@@ -31,11 +30,11 @@ public abstract class EndpointSpec {
     @NotNull
     private final EndpointSpecType type;
 
-    protected EndpointSpec(final EndpointSpecType type) {
+    protected EndpointSpec(EndpointSpecType type) {
         this.type = type;
     }
 
-    public abstract void accept(final SpecVisitor visitor);
+    public abstract void accept(SpecVisitor visitor);
 
     public EndpointSpecType getType() {
         return this.type;

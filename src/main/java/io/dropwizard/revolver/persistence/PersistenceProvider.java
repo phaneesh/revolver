@@ -21,7 +21,6 @@ import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
-
 import java.util.List;
 
 /**
@@ -29,24 +28,28 @@ import java.util.List;
  */
 public interface PersistenceProvider {
 
-    boolean exists(final String requestId);
+    boolean exists(String requestId);
 
-    void saveRequest(final String requestId, final String mailboxId, final RevolverCallbackRequest request);
+    void saveRequest(String requestId, String mailboxId,
+            RevolverCallbackRequest request);
 
-    void saveRequest(final String requestId, final String mailboxId, final RevolverCallbackRequest request, final int ttl) throws Exception;
+    void saveRequest(String requestId, String mailboxId,
+            RevolverCallbackRequest request, int ttl) throws Exception;
 
-    void setRequestState(final String requestId, RevolverRequestState state, final int ttl) throws Exception;
+    void setRequestState(String requestId, RevolverRequestState state, int ttl)
+            throws Exception;
 
-    void saveResponse(final String requestId, RevolverCallbackResponse response, final int ttl) throws Exception;
+    void saveResponse(String requestId, RevolverCallbackResponse response, int ttl)
+            throws Exception;
 
-    RevolverRequestState requestState(final String requestId);
+    RevolverRequestState requestState(String requestId);
 
-    RevolverCallbackResponse response(final String requestId);
+    RevolverCallbackResponse response(String requestId);
 
-    List<RevolverCallbackResponses> responses(final String mailboxId);
+    List<RevolverCallbackResponses> responses(String mailboxId);
 
-    RevolverCallbackRequest request(final String requestId);
+    RevolverCallbackRequest request(String requestId);
 
-    List<RevolverCallbackRequest> requests(final String mailboxId);
+    List<RevolverCallbackRequest> requests(String mailboxId);
 
 }

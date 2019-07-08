@@ -21,10 +21,5 @@ package io.dropwizard.revolver.base.core;
  * @author phaneesh
  */
 public enum RevolverRequestState {
-    RECEIVED,
-    REQUESTED,
-    RESPONDED,
-    READ,
-    ERROR,
-    UNKNOWN
+    RECEIVED, REQUESTED, RESPONDED, READ, ERROR, UNKNOWN
 }

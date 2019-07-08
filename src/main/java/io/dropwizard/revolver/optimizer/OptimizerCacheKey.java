@@ -19,21 +19,24 @@ public class OptimizerCacheKey {
 
     @Override
     public boolean equals(Object o) {
-        if(this == o)
+        if (this == o) {
             return true;
-        if(!(o instanceof OptimizerCacheKey))
+        }
+        if (!(o instanceof OptimizerCacheKey)) {
             return false;
+        }
 
-        OptimizerCacheKey that = (OptimizerCacheKey)o;
+        OptimizerCacheKey that = (OptimizerCacheKey) o;
 
-        if(time != that.time)
+        if (time != that.time) {
             return false;
+        }
         return name.equals(that.name);
     }
 
     @Override
     public int hashCode() {
-        int result = (int)(time ^ (time >>> 32));
+        int result = (int) (time ^ (time >>> 32));
         result = 31 * result + name.hashCode();
         return result;
     }

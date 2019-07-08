@@ -26,14 +26,13 @@ import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.RevolverConfig;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
-
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 
 @Slf4j
 public class DynamicConfigHandler implements Managed {
@@ -54,8 +53,8 @@ public class DynamicConfigHandler implements Managed {
 
     private RevolverBundle revolverBundle;
 
-    public DynamicConfigHandler(final String configAttribute, RevolverConfig revolverConfig, ObjectMapper objectMapper,
-                                ConfigSource configSource, RevolverBundle revolverBundle) {
+    public DynamicConfigHandler(String configAttribute, RevolverConfig revolverConfig,
+            ObjectMapper objectMapper, ConfigSource configSource, RevolverBundle revolverBundle) {
         this.configAttribute = configAttribute;
         this.revolverConfig = revolverConfig;
         this.configSource = configSource;
@@ -65,7 +64,7 @@ public class DynamicConfigHandler implements Managed {
         this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         this.revolverBundle = revolverBundle;
         try {
-            if(configSource == null) {
+            if (configSource == null) {
                 prevConfigHash = "unknown";
             } else {
                 prevConfigHash = computeHash(loadConfigData(false));
@@ -79,20 +78,22 @@ public class DynamicConfigHandler implements Managed {
 
     @Override
     public void start() {
-        scheduledExecutorService.scheduleWithFixedDelay(this::refreshConfig, 120, revolverConfig.getConfigPollIntervalSeconds(), TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleWithFixedDelay(this::refreshConfig, 120,
+                revolverConfig.getConfigPollIntervalSeconds(), TimeUnit.SECONDS);
     }
 
     public String refreshConfig() {
-        if(configSource == null) {
+        if (configSource == null) {
             return "unknown";
         }
         try {
-            final String substituted = loadConfigData(false);
+            String substituted = loadConfigData(false);
             String curHash = computeHash(substituted);
             log.info("Old Config Hash: {} | New Config Hash: {}", prevConfigHash, curHash);
             if (!prevConfigHash.equals(curHash)) {
                 log.info("Refreshing config with new hash: {}", curHash);
-                RevolverConfig revolverConfig = objectMapper.readValue(substituted, RevolverConfig.class);
+                RevolverConfig revolverConfig = objectMapper
+                        .readValue(substituted, RevolverConfig.class);
                 RevolverBundle.loadServiceConfiguration(revolverConfig);
                 this.prevConfigHash = curHash;
                 prevLoadTime = System.currentTimeMillis();
@@ -109,23 +110,24 @@ public class DynamicConfigHandler implements Managed {
     }
 
     public Map<String, Object> configLoadInfo() {
-        return ImmutableMap.<String, Object>builder()
-                .put("hash", prevConfigHash)
-                .put("loadTime", new Date(prevLoadTime))
-                .build();
+        return ImmutableMap.<String, Object>builder().put("hash", prevConfigHash)
+                .put("loadTime", new Date(prevLoadTime)).build();
     }
 
     private String loadConfigData(boolean fullConfig) throws Exception {
-        log.info("Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}", prevConfigHash, new Date(prevLoadTime));
-        JsonNode node = objectMapper.readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
+        log.info(
+                "Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}",
+                prevConfigHash, new Date(prevLoadTime));
+        JsonNode node = objectMapper
+                .readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
         EnvironmentVariableSubstitutor substitute = new EnvironmentVariableSubstitutor(false, true);
-        if(fullConfig) {
+        if (fullConfig) {
             return substitute.replace(node.toString());
         }
         return substitute.replace(node.get(configAttribute).toString());
     }
 
-    private String computeHash(final String config) {
+    private String computeHash(String config) {
         return DigestUtils.sha512Hex(config);
     }
 

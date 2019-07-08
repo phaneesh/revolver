@@ -18,12 +18,11 @@
 
 package io.dropwizard.revolver.core.tracing;
 
+import java.util.Map;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author phaneesh

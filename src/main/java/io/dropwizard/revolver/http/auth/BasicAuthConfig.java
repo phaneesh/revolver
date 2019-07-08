@@ -17,7 +17,11 @@
 
 package io.dropwizard.revolver.http.auth;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 /**
  * @author phaneesh

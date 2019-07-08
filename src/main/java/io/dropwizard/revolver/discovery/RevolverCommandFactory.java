@@ -30,5 +30,10 @@ import io.dropwizard.revolver.core.tracing.TraceCollector;
  * @author phaneesh
  */
 public interface RevolverCommandFactory<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> {
-    RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> create(final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfigurationType, final RevolverServiceResolver rangerServiceResolver, final TraceCollector traceCollector);
+
+    RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> create(
+            RuntimeConfig runtimeConfig,
+            ServiceConfigurationType serviceConfigurationType,
+            RevolverServiceResolver rangerServiceResolver,
+            TraceCollector traceCollector);
 }

@@ -5,10 +5,6 @@ package io.dropwizard.revolver.retry;
  ***/
 public enum WaitStrategy {
 
-    FIXED,
-    EXPONENTIAL,
-    FIBONACCI,
-    INCREMENTAL,
-    NO_WAIT
+    FIXED, EXPONENTIAL, FIBONACCI, INCREMENTAL, NO_WAIT
 
 }

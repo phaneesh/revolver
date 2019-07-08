@@ -17,12 +17,11 @@
 
 package io.dropwizard.revolver.core.model;
 
+import javax.ws.rs.core.MultivaluedMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 /**
  * @author phaneesh

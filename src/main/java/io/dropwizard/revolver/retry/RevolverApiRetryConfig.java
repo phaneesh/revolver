@@ -1,12 +1,11 @@
 package io.dropwizard.revolver.retry;
 
+import javax.validation.constraints.NotNull;
+import javax.ws.rs.DefaultValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.validation.constraints.NotNull;
-import javax.ws.rs.DefaultValue;
 
 /***
  Created by nitish.goyal on 25/02/19

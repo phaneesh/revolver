@@ -22,7 +22,5 @@ package io.dropwizard.revolver.discovery.model;
  */
 public enum EndpointSpecType {
 
-    simple,
-    ranger_simple,
-    ranger_sharded
+    simple, ranger_simple, ranger_sharded
 }

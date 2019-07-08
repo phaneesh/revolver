@@ -27,8 +27,12 @@ import io.dropwizard.revolver.core.model.RevolverResponse;
 /**
  * @author phaneesh
  */
-public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> extends RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> {
-    public SimpleRevolverCommand(final ContextType context, final ClientConfig clientConfiguration, final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration, final CommandHandlerConfigurationType apiConfiguration) {
+public abstract class SimpleRevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> extends
+        RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> {
+
+    public SimpleRevolverCommand(ContextType context, ClientConfig clientConfiguration,
+            RuntimeConfig runtimeConfig, ServiceConfigurationType serviceConfiguration,
+            CommandHandlerConfigurationType apiConfiguration) {
         super(context, clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
     }
 }

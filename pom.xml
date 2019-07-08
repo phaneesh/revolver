@@ -4,7 +4,7 @@
 
     <groupId>io.dropwizard.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>1.3.7-37-2</version>
+    <version>1.3.7-38</version>
     <packaging>jar</packaging>
 
     <name>dropwizard-revolver</name>
@@ -156,10 +156,6 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.netflix.hystrix</groupId>
-                    <artifactId>hystrix-core</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

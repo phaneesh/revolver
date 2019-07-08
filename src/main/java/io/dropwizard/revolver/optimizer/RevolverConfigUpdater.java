@@ -39,9 +39,11 @@ public class RevolverConfigUpdater implements Runnable {
     @Override
     public void run() {
 
+        log.info("Running revolver config updater job");
         Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap = Maps.newHashMap();
         Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
         if (metricsCache.isEmpty()) {
+            log.info("Metrics cache is empty");
             return;
         }
 
@@ -115,7 +117,9 @@ public class RevolverConfigUpdater implements Runnable {
     private void aggregateAppLevelMetrics(Map<String, Number> aggregatedAppLevelMetricsValues,
             String metric, Number value, AtomicLong metricsCount) {
 
-        if (!optimizerConfig.getTimeConfig().getAppLatencyMetric().equals(metric)
+        OptimizerTimeConfig optimizerTimeConfig = optimizerConfig.getTimeConfig();
+        if (optimizerTimeConfig == null || !optimizerTimeConfig.isEnabled() || !optimizerTimeConfig
+                .getAppLatencyMetric().equals(metric)
                 || value.intValue() == 0) {
             return;
         }
@@ -127,7 +131,7 @@ public class RevolverConfigUpdater implements Runnable {
                     (aggregatedAppLevelMetricsValues.get(metric).intValue() + value.intValue()));
         }
         if (OptimizerUtils.LATENCY_PERCENTILE_995.equals(metric)) {
-            log.error("Aggregated 99%ile for app : "
+            log.info("Aggregated 99%ile for app : "
                     + aggregatedAppLevelMetricsValues.get(metric).intValue() / metricsCount.get());
         }
     }
@@ -304,7 +308,7 @@ public class RevolverConfigUpdater implements Runnable {
     private void updateLatencySettings(RevolverHttpApiConfig api,
             OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
         OptimizerTimeConfig optimizerTimeConfig = optimizerConfig.getTimeConfig();
-        if (!optimizerTimeConfig.isEnabled()) {
+        if (optimizerTimeConfig == null || !optimizerTimeConfig.isEnabled()) {
             return;
         }
         String latencyMetric = optimizerTimeConfig.getApiLatencyMetric();

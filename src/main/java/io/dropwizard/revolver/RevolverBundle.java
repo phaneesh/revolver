@@ -56,6 +56,7 @@ import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
 import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfigUpdaterConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerMetricsCollectorConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
@@ -332,6 +333,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         val metrics = environment.metrics();
         ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
                 .scheduledExecutorService("metrics-builder").build();
+        ScheduledExecutorService configUpdaterExecutorService = environment.lifecycle()
+                .scheduledExecutorService("config-updater").build();
 
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         initializeRevolver(configuration, environment);
@@ -354,29 +357,31 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
         if (optimizerConfig != null && optimizerConfig.isEnabled()) {
             log.info("Concurrency config enabled");
-            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
-                    optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig())
-                    .build();
-
             OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
                     .getMetricsCollectorConfig();
+            OptimizerConfigUpdaterConfig configUpdaterConfig = optimizerConfig
+                    .getConfigUpdaterConfig();
+            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
+                    optimizerMetricsCollectorConfig(optimizerMetricsCollectorConfig)
+                    .build();
             OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
                     .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
                     .optimizerConfig(optimizerConfig).build();
-            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
-                    .optimizerConfig(optimizerConfig)
-                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
-                    .build();
 
             scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
                     optimizerConfig.getInitialDelay(),
                     optimizerMetricsCollectorConfig.getRepeatAfter(),
                     optimizerMetricsCollectorConfig.getTimeUnit());
 
-            scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
+            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
+                    .optimizerConfig(optimizerConfig)
+                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                    .build();
+
+            configUpdaterExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
                     optimizerConfig.getInitialDelay(),
-                    optimizerConfig.getConfigUpdaterConfig().getRepeatAfter(),
-                    optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
+                    configUpdaterConfig.getRepeatAfter(),
+                    configUpdaterConfig.getTimeUnit());
 
         }
 

@@ -15,11 +15,11 @@ import lombok.NoArgsConstructor;
 @Builder
 public class OptimizerMetricsCollectorConfig {
 
-    private int repeatAfter = 30;
+    private int repeatAfter = 2;
 
-    private TimeUnit timeUnit = TimeUnit.SECONDS;
+    private TimeUnit timeUnit = TimeUnit.MINUTES;
 
     private int cachingWindowInMinutes = 30;
 
-    private int concurrency = 4;
+    private int concurrency = 2;
 }

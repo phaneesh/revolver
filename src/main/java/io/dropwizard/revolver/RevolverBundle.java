@@ -356,7 +356,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
         if (optimizerConfig != null && optimizerConfig.isEnabled()) {
-            log.info("Concurrency config enabled");
+            log.info("Optimizer config enabled");
             OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
                     .getMetricsCollectorConfig();
             OptimizerConfigUpdaterConfig configUpdaterConfig = optimizerConfig

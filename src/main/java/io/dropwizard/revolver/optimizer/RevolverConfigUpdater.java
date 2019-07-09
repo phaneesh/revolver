@@ -188,7 +188,10 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
             AtomicBoolean configUpdated) {
 
-        if (!optimizerConfig.getConcurrencyConfig().isEnabled()) {
+        OptimizerConcurrencyConfig optimizerConcurrencyConfig = optimizerConfig
+                .getConcurrencyConfig();
+        if (optimizerConcurrencyConfig == null || !optimizerConfig.getConcurrencyConfig()
+                .isEnabled()) {
             return;
         }
         OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
@@ -224,7 +227,10 @@ public class RevolverConfigUpdater implements Runnable {
     private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig,
             OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
             String poolName) {
-        if (!optimizerConfig.getConcurrencyConfig().isEnabled()) {
+        OptimizerConcurrencyConfig optimizerConcurrencyConfig = optimizerConfig
+                .getConcurrencyConfig();
+        if (optimizerConcurrencyConfig == null || !optimizerConfig.getConcurrencyConfig()
+                .isEnabled()) {
             return;
         }
         if (optimizerAggregatedMetrics.getMetricsAggValueMap()

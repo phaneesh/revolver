@@ -36,7 +36,7 @@ public class OptimizerMetricsCollector implements Runnable {
             captureThreadPoolMetrics(gauges, time);
             captureTimeMetrics(gauges, time);
         } catch (Exception e) {
-            log.error("Error occurred while executing metrics collector");
+            log.error("Error occurred while executing metrics collector : ", e);
         }
     }
 

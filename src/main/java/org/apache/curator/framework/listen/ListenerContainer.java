@@ -61,8 +61,7 @@ public class ListenerContainer<T> implements Listenable<T> {
     }
 
     /**
-     * Utility - apply the given function to each listener. The function receives
-     * the listener as an argument.
+     * Utility - apply the given function to each listener. The function receives the listener as an argument.
      *
      * @param function function to call for each listener
      */

@@ -45,11 +45,11 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class RevolverCommandHelper {
 
-    public static String getName(final RevolverRequest request) {
+    public static String getName(RevolverRequest request) {
         return Joiner.on(".").join(request.getService(), request.getApi());
     }
 
-    public static <T extends RevolverRequest> T normalize(final T request) {
+    public static <T extends RevolverRequest> T normalize(T request) {
         if (null == request) {
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST,
                     "Request cannot be null");
@@ -78,11 +78,11 @@ public class RevolverCommandHelper {
          different group thread pool
          Timeout would be overridden if provided at individual api level
      */
-    public static HystrixCommand.Setter setter(final RevolverCommand commandHandler,
-            final String api) {
-        final RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
-        final RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
-        final CommandHandlerConfig config = commandHandler.getApiConfiguration();
+    public static HystrixCommand.Setter setter(RevolverCommand commandHandler,
+            String api) {
+        RuntimeConfig runtimeConfig = commandHandler.getRuntimeConfig();
+        RevolverServiceConfig serviceConfiguration = commandHandler.getServiceConfiguration();
+        CommandHandlerConfig config = commandHandler.getApiConfiguration();
         CircuitBreakerConfig circuitBreakerConfig;
         if (null != runtimeConfig) {
             circuitBreakerConfig = runtimeConfig.getCircuitBreaker();

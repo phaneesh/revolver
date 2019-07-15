@@ -20,6 +20,7 @@ package io.dropwizard.revolver.core.config;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
 import io.dropwizard.Configuration;
+import io.dropwizard.revolver.core.config.resilience.ResilienceConfig;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.riemann.RiemannConfig;
@@ -106,6 +107,8 @@ public class RevolverConfig extends Configuration {
     private OptimizerConfig optimizerConfig;
 
     private ServiceDiscoveryConfig serviceDiscoveryConfig;
+
+    private ResilienceConfig resilienceConfig;
 
     @Builder
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,

@@ -19,6 +19,7 @@ package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
+import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
@@ -57,14 +58,15 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
     private RevolverHttpServiceSplitConfig serviceSplitConfig;
 
     @Builder
-    public RevolverHttpsServiceConfig(final String type, final String service,
-            final EndpointSpec enpoint, final int connectionPoolSize, final boolean authEnabled,
-            final AuthConfig auth, final String keyStorePath, final String keystorePassword,
-            @Singular("api") final Set<RevolverHttpApiConfig> apis, final boolean trackingHeaders,
-            final boolean compression, final int connectionKeepAliveInMillis,
+    public RevolverHttpsServiceConfig(String type, String service,
+            EndpointSpec enpoint, int connectionPoolSize, boolean authEnabled,
+            AuthConfig auth, String keyStorePath, String keystorePassword,
+            @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders,
+            boolean compression, int connectionKeepAliveInMillis,
             ThreadPoolGroupConfig threadPoolGroupConfig,
-            final RevolverHttpServiceSplitConfig serviceSplitConfig) {
-        super(type, service);
+            RevolverHttpServiceSplitConfig serviceSplitConfig,
+            SentinelCommandConfig sentinelCommandConfig) {
+        super(type, service, sentinelCommandConfig);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
         this.authEnabled = authEnabled;

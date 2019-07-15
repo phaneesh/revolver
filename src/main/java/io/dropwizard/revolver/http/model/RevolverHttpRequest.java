@@ -18,6 +18,7 @@
 package io.dropwizard.revolver.http.model;
 
 import com.google.common.collect.Maps;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -54,8 +55,8 @@ public class RevolverHttpRequest extends RevolverRequest {
     public RevolverHttpRequest(String service, String api,
             RevolverHttpApiConfig.RequestMethod method, TraceInfo traceInfo,
             MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams,
-            Map<String, String> pathParams, String path, byte[] body) {
-        super("http", service, api, traceInfo);
+            Map<String, String> pathParams, String path, byte[] body, RevolverExecutorType revolverExecutorType) {
+        super("http", service, api, traceInfo, revolverExecutorType);
         this.headers = new MultivaluedHashMap<>();
         this.queryParams = new MultivaluedHashMap<>();
         this.pathParams = Maps.newHashMap();

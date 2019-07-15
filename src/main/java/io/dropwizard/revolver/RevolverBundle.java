@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.hystrix.contrib.codahalemetricspublisher.HystrixCodaHaleMetricsPublisher;
-import com.netflix.hystrix.contrib.metrics.eventstream.HystrixMetricsStreamServlet;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import io.dropwizard.Configuration;
 import io.dropwizard.ConfiguredBundle;
@@ -37,7 +36,12 @@ import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.ServiceDiscoveryConfig;
+import io.dropwizard.revolver.core.config.hystrix.HystrixUtil;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
+import io.dropwizard.revolver.core.resilience.ResilienceHttpContext;
+import io.dropwizard.revolver.core.resilience.ResilienceUtil;
+import io.dropwizard.revolver.core.sentinel.SentinelUtil;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
@@ -48,6 +52,7 @@ import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.handler.DynamicConfigHandler;
 import io.dropwizard.revolver.http.RevolverHttpClientFactory;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
+import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
@@ -98,8 +103,10 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 @Slf4j
 public abstract class RevolverBundle<T extends Configuration> implements ConfiguredBundle<T> {
 
-    public static final ObjectMapper msgPackObjectMapper = new ObjectMapper(
+    public static final ObjectMapper MSG_PACK_OBJECT_MAPPER = new ObjectMapper(
             new MessagePackFactory());
+    public static final Map<String, Boolean> apiStatus = new ConcurrentHashMap<>();
+
     public static RevolverServiceResolver serviceNameResolver = null;
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
@@ -108,44 +115,86 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
 
     private static RevolverConfig revolverConfig;
+    private static ResilienceHttpContext resilienceHttpContext = new ResilienceHttpContext();
 
-    private static Map<String, RevolverHttpApiConfig> generateApiConfigMap(
-            RevolverHttpServiceConfig serviceConfiguration) {
-        val tokenMatch = Pattern.compile("\\{(([^/])+\\})");
-        List<RevolverHttpApiConfig> apis = new ArrayList<>(serviceConfiguration.getApis());
-        apis.sort((o1, o2) -> {
-            String o1Expr = generatePathExpression(o1.getPath());
-            String o2Expr = generatePathExpression(o2.getPath());
-            return tokenMatch.matcher(o2Expr).groupCount() - tokenMatch.matcher(o1Expr)
-                    .groupCount();
-        });
-        apis.sort(Comparator.comparing(RevolverHttpApiConfig::getPath));
-        apis.forEach(apiConfig -> {
-            ApiPathMap apiPathMap = ApiPathMap.builder().api(apiConfig)
-                    .path(generatePathExpression(apiConfig.getPath())).build();
-            //Update
-            int elementIndex = serviceToPathMap
-                    .getOrDefault(serviceConfiguration.getService(), Collections.emptyList())
-                    .indexOf(apiPathMap);
-            if (elementIndex == -1) {
-                serviceToPathMap.add(serviceConfiguration.getService(), apiPathMap);
-            } else {
-                serviceToPathMap.get(serviceConfiguration.getService())
-                        .set(elementIndex, apiPathMap);
+    @Override
+    public void initialize(Bootstrap<?> bootstrap) {
+        //Reset everything before configuration
+        HystrixPlugins.reset();
+        registerTypes(bootstrap);
+        bootstrap.addBundle(new MsgPackBundle());
+        bootstrap.addBundle(
+                new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
+        bootstrap.addBundle(new RiemannBundle<Configuration>() {
+            @Override
+            public RiemannConfig getRiemannConfiguration(Configuration configuration) {
+                if (configuration instanceof RevolverConfig) {
+                    return ((RevolverConfig) configuration).getRiemann();
+                }
+                return null;
             }
         });
-        ImmutableMap.Builder<String, RevolverHttpApiConfig> configMapBuilder = ImmutableMap
-                .builder();
-        apis.forEach(apiConfig -> configMapBuilder.put(apiConfig.getApi(), apiConfig));
-        return configMapBuilder.build();
     }
 
-    private static String generatePathExpression(String path) {
-        if (Strings.isNullOrEmpty(path)) {
-            return "";
-        }
-        return path.replaceAll("\\{(([^/])+\\})", "(([^/])+)");
+    @Override
+    public void run(T configuration, Environment environment) {
+        //Add metrics publisher
+        HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(
+                environment.metrics());
+        val metrics = environment.metrics();
+        ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
+                .scheduledExecutorService("metrics-builder").build();
+
+        initializeRevolver(configuration, environment);
+
+        HystrixUtil.initializeHystrix(environment, metricsPublisher, revolverConfig);
+        SentinelUtil.initializeSentinel(revolverConfig);
+        ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext, environment.metrics());
+
+        initializeOptimizer(metrics, scheduledExecutorService);
+
+        PersistenceProvider persistenceProvider = getPersistenceProvider(configuration,
+                environment);
+        InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
+                .persistenceProvider(persistenceProvider).revolverConfig(revolverConfig).build();
+
+        registerResources(environment, metrics, persistenceProvider, callbackHandler);
+        registerMappers(environment);
+        registerFilters(environment);
     }
+
+
+    public abstract RevolverConfig getRevolverConfig(T configuration);
+
+    public abstract String getRevolverConfigAttribute();
+
+    public abstract ConfigSource getConfigSource();
+
+    public void onConfigChange(String configData) {
+        log.info("Config changed! Override to propagate config changes to other bundles");
+    }
+
+    PersistenceProvider getPersistenceProvider(T configuration, Environment environment) {
+        RevolverConfig revolverConfig = getRevolverConfig(configuration);
+        //Default for avoiding no mailbox config NPE
+        if (revolverConfig.getMailBox() == null) {
+            return new InMemoryPersistenceProvider();
+        }
+        switch (revolverConfig.getMailBox().getType()) {
+            case "in_memory":
+                return new InMemoryPersistenceProvider();
+            case "aerospike":
+                AerospikeConnectionManager
+                        .init((AerospikeMailBoxConfig) revolverConfig.getMailBox());
+                return new AeroSpikePersistenceProvider(
+                        (AerospikeMailBoxConfig) revolverConfig.getMailBox(),
+                        environment.getObjectMapper());
+        }
+        throw new IllegalArgumentException("Invalid mailbox configuration");
+    }
+
+    public abstract CuratorFramework getCurator();
+
 
     public static ApiPathMap matchPath(String service, String path) {
         if (serviceToPathMap.containsKey(service)) {
@@ -167,18 +216,25 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST,
                     "No api spec defined for service: " + service);
         }
+        RevolverHttpContext revolverContext = getRevolverContext(serviceKey);
         return RevolverHttpCommand.builder().apiConfiguration(apiConfig.get(serviceKey))
                 .clientConfiguration(revolverConfig.getClientConfig())
                 .runtimeConfig(revolverConfig.getGlobal())
+                .revolverContext(revolverContext)
                 .serviceConfiguration(serviceConfig.get(service)).build();
     }
 
-    private static RevolverHttpCommand getTestHttpCommand(RevolverHttpServiceConfig serviceConfig) {
-        return RevolverHttpCommand.builder().apiConfiguration(RevolverHttpApiConfig.configBuilder()
-                .method(RevolverHttpApiConfig.RequestMethod.GET).api("test").path("/").build())
-                .clientConfiguration(revolverConfig.getClientConfig())
-                .runtimeConfig(revolverConfig.getGlobal()).serviceConfiguration(serviceConfig)
-                .build();
+    private static RevolverHttpContext getRevolverContext(String serviceKey) {
+        RevolverHttpApiConfig revolverHttpApiConfig = apiConfig.get(serviceKey);
+        RevolverExecutorType revolverExecutorType = revolverHttpApiConfig.getRevolverExecutorType();
+        if (revolverExecutorType == null) {
+            return new ResilienceHttpContext();
+        }
+        switch (revolverExecutorType) {
+            case RESILIENCE:
+                return resilienceHttpContext;
+        }
+        return new RevolverHttpContext();
     }
 
     public static RevolverServiceResolver getServiceNameResolver() {
@@ -201,6 +257,18 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             }
         }
     }
+
+    public static Map<String, RevolverHttpServiceConfig> getServiceConfig() {
+        return serviceConfig;
+    }
+
+    public static void addHttpCommand(RevolverHttpServiceConfig config) {
+        if (!serviceConfig.containsKey(config.getService())) {
+            serviceConfig.put(config.getService(), config);
+            registerCommand(config, config);
+        }
+    }
+
 
     private static void registerHttpsCommand(RevolverServiceConfig config) {
         RevolverHttpsServiceConfig httpsConfig = (RevolverHttpsServiceConfig) config;
@@ -295,158 +363,37 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    private static void registerHttpCommand(RevolverServiceConfig config) {
-        RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
-        httpConfig.setSecured(false);
-        registerCommand(config, httpConfig);
+    private void initializeOptimizer(MetricRegistry metrics, ScheduledExecutorService scheduledExecutorService) {
+        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
+        if (optimizerConfig != null && optimizerConfig.isEnabled()) {
+            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
+                    optimizerMetricsCollectorConfig(optimizerConfig.getMetricsCollectorConfig())
+                    .build();
 
-        if (serviceConfig.containsKey(httpConfig.getService())) {
-            serviceConfig.put(config.getService(), httpConfig);
-            if (serviceConnectionPoolMap.get(httpConfig.getService()) != null
-                    && !serviceConnectionPoolMap.get(httpConfig.getService())
-                    .equals(((RevolverHttpServiceConfig) config).getConnectionPoolSize())) {
-                RevolverHttpClientFactory.refreshClient(httpConfig);
+            if (optimizerConfig.getConcurrencyConfig() != null && optimizerConfig
+                    .getConcurrencyConfig().isEnabled()) {
+                OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
+                        .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
+                        .optimizerConfig(optimizerConfig).build();
+                scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
+                        optimizerConfig.getInitialDelay(),
+                        optimizerConfig.getMetricsCollectorConfig().getRepeatAfter(),
+                        optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }
-        } else {
-            serviceConfig.put(config.getService(), httpConfig);
-        }
-        serviceConnectionPoolMap.put(httpConfig.getService(), httpConfig.getConnectionPoolSize());
 
-    }
-
-    public static void addHttpCommand(RevolverHttpServiceConfig config) {
-        if (!serviceConfig.containsKey(config.getService())) {
-            serviceConfig.put(config.getService(), config);
-            registerCommand(config, config);
-        }
-    }
-
-    public static ConcurrentHashMap<String, RevolverHttpServiceConfig> getServiceConfig() {
-        return serviceConfig;
-    }
-
-    @Override
-    public void initialize(Bootstrap<?> bootstrap) {
-        //Reset everything before configuration
-        HystrixPlugins.reset();
-        registerTypes(bootstrap);
-        bootstrap.addBundle(new MsgPackBundle());
-        bootstrap.addBundle(
-                new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
-        bootstrap.addBundle(new RiemannBundle<Configuration>() {
-            @Override
-            public RiemannConfig getRiemannConfiguration(Configuration configuration) {
-                if (configuration instanceof RevolverConfig) {
-                    return ((RevolverConfig) configuration).getRiemann();
-                }
-                return null;
+            if (optimizerConfig.getTimeConfig() != null && optimizerConfig.getTimeConfig()
+                    .isEnabled()) {
+                RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
+                        .optimizerConfig(optimizerConfig)
+                        .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                        .build();
+                scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
+                        optimizerConfig.getInitialDelay(),
+                        optimizerConfig.getConfigUpdaterConfig().getRepeatAfter(),
+                        optimizerConfig.getConfigUpdaterConfig().getTimeUnit());
             }
-        });
-    }
-
-    @Override
-    public void run(T configuration, Environment environment) {
-        //Add metrics publisher
-        HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(
-                environment.metrics());
-        val metrics = environment.metrics();
-        ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
-                .scheduledExecutorService("metrics-builder").build();
-        ScheduledExecutorService configUpdaterExecutorService = environment.lifecycle()
-                .scheduledExecutorService("config-updater").build();
-
-        HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
-        initializeRevolver(configuration, environment);
-        if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
-            environment.getApplicationContext()
-                    .addServlet(HystrixMetricsStreamServlet.class, "/hystrix.stream");
-        } else {
-            environment.getApplicationContext().addServlet(HystrixMetricsStreamServlet.class,
-                    revolverConfig.getHystrixStreamPath());
         }
-        environment.jersey().register(
-                new RevolverExceptionMapper(environment.getObjectMapper(), msgPackObjectMapper));
-        environment.jersey().register(new TimeoutExceptionMapper(environment.getObjectMapper()));
-
-        PersistenceProvider persistenceProvider = getPersistenceProvider(configuration,
-                environment);
-        InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(persistenceProvider).revolverConfig(revolverConfig).build();
-
-        setupOptimizer(metrics, scheduledExecutorService, configUpdaterExecutorService);
-
-        environment.jersey().register(new RevolverRequestFilter(revolverConfig));
-
-        environment.jersey().register(
-                new RevolverRequestResource(environment.getObjectMapper(), msgPackObjectMapper,
-                        persistenceProvider, callbackHandler, metrics, revolverConfig));
-        environment.jersey()
-                .register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
-        environment.jersey().register(
-                new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
-                        msgPackObjectMapper, Collections.unmodifiableMap(apiConfig)));
-        environment.jersey().register(new RevolverMetadataResource(revolverConfig));
-
-        DynamicConfigHandler dynamicConfigHandler = new DynamicConfigHandler(
-                getRevolverConfigAttribute(), revolverConfig, environment.getObjectMapper(),
-                getConfigSource(), this);
-        //Register dynamic config poller if it is enabled
-        if (revolverConfig.isDynamicConfig()) {
-            environment.lifecycle().manage(dynamicConfigHandler);
-        }
-        environment.jersey().register(new RevolverConfigResource(dynamicConfigHandler));
-        environment.jersey().register(new RevolverApiManageResource());
     }
-
-    private void registerTypes(Bootstrap<?> bootstrap) {
-        bootstrap.getObjectMapper()
-                .registerModule(new MetricsModule(TimeUnit.MINUTES, TimeUnit.MILLISECONDS, false));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(RevolverHttpServiceConfig.class, "http"));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(RevolverHttpsServiceConfig.class, "https"));
-        bootstrap.getObjectMapper().registerSubtypes(new NamedType(BasicAuthConfig.class, "basic"));
-        bootstrap.getObjectMapper().registerSubtypes(new NamedType(TokenAuthConfig.class, "token"));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(SimpleEndpointSpec.class, "simple"));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(RangerEndpointSpec.class, "ranger_sharded"));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(InMemoryMailBoxConfig.class, "in_memory"));
-        bootstrap.getObjectMapper()
-                .registerSubtypes(new NamedType(AerospikeMailBoxConfig.class, "aerospike"));
-    }
-
-    public abstract RevolverConfig getRevolverConfig(T configuration);
-
-    public abstract String getRevolverConfigAttribute();
-
-    public abstract ConfigSource getConfigSource();
-
-    public void onConfigChange(String configData) {
-        log.info("Config changed! Override to propagate config changes to other bundles");
-    }
-
-    PersistenceProvider getPersistenceProvider(T configuration, Environment environment) {
-        RevolverConfig revolverConfig = getRevolverConfig(configuration);
-        //Default for avoiding no mailbox config NPE
-        if (revolverConfig.getMailBox() == null) {
-            return new InMemoryPersistenceProvider();
-        }
-        switch (revolverConfig.getMailBox().getType()) {
-            case "in_memory":
-                return new InMemoryPersistenceProvider();
-            case "aerospike":
-                AerospikeConnectionManager
-                        .init((AerospikeMailBoxConfig) revolverConfig.getMailBox());
-                return new AeroSpikePersistenceProvider(
-                        (AerospikeMailBoxConfig) revolverConfig.getMailBox(),
-                        environment.getObjectMapper());
-        }
-        throw new IllegalArgumentException("Invalid mailbox configuration");
-    }
-
-    public abstract CuratorFramework getCurator();
 
     private void initializeRevolver(T configuration, Environment environment) {
         revolverConfig = getRevolverConfig(configuration);
@@ -480,42 +427,114 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    private void setupOptimizer(MetricRegistry metrics, ScheduledExecutorService scheduledExecutorService,
-            ScheduledExecutorService configUpdaterExecutorService) {
-        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
-        if (optimizerConfig != null && optimizerConfig.isEnabled()) {
-            log.info("Optimizer config enabled");
-            OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
-                    .getMetricsCollectorConfig();
-            OptimizerConfigUpdaterConfig configUpdaterConfig = optimizerConfig
-                    .getConfigUpdaterConfig();
-            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
-                    optimizerMetricsCollectorConfig(optimizerMetricsCollectorConfig)
-                    .build();
-            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
-                    .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
-                    .optimizerConfig(optimizerConfig).build();
+    private static void registerHttpCommand(RevolverServiceConfig config) {
+        RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
+        httpConfig.setSecured(false);
+        registerCommand(config, httpConfig);
 
-            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                    optimizerConfig.getInitialDelay(),
-                    optimizerMetricsCollectorConfig.getRepeatAfter(),
-                    optimizerMetricsCollectorConfig.getTimeUnit());
-
-            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
-                    .optimizerConfig(optimizerConfig)
-                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
-                    .build();
-
-            configUpdaterExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
-                    optimizerConfig.getInitialDelay(),
-                    configUpdaterConfig.getRepeatAfter(),
-                    configUpdaterConfig.getTimeUnit());
-
+        if (serviceConfig.containsKey(httpConfig.getService())) {
+            serviceConfig.put(config.getService(), httpConfig);
+            if (serviceConnectionPoolMap.get(httpConfig.getService()) != null
+                    && !serviceConnectionPoolMap.get(httpConfig.getService())
+                    .equals(((RevolverHttpServiceConfig) config).getConnectionPoolSize())) {
+                RevolverHttpClientFactory.refreshClient(httpConfig);
+            }
+        } else {
+            serviceConfig.put(config.getService(), httpConfig);
         }
+        serviceConnectionPoolMap.put(httpConfig.getService(), httpConfig.getConnectionPoolSize());
+
     }
 
-    public MultivaluedMap<String, ApiPathMap> getServiceToPathMap() {
-        return serviceToPathMap;
+    private static void generateApiConfigMap(
+            RevolverHttpServiceConfig serviceConfiguration) {
+        val tokenMatch = Pattern.compile("\\{(([^/])+\\})");
+        List<RevolverHttpApiConfig> apis = new ArrayList<>(serviceConfiguration.getApis());
+        apis.sort((o1, o2) -> {
+            String o1Expr = generatePathExpression(o1.getPath());
+            String o2Expr = generatePathExpression(o2.getPath());
+            return tokenMatch.matcher(o2Expr).groupCount() - tokenMatch.matcher(o1Expr)
+                    .groupCount();
+        });
+        apis.sort(Comparator.comparing(RevolverHttpApiConfig::getPath));
+        apis.forEach(apiConfig -> {
+            ApiPathMap apiPathMap = ApiPathMap.builder().api(apiConfig)
+                    .path(generatePathExpression(apiConfig.getPath())).build();
+            //Update
+            int elementIndex = serviceToPathMap
+                    .getOrDefault(serviceConfiguration.getService(), Collections.emptyList())
+                    .indexOf(apiPathMap);
+            if (elementIndex == -1) {
+                serviceToPathMap.add(serviceConfiguration.getService(), apiPathMap);
+            } else {
+                serviceToPathMap.get(serviceConfiguration.getService())
+                        .set(elementIndex, apiPathMap);
+            }
+        });
+        ImmutableMap.Builder<String, RevolverHttpApiConfig> configMapBuilder = ImmutableMap
+                .builder();
+        apis.forEach(apiConfig -> configMapBuilder.put(apiConfig.getApi(), apiConfig));
+    }
+
+    private static String generatePathExpression(String path) {
+        if (Strings.isNullOrEmpty(path)) {
+            return "";
+        }
+        return path.replaceAll("\\{(([^/])+\\})", "(([^/])+)");
+    }
+
+    private void registerTypes(Bootstrap<?> bootstrap) {
+        bootstrap.getObjectMapper()
+                .registerModule(new MetricsModule(TimeUnit.MINUTES, TimeUnit.MILLISECONDS, false));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(RevolverHttpServiceConfig.class, "http"));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(RevolverHttpsServiceConfig.class, "https"));
+        bootstrap.getObjectMapper().registerSubtypes(new NamedType(BasicAuthConfig.class, "basic"));
+        bootstrap.getObjectMapper().registerSubtypes(new NamedType(TokenAuthConfig.class, "token"));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(SimpleEndpointSpec.class, "simple"));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(RangerEndpointSpec.class, "ranger_sharded"));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(InMemoryMailBoxConfig.class, "in_memory"));
+        bootstrap.getObjectMapper()
+                .registerSubtypes(new NamedType(AerospikeMailBoxConfig.class, "aerospike"));
+    }
+
+
+    private void registerResources(Environment environment, MetricRegistry metrics,
+            PersistenceProvider persistenceProvider, InlineCallbackHandler callbackHandler) {
+        environment.jersey().register(
+                new RevolverRequestResource(environment.getObjectMapper(), MSG_PACK_OBJECT_MAPPER,
+                        persistenceProvider, callbackHandler, metrics, revolverConfig));
+        environment.jersey()
+                .register(new RevolverCallbackResource(persistenceProvider, callbackHandler));
+        environment.jersey().register(new RevolverMetadataResource(revolverConfig));
+        environment.jersey().register(
+                new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
+                        MSG_PACK_OBJECT_MAPPER, Collections.unmodifiableMap(apiConfig)));
+
+        DynamicConfigHandler dynamicConfigHandler = new DynamicConfigHandler(
+                getRevolverConfigAttribute(), revolverConfig, environment.getObjectMapper(),
+                getConfigSource(), this);
+        //Register dynamic config poller if it is enabled
+        if (revolverConfig.isDynamicConfig()) {
+            environment.lifecycle().manage(dynamicConfigHandler);
+        }
+        environment.jersey().register(new RevolverConfigResource(dynamicConfigHandler));
+        environment.jersey().register(new RevolverApiManageResource());
+    }
+
+    private void registerFilters(Environment environment) {
+        environment.jersey().register(new RevolverRequestFilter(revolverConfig));
+    }
+
+    private void registerMappers(Environment environment) {
+        environment.jersey().register(
+                new RevolverExceptionMapper(environment.getObjectMapper(), MSG_PACK_OBJECT_MAPPER));
+        environment.jersey().register(new TimeoutExceptionMapper(environment.getObjectMapper()));
     }
 
 }
+

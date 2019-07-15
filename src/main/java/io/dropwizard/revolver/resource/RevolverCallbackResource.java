@@ -19,7 +19,6 @@ package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.base.Strings;
-import com.google.common.io.ByteStreams;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
@@ -29,7 +28,6 @@ import io.dropwizard.revolver.util.HeaderUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;

@@ -71,8 +71,9 @@ public class RevolverHttpCommand extends
     public RevolverHttpCommand(RuntimeConfig runtimeConfig,
             ClientConfig clientConfiguration,
             RevolverHttpServiceConfig serviceConfiguration,
-            RevolverHttpApiConfig apiConfiguration) {
-        super(new RevolverHttpContext(), clientConfiguration, runtimeConfig, serviceConfiguration,
+            RevolverHttpApiConfig apiConfiguration,
+            RevolverHttpContext revolverContext) {
+        super(revolverContext, clientConfiguration, runtimeConfig, serviceConfiguration,
                 apiConfiguration);
         this.client = RevolverHttpClientFactory.buildClient(serviceConfiguration);
     }
@@ -83,7 +84,7 @@ public class RevolverHttpCommand extends
     }
 
     @Override
-    protected RevolverHttpResponse execute(RevolverHttpContext context,
+    public RevolverHttpResponse execute(RevolverHttpContext context,
             RevolverHttpRequest request) throws Exception {
         Preconditions.checkNotNull(client);
         RevolverHttpApiConfig apiConfig = getApiConfiguration();

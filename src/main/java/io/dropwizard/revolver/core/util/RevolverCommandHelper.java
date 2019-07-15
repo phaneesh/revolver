@@ -198,8 +198,9 @@ public class RevolverCommandHelper {
                 .andThreadPoolPropertiesDefaults(
                         HystrixThreadPoolProperties.Setter().withCoreSize(coreSize)
                                 .withMaxQueueSize(threadPoolConfig.getMaxRequestQueueSize())
-                                .withMaximumSize(concurrency).withKeepAliveTimeMinutes(
-                                threadPoolConfig.getKeepAliveTimeInMinutes())
+                                .withMaximumSize(concurrency)
+                                .withKeepAliveTimeMinutes(
+                                        threadPoolConfig.getKeepAliveTimeInMinutes())
                                 .withQueueSizeRejectionThreshold(
                                         threadPoolConfig.getDynamicRequestQueueSize())
                                 .withAllowMaximumSizeToDivergeFromCoreSize(true)

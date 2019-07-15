@@ -38,11 +38,18 @@ import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.core.config.resilience.ResilienceCommandConfig;
+import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.core.config.sentinel.SentinelFlowControlConfig;
+import io.dropwizard.revolver.core.config.sentinel.SentinelGrade;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
+import io.dropwizard.revolver.core.sentinel.SentinelUtil;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
 import io.dropwizard.revolver.handler.ConfigSource;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig.RequestMethod;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
@@ -87,6 +94,7 @@ public class BaseRevolverTest {
     protected static InlineCallbackHandler callbackHandler;
 
     static {
+        when(environment.getObjectMapper()).thenReturn(mapper);
 
         val simpleEndpoint = new SimpleEndpointSpec();
         simpleEndpoint.setHost("localhost");
@@ -135,53 +143,98 @@ public class BaseRevolverTest {
                                         .threadPools(Lists.newArrayList(threadPoolConfig)).build())
                                 .serviceSplitConfig(RevolverHttpServiceSplitConfig.builder()
                                         .configs(Lists.newArrayList(s1, s2)).build())
-                                .api(RevolverHttpApiConfig.configBuilder().api("test")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                        .path("{version}/test").runtime(
+                                .sentinelCommandConfig(SentinelCommandConfig.builder()
+                                        .flowControlConfig(SentinelFlowControlConfig.builder()
+                                                .concurrency(1)
+                                                .grade(SentinelGrade.FLOW_GRADE_THREAD)
+                                                .poolName("test").build())
+                                        .build())
+                                .api(RevolverHttpApiConfig.configBuilder()
+                                        .api("test")
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
+                                        .path("{version}/test")
+                                        .runtime(
                                                 HystrixCommandConfig.builder().threadPool(
                                                         ThreadPoolConfig.builder().concurrency(1)
                                                                 .timeout(2000).build()).build())
-                                        .build()).api(RevolverHttpApiConfig.configBuilder()
-                                .api("test_path_expression")
-                                .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                .path("{version}/test_path_expression")
-                                .splitConfig(revolverHttpPathExpressionConfig).runtime(
-                                        HystrixCommandConfig.builder().threadPool(
-                                                ThreadPoolConfig.builder().concurrency(1)
-                                                        .timeout(180000).build()).build()).build())
+                                        .sentinelCommandConfig(SentinelCommandConfig.builder()
+                                                .flowControlConfig(SentinelFlowControlConfig.builder()
+                                                        .concurrency(1)
+                                                        .grade(SentinelGrade.FLOW_GRADE_THREAD)
+                                                        .poolName("test-test").build())
+                                                .build())
+                                        .build())
+                                .api(RevolverHttpApiConfig.configBuilder()
+                                        .api("resilience-test")
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
+                                        .path("{version}/resilience-test")
+                                        .runtime(
+                                                HystrixCommandConfig.builder().threadPool(
+                                                        ThreadPoolConfig.builder().concurrency(1)
+                                                                .timeout(10000).build()).build())
+                                        .resilienceCommandConfig(ResilienceCommandConfig.builder().build())
+                                        .revolverExecutorType(RevolverExecutorType.RESILIENCE)
+                                        .build())
+                                .api(RevolverHttpApiConfig.configBuilder()
+                                        .api("test_path_expression")
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
+                                        .path("{version}/test_path_expression")
+                                        .splitConfig(revolverHttpPathExpressionConfig)
+                                        .runtime(
+                                                HystrixCommandConfig.builder().threadPool(
+                                                        ThreadPoolConfig.builder().concurrency(1)
+                                                                .timeout(180000).build()).build())
+                                        .sentinelCommandConfig(SentinelCommandConfig.builder()
+                                                .flowControlConfig(SentinelFlowControlConfig.builder()
+                                                        .poolName("test").build())
+                                                .build())
+                                        .build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_multi")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
-                                        .path("{version}/test/{operation}").runtime(
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
+                                        .path("{version}/test/{operation}")
+                                        .runtime(
                                                 HystrixCommandConfig.builder().threadPool(
                                                         ThreadPoolConfig.builder().concurrency(1)
                                                                 .timeout(2000).build()).build())
+                                        .sentinelCommandConfig(SentinelCommandConfig.builder()
+                                                .flowControlConfig(SentinelFlowControlConfig.builder().concurrency(1)
+                                                        .grade(SentinelGrade.FLOW_GRADE_THREAD)
+                                                        .poolName("test-test_multi")
+                                                        .build())
+                                                .build())
                                         .build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_split")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("{version}/split").splitConfig(
                                                 RevolverHttpApiSplitConfig.builder().enabled(true)
                                                         .splitStrategy(SplitStrategy.PATH)
@@ -191,13 +244,13 @@ public class BaseRevolverTest {
                                                                 .timeout(20000).build()).build())
                                         .build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_single_split")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("{version}/single_split").splitConfig(
                                                 RevolverHttpApiSplitConfig.builder().enabled(true)
                                                         .splits(Lists.newArrayList(splitConfigv4))
@@ -206,13 +259,13 @@ public class BaseRevolverTest {
                                                 ThreadPoolConfig.builder().concurrency(1)
                                                         .timeout(20000).build()).build()).build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_service_split")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("{version}/test_service_split").splitConfig(
                                                 RevolverHttpApiSplitConfig.builder().enabled(true)
                                                         .splits(Lists
@@ -225,13 +278,13 @@ public class BaseRevolverTest {
                                                                 .timeout(30000).build()).build())
                                         .build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_retry")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .retryConfig(RevolverApiRetryConfig.builder().enabled(true)
                                                 .build()).path("{version}/test").runtime(
                                                 HystrixCommandConfig.builder().threadPool(
@@ -239,13 +292,13 @@ public class BaseRevolverTest {
                                                                 .timeout(20000).build()).build())
                                         .build()).api(RevolverHttpApiConfig.configBuilder()
                                 .api("test_group_thread_pool")
-                                .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                .method(RequestMethod.GET)
+                                .method(RequestMethod.POST)
+                                .method(RequestMethod.DELETE)
+                                .method(RequestMethod.PATCH)
+                                .method(RequestMethod.PUT)
+                                .method(RequestMethod.HEAD)
+                                .method(RequestMethod.OPTIONS)
                                 .path("{version}/test/{operation}").runtime(
                                         HystrixCommandConfig.builder().threadPool(
                                                 ThreadPoolConfig.builder().concurrency(1)
@@ -257,13 +310,13 @@ public class BaseRevolverTest {
                                 RevolverHttpServiceSplitConfig.builder()
                                         .configs(Lists.newArrayList(s1, s2)).build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("test").runtime(HystrixCommandConfig.builder()
                                                 .threadPool(
                                                         ThreadPoolConfig.builder().concurrency(1)
@@ -273,26 +326,26 @@ public class BaseRevolverTest {
                                 .connectionPoolSize(1).enpoint(securedEndpoint)
                                 .service("test_secured").type("https")
                                 .api(RevolverHttpApiConfig.configBuilder().api("test")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("{version}/test").runtime(
                                                 HystrixCommandConfig.builder().threadPool(
                                                         ThreadPoolConfig.builder().concurrency(1)
                                                                 .timeout(2000).build()).build())
                                         .build())
                                 .api(RevolverHttpApiConfig.configBuilder().api("test_multi")
-                                        .method(RevolverHttpApiConfig.RequestMethod.GET)
-                                        .method(RevolverHttpApiConfig.RequestMethod.POST)
-                                        .method(RevolverHttpApiConfig.RequestMethod.DELETE)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PATCH)
-                                        .method(RevolverHttpApiConfig.RequestMethod.PUT)
-                                        .method(RevolverHttpApiConfig.RequestMethod.HEAD)
-                                        .method(RevolverHttpApiConfig.RequestMethod.OPTIONS)
+                                        .method(RequestMethod.GET)
+                                        .method(RequestMethod.POST)
+                                        .method(RequestMethod.DELETE)
+                                        .method(RequestMethod.PATCH)
+                                        .method(RequestMethod.PUT)
+                                        .method(RequestMethod.HEAD)
+                                        .method(RequestMethod.OPTIONS)
                                         .path("{version}/test/{operation}").runtime(
                                                 HystrixCommandConfig.builder().threadPool(
                                                         ThreadPoolConfig.builder().concurrency(1)
@@ -302,6 +355,7 @@ public class BaseRevolverTest {
         RevolverBundle.serviceNameResolver = RevolverServiceResolver.builder()
                 .objectMapper(environment.getObjectMapper()).build();
         RevolverBundle.loadServiceConfiguration(revolverConfig);
+        SentinelUtil.initializeSentinel(revolverConfig);
 
     }
 

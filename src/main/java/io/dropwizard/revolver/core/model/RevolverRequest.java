@@ -53,4 +53,14 @@ public class RevolverRequest {
     @Valid
     @Builder.Default
     private TraceInfo trace = new TraceInfo();
+
+    @Builder.Default
+    private RevolverExecutorType revolverExecutorType = RevolverExecutorType.HYSTRIX;
+
+    public RevolverExecutorType getRevolverExecutorType() {
+        if (revolverExecutorType == null) {
+            return RevolverExecutorType.HYSTRIX;
+        }
+        return revolverExecutorType;
+    }
 }

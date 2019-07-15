@@ -20,6 +20,9 @@ package io.dropwizard.revolver.http.config;
 import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
+import io.dropwizard.revolver.core.config.resilience.ResilienceCommandConfig;
+import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.retry.RevolverApiRetryConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpApiSplitConfig;
 import java.util.Collections;
@@ -63,6 +66,8 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private ApiLatencyConfig apiLatencyConfig;
 
+    private RevolverExecutorType revolverExecutorType = RevolverExecutorType.HYSTRIX;
+
     @NotNull
     @NotEmpty
     @Singular
@@ -78,13 +83,15 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
     public RevolverHttpApiConfig(String api, HystrixCommandConfig runtime, String path,
             @Singular Set<RequestMethod> methods, Set<Integer> acceptableResponseCodes,
             boolean sharedPool, RevolverHttpApiSplitConfig splitConfig,
-            RevolverApiRetryConfig retryConfig) {
-        super(api, sharedPool, runtime);
+            RevolverApiRetryConfig retryConfig, SentinelCommandConfig sentinelCommandConfig,
+            ResilienceCommandConfig resilienceCommandConfig, RevolverExecutorType revolverExecutorType) {
+        super(api, sharedPool, runtime, sentinelCommandConfig, resilienceCommandConfig);
         this.path = path;
         this.methods = methods;
         this.acceptableResponseCodes = acceptableResponseCodes;
         this.retryConfig = retryConfig;
         this.splitConfig = splitConfig;
+        this.revolverExecutorType = revolverExecutorType;
     }
 
     public enum RequestMethod {

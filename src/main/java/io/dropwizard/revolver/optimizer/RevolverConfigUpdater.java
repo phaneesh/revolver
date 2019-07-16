@@ -38,45 +38,48 @@ public class RevolverConfigUpdater implements Runnable {
 
     @Override
     public void run() {
-
-        log.info("Running revolver config updater job");
-        Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap = Maps.newHashMap();
-        Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
-        if (metricsCache.isEmpty()) {
-            log.info("Metrics cache is empty");
-            return;
-        }
-
-        Map<String, Integer> keyVsMetricCount = Maps.newHashMap();
-        AtomicLong metricsCount = new AtomicLong(0);
-        Map<String, Number> aggregatedAppLevelMetricsValues = Maps.newHashMap();
-
-        metricsCache.forEach((key, optimizerMetrics) -> {
-            if (optimizerAggregatedMetricsMap.get(key.getName()) == null) {
-                optimizerAggregatedMetricsMap.put(key.getName(),
-                        OptimizerAggregatedMetrics.builder().metricsAggValueMap(Maps.newHashMap())
-                                .build());
+        try {
+            log.info("Running revolver config updater job with exception catching enabled");
+            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap = Maps.newHashMap();
+            Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
+            if (metricsCache.isEmpty()) {
+                log.info("Metrics cache is empty");
+                return;
             }
 
-            OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
-                    .get(key.getName());
-            Map<String, Number> aggregatedMetricsValues = optimizerAggregatedMetrics
-                    .getMetricsAggValueMap();
+            Map<String, Integer> keyVsMetricCount = Maps.newHashMap();
+            AtomicLong metricsCount = new AtomicLong(0);
+            Map<String, Number> aggregatedAppLevelMetricsValues = Maps.newHashMap();
 
-            optimizerMetrics.getMetrics().forEach((metric, value) -> {
-                aggregateAppLevelMetrics(aggregatedAppLevelMetricsValues, metric, value,
-                        metricsCount);
-                aggregateApiLevelMetrics(optimizerMetrics, aggregatedMetricsValues, metric, value,
-                        keyVsMetricCount, key);
+            metricsCache.forEach((key, optimizerMetrics) -> {
+                if (optimizerAggregatedMetricsMap.get(key.getName()) == null) {
+                    optimizerAggregatedMetricsMap.put(key.getName(),
+                            OptimizerAggregatedMetrics.builder().metricsAggValueMap(Maps.newHashMap())
+                                    .build());
+                }
+
+                OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
+                        .get(key.getName());
+                Map<String, Number> aggregatedMetricsValues = optimizerAggregatedMetrics
+                        .getMetricsAggValueMap();
+
+                optimizerMetrics.getMetrics().forEach((metric, value) -> {
+                    aggregateAppLevelMetrics(aggregatedAppLevelMetricsValues, metric, value,
+                            metricsCount);
+                    aggregateApiLevelMetrics(optimizerMetrics, aggregatedMetricsValues, metric, value,
+                            keyVsMetricCount, key);
+                });
+
             });
 
-        });
+            updateAvgOfMetrics(keyVsMetricCount, optimizerAggregatedMetricsMap,
+                    aggregatedAppLevelMetricsValues, metricsCount);
 
-        updateAvgOfMetrics(keyVsMetricCount, optimizerAggregatedMetricsMap,
-                aggregatedAppLevelMetricsValues, metricsCount);
-
-        updateRevolverConfig(optimizerAggregatedMetricsMap);
-        updateLatencyThreshold(aggregatedAppLevelMetricsValues);
+            updateRevolverConfig(optimizerAggregatedMetricsMap);
+            updateLatencyThreshold(aggregatedAppLevelMetricsValues);
+        } catch (Exception e) {
+            log.error("Revolver config counldn't be updated : " + e);
+        }
 
     }
 

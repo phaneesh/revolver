@@ -25,8 +25,8 @@ import lombok.NoArgsConstructor;
 import lombok.Singular;
 
 /**
- * A metadata element that can be used to supply authorization info to any external authorization
- * system for basic role based authorizations
+ * A metadata element that can be used to supply authorization info to any external authorization system for basic role
+ * based authorizations
  *
  * @author phaneesh
  */

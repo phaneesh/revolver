@@ -28,11 +28,16 @@ public class OptimizerMetricsCollector implements Runnable {
     @Override
     public void run() {
 
+        log.info("Running optimiser metrics collection job");
         SortedMap<String, Gauge> gauges = metrics.getGauges();
         Long time = System.currentTimeMillis();
 
-        captureThreadPoolMetrics(gauges, time);
-        captureTimeMetrics(gauges, time);
+        try {
+            captureThreadPoolMetrics(gauges, time);
+            captureTimeMetrics(gauges, time);
+        } catch (Exception e) {
+            log.error("Error occurred while executing metrics collector : ", e);
+        }
     }
 
 
@@ -72,6 +77,9 @@ public class OptimizerMetricsCollector implements Runnable {
     private void captureTimeMetrics(SortedMap<String, Gauge> gauges, Long time) {
         OptimizerTimeConfig timeConfig = optimizerConfig.getTimeConfig();
         gauges.forEach((k, v) -> {
+            if (timeConfig == null || !timeConfig.isEnabled()) {
+                return;
+            }
             String[] splits = k.split("\\.");
             if (splits.length < 4) {
                 return;

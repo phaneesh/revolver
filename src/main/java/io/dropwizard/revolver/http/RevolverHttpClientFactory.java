@@ -23,6 +23,7 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.dropwizard.revolver.RevolverBundle;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -36,7 +37,9 @@ import java.security.SecureRandom;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManagerFactory;
@@ -51,6 +54,7 @@ import okhttp3.ConnectionSpec;
 import okhttp3.Credentials;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
+import okhttp3.OkHttpClient.Builder;
 import okhttp3.internal.tls.OkHostnameVerifier;
 import org.apache.commons.lang3.StringUtils;
 
@@ -92,9 +96,7 @@ public class RevolverHttpClientFactory {
         dispatcher.setMaxRequestsPerHost(serviceConfiguration.getConnectionPoolSize());
         dispatcher.setMaxRequests(serviceConfiguration.getConnectionPoolSize());
         builder.retryOnConnectionFailure(true);
-        builder.connectTimeout(0, TimeUnit.MILLISECONDS);
-        builder.readTimeout(0, TimeUnit.MILLISECONDS);
-        builder.writeTimeout(0, TimeUnit.MILLISECONDS);
+        setTimeouts(serviceConfiguration, builder);
         builder.dispatcher(dispatcher);
         if (serviceConfiguration.isAuthEnabled()) {
             switch (serviceConfiguration.getAuth().getType().toLowerCase()) {
@@ -156,6 +158,33 @@ public class RevolverHttpClientFactory {
                     serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
         return builder.build();
+    }
+
+    private static void setTimeouts(RevolverHttpServiceConfig serviceConfiguration,
+            Builder builder) {
+
+        boolean timeoutSet = false;
+        if (serviceConfiguration.getThreadPoolGroupConfig() != null && !serviceConfiguration
+                .getThreadPoolGroupConfig().getThreadPools().isEmpty()) {
+
+            Optional maxTimeout = serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()
+                    .stream().max(Comparator
+                            .comparing(ThreadPoolConfig::getTimeout));
+            if (maxTimeout.isPresent() && maxTimeout.get() instanceof ThreadPoolConfig) {
+                builder.connectTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.readTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.writeTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                timeoutSet = true;
+            }
+        }
+        if (!timeoutSet) {
+            builder.connectTimeout(0, TimeUnit.MILLISECONDS);
+            builder.readTimeout(0, TimeUnit.MILLISECONDS);
+            builder.writeTimeout(0, TimeUnit.MILLISECONDS);
+        }
     }
 
     private static void setSSLContext(String keyStorePath, String keyStorePassword,

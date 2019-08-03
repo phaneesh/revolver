@@ -241,9 +241,10 @@ public class RevolverConfigUpdater implements Runnable {
             return;
         }
         OptimizerConcurrencyConfig concurrencyConfig = optimizerConfig.getConcurrencyConfig();
-        log.info("Enabled : {}, MaxThreadsMultiplier : {}, MaxThreshold : {}",
+        log.info("Enabled : {}, MaxThreadsMultiplier : {}, MaxThreshold : {}, Initial Concurrency : {}, Pool : {}",
                 concurrencyConfig.isEnabled(), concurrencyConfig.getMaxThreadsMultiplier(),
-                concurrencyConfig.getMaxThreshold());
+                concurrencyConfig.getMaxThreshold(), threadPoolConfig.getInitialConcurrency(),
+                threadPoolConfig.getThreadPoolName());
         int maxRollingActiveThreads = optimizerAggregatedMetrics.getMetricsAggValueMap()
                 .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS).intValue();
         int concurrency = threadPoolConfig.getConcurrency();

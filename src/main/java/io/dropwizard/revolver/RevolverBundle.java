@@ -234,8 +234,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             apiStatus.put(key, true);
             apiConfig.put(key, a);
             if (a.getRuntime() != null && a.getRuntime().getThreadPool() != null) {
-                a.getRuntime().getThreadPool()
-                        .setInitialConcurrency(a.getRuntime().getThreadPool().getConcurrency());
+                if (a.getRuntime().getThreadPool().getInitialConcurrency() == 0) {
+                    a.getRuntime().getThreadPool()
+                            .setInitialConcurrency(a.getRuntime().getThreadPool().getConcurrency());
+                }
             }
             if (null != a.getSplitConfig() && a.getSplitConfig().isEnabled()) {
                 updateSplitConfig(a);
@@ -263,6 +265,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             config.getThreadPoolGroupConfig().getThreadPools()
                     .forEach(a -> {
                         if (a.getInitialConcurrency() == 0) {
+                            log.info("Initial Concurrency : {}, Thread Pool : {}", a.getInitialConcurrency(),
+                                    a.getThreadPoolName());
                             a.setInitialConcurrency(a.getConcurrency());
                         }
                     });

@@ -78,4 +78,13 @@ public class DegradeRegistry {
     return timeoutDegradeMap;
   }
 
+
+  public boolean isThreadPoolDegraded(final String key) {
+    return threadPoolDegradeMap.containsKey(key);
+  }
+
+  public boolean isTimeoutDegraded(final String key) {
+    return timeoutDegradeMap.containsKey(key);
+  }
+
 }

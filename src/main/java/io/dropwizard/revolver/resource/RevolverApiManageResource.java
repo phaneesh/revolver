@@ -20,6 +20,7 @@ package io.dropwizard.revolver.resource;
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.revolver.RevolverBundle;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.degrade.DegradeRegistry;
 import io.swagger.annotations.ApiOperation;
 import lombok.Builder;
@@ -132,6 +133,36 @@ public class RevolverApiManageResource {
         }
     }
 
+    @Path("/v1/manage/api/degrade/threadpoolgroup/concurrency/{service}/{threadpool}/{factor}")
+    @POST
+    @Metered
+    @ApiOperation(value = "Enable threadpool degrade for service")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response degradeServiceThreadPool(@PathParam("service") String service,
+                                      @PathParam("threadpool") String threadpool, @PathParam("factor") double factor) {
+        if (!RevolverBundle.getServiceConfig().containsKey(service)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        if(null == RevolverBundle.getServiceConfig().get(service).getThreadPoolGroupConfig()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        if(RevolverBundle.getServiceConfig().get(service).getThreadPoolGroupConfig()
+            .getThreadPools().stream().map(ThreadPoolConfig::getThreadPoolName).noneMatch(n -> n.equals(threadpool))) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        DegradeRegistry.getInstance().addThreadPoolDegrade(service +"." +threadpool, factor);
+        return Response.ok(ImmutableMap.<String, Object>builder().put("service", service)
+            .put("threadpool", threadpool)
+            .put("factor", factor).build())
+            .build();
+    }
+
     @Path("/v1/manage/api/degrade/threadpool/disable/{service}/{api}")
     @POST
     @Metered
@@ -150,6 +181,24 @@ public class RevolverApiManageResource {
                 .entity(ImmutableMap.<String, Object>builder().put("service", service)
                     .put("api", api).build()).build();
         }
+    }
+
+    @Path("/v1/manage/api/degrade/disable/threadpoolgroup/concurrency/{service}/{threadpool}")
+    @POST
+    @Metered
+    @ApiOperation(value = "Enable threadpool degrade for service")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response disableDegradeServiceThreadPool(@PathParam("service") String service,
+                                             @PathParam("threadpool") String threadpool) {
+        if (!DegradeRegistry.getInstance().getThreadPoolDegradeStatus().containsKey(service +"." +threadpool)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        DegradeRegistry.getInstance().removeThreadPoolDegrade(service +"." +threadpool);
+        return Response.ok(ImmutableMap.<String, Object>builder().put("service", service)
+            .put("threadpool", threadpool))
+            .build();
     }
 
     @Path("/v1/manage/api/degrade/timeout/{service}/{api}/{factor}")
@@ -173,6 +222,37 @@ public class RevolverApiManageResource {
         }
     }
 
+    @Path("/v1/manage/api/degrade/threadpoolgroup/timeout/{service}/{threadpool}/{factor}")
+    @POST
+    @Metered
+    @ApiOperation(value = "Enable timeout degrade for service")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response degradeServiceTimeout(@PathParam("service") String service,
+                                             @PathParam("threadpool") String threadpool, @PathParam("factor") double factor) {
+        if (!RevolverBundle.getServiceConfig().containsKey(service)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        if(null == RevolverBundle.getServiceConfig().get(service).getThreadPoolGroupConfig()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        if(RevolverBundle.getServiceConfig().get(service).getThreadPoolGroupConfig()
+            .getThreadPools().stream().map(ThreadPoolConfig::getThreadPoolName).noneMatch(n -> n.equals(threadpool))) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        DegradeRegistry.getInstance().addTimeoutDegrade(service +"." +threadpool, factor);
+        return Response.ok(ImmutableMap.<String, Object>builder().put("service", service)
+            .put("threadpool", threadpool)
+            .put("factor", factor).build())
+            .build();
+    }
+
+
     @Path("/v1/manage/api/degrade/timeout/disable/{service}/{api}")
     @POST
     @Metered
@@ -190,6 +270,24 @@ public class RevolverApiManageResource {
                 .entity(ImmutableMap.<String, Object>builder().put("service", service)
                     .put("api", api).build()).build();
         }
+    }
+
+    @Path("/v1/manage/api/degrade/threadpoolgroup/timeout/disable/{service}/{threadpool}")
+    @POST
+    @Metered
+    @ApiOperation(value = "Enable timeout degrade for service")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response disableDegradeServiceTimeout(@PathParam("service") String service,
+                                          @PathParam("threadpool") String threadpool) {
+        if(!DegradeRegistry.getInstance().getTimeoutDegradeStatus().containsKey(service +"." +threadpool)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(ImmutableMap.<String, Object>builder().put("service", service)
+                    .put("threadpool", threadpool).build()).build();
+        }
+        DegradeRegistry.getInstance().removeTimeoutDegrade(service +"." +threadpool);
+        return Response.ok(ImmutableMap.<String, Object>builder().put("service", service)
+            .put("threadpool", threadpool))
+            .build();
     }
 
     @Path("/v1/manage/api/degrade/status")

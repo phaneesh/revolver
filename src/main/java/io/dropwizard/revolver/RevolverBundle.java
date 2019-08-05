@@ -36,6 +36,7 @@ import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.degrade.DegradeRegistry;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
@@ -401,6 +402,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     configUpdaterConfig.getTimeUnit());
 
         }
+
+        DegradeRegistry.getInstance();
 
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 

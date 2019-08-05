@@ -6,6 +6,7 @@ import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.degrade.DegradeRegistry;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
@@ -220,16 +221,23 @@ public class RevolverConfigUpdater implements Runnable {
         if (optimizerAggregatedMetrics == null) {
             return;
         }
-        updateConcurrencySetting(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
+        if(!DegradeRegistry.getInstance().isThreadPoolDegraded(key)) {
+            updateConcurrencySetting(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
                 configUpdated, api.getApi());
-        updateTimeoutSettings(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
+        }
+        if(!DegradeRegistry.getInstance().isTimeoutDegraded(key)) {
+            updateTimeoutSettings(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
                 configUpdated, api);
-        updateLatencySettings(api, optimizerAggregatedMetrics);
+            updateLatencySettings(api, optimizerAggregatedMetrics);
+        }
     }
 
     private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig,
             OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
             String poolName) {
+        if(DegradeRegistry.getInstance().isThreadPoolDegraded(poolName)) {
+            return;
+        }
         OptimizerConcurrencyConfig optimizerConcurrencyConfig = optimizerConfig
                 .getConcurrencyConfig();
         if (optimizerConcurrencyConfig == null || !optimizerConfig.getConcurrencyConfig()

@@ -112,7 +112,7 @@ public class RevolverApiManageResource {
         }
     }
 
-    @Path("/v1/manage/api/degrade/threadpool/{service}/{api}/{factor}")
+    @Path("/v1/manage/api/degrade/threadpool/concurrency/{service}/{api}/{factor}")
     @POST
     @Metered
     @ApiOperation(value = "Enable threadpool degrade for api")
@@ -163,7 +163,7 @@ public class RevolverApiManageResource {
             .build();
     }
 
-    @Path("/v1/manage/api/degrade/threadpool/disable/{service}/{api}")
+    @Path("/v1/manage/api/degrade/threadpool/concurrency/disable/{service}/{api}")
     @POST
     @Metered
     @ApiOperation(value = "Disable threadpool degrade for api")

@@ -21,23 +21,26 @@ package io.dropwizard.revolver.core;
  * @author phaneesh
  */
 public class RevolverExecutionException extends RuntimeException {
+
+    private static final long serialVersionUID = -8567678723466161055L;
     private final Type type;
 
-    public RevolverExecutionException(final Type type) {
+    public RevolverExecutionException(Type type) {
         this.type = type;
     }
 
-    public RevolverExecutionException(final Type type, final String message) {
+    public RevolverExecutionException(Type type, String message) {
         super(message);
         this.type = type;
     }
 
-    public RevolverExecutionException(final Type type, final String message, final Throwable cause) {
+    public RevolverExecutionException(Type type, String message,
+            Throwable cause) {
         super(message, cause);
         this.type = type;
     }
 
-    public RevolverExecutionException(final Type type, final Throwable cause) {
+    public RevolverExecutionException(Type type, Throwable cause) {
         super(cause);
         this.type = type;
     }
@@ -47,9 +50,7 @@ public class RevolverExecutionException extends RuntimeException {
     }
 
     public enum Type {
-        SERVICE_ERROR,
-        DOWNSTREAM_SERVICE_CALL_FAILURE,
-        BAD_REQUEST;
+        SERVICE_ERROR, DOWNSTREAM_SERVICE_CALL_FAILURE, BAD_REQUEST;
 
         Type() {
         }

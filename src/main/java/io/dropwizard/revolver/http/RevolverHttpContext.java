@@ -18,12 +18,12 @@
 package io.dropwizard.revolver.http;
 
 import io.dropwizard.revolver.core.RevolverContext;
-import okhttp3.OkHttpClient;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 /**
  * @author phaneesh
  */
 public class RevolverHttpContext extends RevolverContext {
 
-    private OkHttpClient httpClient;
+    private CloseableHttpClient httpClient;
 }

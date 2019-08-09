@@ -17,22 +17,29 @@
 
 package io.dropwizard.revolver.resource;
 
-import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.head;
+import static com.github.tomakehurst.wiremock.client.WireMock.options;
+import static com.github.tomakehurst.wiremock.client.WireMock.patch;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static org.junit.Assert.assertEquals;
+
+import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.revolver.BaseRevolverTest;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.testing.junit.ResourceTestRule;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
 import java.util.Collections;
 import java.util.UUID;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static org.junit.Assert.assertEquals;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * @author phaneesh
@@ -40,80 +47,66 @@ import static org.junit.Assert.assertEquals;
 public class RevolverRequestResourceTest extends BaseRevolverTest {
 
     @ClassRule
-    public static final ResourceTestRule resources = ResourceTestRule.builder()
-            .addResource(new RevolverRequestResource(environment.getObjectMapper(),
-                    RevolverBundle.msgPackObjectMapper, RevolverBundle.xmlObjectMapper, inMemoryPersistenceProvider, callbackHandler))
-            .build();
-
-    @Rule
-    public WireMockRule wireMockRule = new WireMockRule(9999);
+    public static final ResourceTestRule resources = ResourceTestRule.builder().addResource(
+            new RevolverRequestResource(environment.getObjectMapper(),
+                    RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider,
+                    callbackHandler, new MetricRegistry(), revolverConfig)).build();
 
     @Test
     public void testGetRequest() {
-        stubFor(get(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(get(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .get().getStatus(), 200);
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).get()
+                .getStatus(), 200);
     }
 
     @Test
     public void testPostRequest() {
-        stubFor(post(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(post(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .post(null).getStatus(), 200);
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).post(null)
+                .getStatus(), 200);
     }
 
     @Test
     public void testPutRequest() {
-        stubFor(put(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(put(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .put(Entity.entity(Collections.singletonMap("test", "test"), MediaType.APPLICATION_JSON)).getStatus(), 200);
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).put(Entity
+                        .entity(Collections.singletonMap("test", "test"),
+                                MediaType.APPLICATION_JSON)).getStatus(), 200);
     }
 
     @Test
     public void testDeleteRequest() {
-        stubFor(delete(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(delete(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(200, resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .delete().getStatus());
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).delete()
+                .getStatus());
     }
 
     @Test
     public void testHeadRequest() {
-        stubFor(head(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(head(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(200, resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .head().getStatus());
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).head()
+                .getStatus());
     }
 
     @Test
     public void testPatchRequest() {
-        stubFor(patch(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(patch(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(200, resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
@@ -122,14 +115,12 @@ public class RevolverRequestResourceTest extends BaseRevolverTest {
 
     @Test
     public void testOptionsRequest() {
-        stubFor(options(urlEqualTo("/v1/test"))
-                .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")));
+        stubFor(options(urlEqualTo("/v1/test")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-Type", "application/json")));
         assertEquals(200, resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
-                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
-                .options().getStatus());
+                .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString()).options()
+                .getStatus());
     }
 
 

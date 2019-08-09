@@ -20,18 +20,22 @@ package io.dropwizard.revolver.aeroapike;
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.Host;
 import com.aerospike.client.IAerospikeClient;
-import com.aerospike.client.policy.*;
+import com.aerospike.client.policy.ClientPolicy;
+import com.aerospike.client.policy.CommitLevel;
+import com.aerospike.client.policy.ConsistencyLevel;
+import com.aerospike.client.policy.Policy;
+import com.aerospike.client.policy.Replica;
+import com.aerospike.client.policy.WritePolicy;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 /**
  * @author phaneesh
@@ -39,16 +43,10 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class AerospikeConnectionManager {
 
-    private AerospikeConnectionManager() {}
-
-    private static IAerospikeClient client;
-
-    private static AerospikeMailBoxConfig config;
-
     public static WritePolicy writePolicy;
-
     public static Policy readPolicy;
-
+    private static IAerospikeClient client;
+    private static AerospikeMailBoxConfig config;
     private static LoadingCache<Integer, WritePolicy> writePolicyCache = CacheBuilder.newBuilder()
             .build(new CacheLoader<Integer, WritePolicy>() {
                 @Override
@@ -65,6 +63,9 @@ public class AerospikeConnectionManager {
                     return wp;
                 }
             });
+
+    private AerospikeConnectionManager() {
+    }
 
     public static void init(AerospikeMailBoxConfig aerospikeConfig) {
         config = aerospikeConfig;
@@ -87,7 +88,6 @@ public class AerospikeConnectionManager {
         writePolicy.sendKey = true;
         writePolicy.expiration = config.getTtl();
 
-
         val clientPolicy = new ClientPolicy();
         clientPolicy.maxConnsPerNode = config.getMaxConnectionsPerNode();
         clientPolicy.readPolicyDefault = readPolicy;
@@ -107,7 +107,7 @@ public class AerospikeConnectionManager {
                 return new Host(host[0], 3000);
             }
         }).toArray(Host[]::new));
-        log.info("Aerospike connection status: " +client.isConnected());
+        log.info("Aerospike connection status: " + client.isConnected());
     }
 
     public static IAerospikeClient getClient() {
@@ -120,7 +120,7 @@ public class AerospikeConnectionManager {
     }
 
     public static void close() {
-        if(null != client) {
+        if (null != client) {
             client.close();
         }
     }

@@ -17,24 +17,31 @@
 
 package io.dropwizard.revolver.core.config;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Lists;
+import io.dropwizard.Configuration;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
+import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
+import io.dropwizard.riemann.RiemannConfig;
+import java.util.List;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Singular;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.NotEmpty;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.NotNull;
-import java.util.List;
-
 /**
  * @author phaneesh
  */
-public class RevolverConfig {
+@AllArgsConstructor
+@Data
+public class RevolverConfig extends Configuration {
 
     @NotNull
     @Valid
@@ -68,7 +75,6 @@ public class RevolverConfig {
     @Singular
     private List<RevolverServiceConfig> services;
 
-    @NotNull
     @Valid
     @Getter
     @Setter
@@ -79,9 +85,31 @@ public class RevolverConfig {
     @Max(30000)
     private int callbackTimeout = 3000;
 
+    @Getter
+    @Setter
+    private boolean dynamicConfig = false;
+
+    @Getter
+    @Setter
+    @Max(30000)
+    private int configPollIntervalSeconds = 600;
+
+    @Getter
+    @Setter
+    private String dynamicConfigUrl = null;
+
+    @JsonProperty("riemann")
+    @Getter
+    @Setter
+    private RiemannConfig riemann;
+
+    private OptimizerConfig optimizerConfig;
+
     @Builder
-    public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global, ServiceResolverConfig serviceResolverConfig,
-                          String hystrixStreamPath, @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox) {
+    public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
+            ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
+            @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
+            OptimizerConfig optimizerConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;
@@ -89,6 +117,8 @@ public class RevolverConfig {
         this.services = services;
         this.mailBox = mailBox;
         this.callbackTimeout = 3000;
+        this.dynamicConfig = false;
+        this.optimizerConfig = optimizerConfig;
     }
 
 
@@ -98,5 +128,8 @@ public class RevolverConfig {
         this.hystrixStreamPath = "/hystrix.stream";
         this.services = Lists.newArrayList();
         this.callbackTimeout = 3000;
+        this.dynamicConfig = false;
+        this.configPollIntervalSeconds = 600;
+        this.dynamicConfigUrl = null;
     }
 }

@@ -16,10 +16,13 @@
  */
 package io.dropwizard.revolver.base.core;
 
-import lombok.*;
-
 import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author phaneesh

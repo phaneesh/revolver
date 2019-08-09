@@ -21,17 +21,16 @@ import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
-import lombok.val;
-import org.apache.commons.lang3.StringUtils;
-
-import javax.inject.Singleton;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.inject.Singleton;
+import javax.ws.rs.core.MultivaluedHashMap;
+import javax.ws.rs.core.MultivaluedMap;
+import lombok.val;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author phaneesh
@@ -50,49 +49,55 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public void saveRequest(final String requestId, final String mailBoxId, final RevolverCallbackRequest request) {
+    public void saveRequest(String requestId, String mailBoxId,
+            RevolverCallbackRequest request) {
         callbackRequests.put(requestId, request);
-        if (!StringUtils.isBlank(mailBoxId))
+        if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+        }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
-    public void saveRequest(final String requestId, final String mailBoxId, final RevolverCallbackRequest request, final int ttl) {
+    public void saveRequest(String requestId, String mailBoxId,
+            RevolverCallbackRequest request, int ttl) {
         callbackRequests.put(requestId, request);
-        if (!StringUtils.isBlank(mailBoxId))
+        if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+        }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
-    public void setRequestState(final String requestId, final RevolverRequestState state, final int ttl) {
+    public void setRequestState(String requestId, RevolverRequestState state,
+            int ttl) {
         callbackStates.put(requestId, state);
     }
 
     @Override
-    public void saveResponse(final String requestId, final RevolverCallbackResponse response, final int ttl) {
+    public void saveResponse(String requestId, RevolverCallbackResponse response,
+            int ttl) {
         callbackResponse.put(requestId, response);
         callbackStates.put(requestId, RevolverRequestState.RESPONDED);
     }
 
     @Override
-    public RevolverRequestState requestState(final String requestId) {
+    public RevolverRequestState requestState(String requestId) {
         return callbackStates.get(requestId);
     }
 
     @Override
-    public RevolverCallbackRequest request(final String requestId) {
+    public RevolverCallbackRequest request(String requestId) {
         return callbackRequests.get(requestId);
     }
 
     @Override
-    public RevolverCallbackResponse response(final String requestId) {
+    public RevolverCallbackResponse response(String requestId) {
         return callbackResponse.get(requestId);
     }
 
     @Override
-    public List<RevolverCallbackRequest> requests(final String mailboxId) {
+    public List<RevolverCallbackRequest> requests(String mailboxId) {
         val requestIds = mailbox.get(mailboxId);
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
@@ -103,17 +108,16 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public List<RevolverCallbackResponses> responses(final String mailboxId) {
+    public List<RevolverCallbackResponses> responses(String mailboxId) {
         val requestIds = mailbox.get(mailboxId);
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
         } else {
             return requestIds.stream().filter(callbackResponse::containsKey)
-                    .map(callbackResponse::get).map(e -> RevolverCallbackResponses
-                            .builder()
-                            .headers(e.getHeaders())
-                            .statusCode(e.getStatusCode()).body(Base64.getEncoder()
-                                    .encodeToString(e.getBody())).build())
+                    .map(callbackResponse::get)
+                    .map(e -> RevolverCallbackResponses.builder().headers(e.getHeaders())
+                            .statusCode(e.getStatusCode())
+                            .body(Base64.getEncoder().encodeToString(e.getBody())).build())
                     .collect(Collectors.toList());
         }
     }

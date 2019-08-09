@@ -17,8 +17,6 @@
 
 package io.dropwizard.revolver.core;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.base.Strings;
 import com.netflix.hystrix.HystrixCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
@@ -26,21 +24,16 @@ import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
-import io.dropwizard.revolver.core.tracing.Trace;
-import io.dropwizard.revolver.core.tracing.TraceCollector;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.core.util.RevolverExceptionHelper;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.MDC;
 import rx.Observable;
-
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * @author phaneesh
@@ -51,63 +44,45 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     private final ContextType context;
     private final RuntimeConfig runtimeConfig;
     private final ServiceConfigurationType serviceConfiguration;
-    private final Map<String, CommandHandlerConfigType> apiConfigurations;
-    private final TraceCollector traceCollector;
+    private final CommandHandlerConfigType apiConfiguration;
     private ClientConfig clientConfiguration;
 
-    public RevolverCommand(final ContextType context, final ClientConfig clientConfiguration,
-                           final RuntimeConfig runtimeConfig, final ServiceConfigurationType serviceConfiguration,
-                           final Map<String, CommandHandlerConfigType> apiConfigurations,
-                           final TraceCollector traceCollector) {
+    public RevolverCommand(ContextType context, ClientConfig clientConfiguration,
+            RuntimeConfig runtimeConfig, ServiceConfigurationType serviceConfiguration,
+            CommandHandlerConfigType apiConfiguration) {
         this.context = context;
         this.clientConfiguration = clientConfiguration;
         this.runtimeConfig = runtimeConfig;
         this.serviceConfiguration = serviceConfiguration;
-        this.apiConfigurations = apiConfigurations;
-        this.traceCollector = traceCollector;
+        this.apiConfiguration = apiConfiguration;
     }
 
     @SuppressWarnings("unchecked")
-    public ResponseType execute(final RequestType request) throws RevolverExecutionException, TimeoutException {
-        final CommandHandlerConfigType apiConfiguration = this.apiConfigurations.get(request.getApi());
-        if (null == apiConfiguration) {
-            throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST, "No api spec defined for key: " + request.getApi());
-        }
-        final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
-        final TraceInfo traceInfo = normalizedRequest.getTrace();
+    public ResponseType execute(RequestType request)
+            throws RevolverExecutionException, TimeoutException {
+        RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
+        TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        final Stopwatch watch = Stopwatch.createStarted();
-        String errorMessage = null;
         try {
-            ResponseType response = (ResponseType) new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()),
-                    this.context, this, normalizedRequest).execute();
-            log.debug("Command response: " + response);
+            ResponseType response = (ResponseType) new RevolverCommandHandler(
+                    RevolverCommandHelper.setter(this, request.getApi()), this.context, this,
+                    normalizedRequest).execute();
+            if (log.isDebugEnabled()) {
+                log.debug("Command response: " + response);
+            }
             return response;
         } catch (Throwable t) {
             Throwable rootCause = ExceptionUtils.getRootCause(t);
+            log.error("Error occurred while executing revolver command for service : " + request
+                    .getService() + ", for api : " + request.getApi() + " with error : " + t);
             if (rootCause == null) {
                 rootCause = t;
             }
             if (rootCause instanceof TimeoutException) {
                 throw (TimeoutException) rootCause;
             }
-            errorMessage = rootCause.getLocalizedMessage();
-            throw new RevolverExecutionException(RevolverExecutionException.Type.SERVICE_ERROR, rootCause);
-        } finally {
-            publishTrace(Trace.builder()
-                    .caller(this.clientConfiguration.getClientName())
-                    .service(this.serviceConfiguration.getService())
-                    .api(apiConfiguration.getApi())
-                    .duration(watch.stop()
-                            .elapsed(TimeUnit.MILLISECONDS))
-                    .transactionId(traceInfo.getTransactionId())
-                    .requestId(traceInfo.getRequestId())
-                    .parentRequestId(traceInfo.getParentRequestId())
-                    .timestamp(traceInfo.getTimestamp())
-                    .attributes(traceInfo.getAttributes())
-                    .error(!Strings.isNullOrEmpty(errorMessage))
-                    .errorReason(errorMessage)
-                    .build());
+            throw new RevolverExecutionException(RevolverExecutionException.Type.SERVICE_ERROR,
+                    rootCause);
         }
     }
 
@@ -119,48 +94,34 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     }
 
     @SuppressWarnings("unchecked")
-    public CompletableFuture<ResponseType> executeAsync(final RequestType request) {
-        final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
-        final TraceInfo traceInfo = normalizedRequest.getTrace();
+    public CompletableFuture<ResponseType> executeAsync(RequestType request) {
+        RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
+        TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        final Stopwatch watch = Stopwatch.createStarted();
-        final Future<ResponseType> responseFuture = new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).queue();
+        Future<ResponseType> responseFuture = new RevolverCommandHandler(
+                RevolverCommandHelper.setter(this, request.getApi()), this.context, this,
+                normalizedRequest).queue();
         return CompletableFuture.supplyAsync(() -> {
-                    String errorMessage = null;
-                    try {
-                        return responseFuture.get();
-                    } catch (Throwable t) {
-                        errorMessage = RevolverExceptionHelper.getLeafErrorMessage(t);
-                        throw new RevolverExecutionException(RevolverExecutionException.Type.SERVICE_ERROR, String.format("Error executing command %s", RevolverCommandHelper.getName(request)), RevolverExceptionHelper.getLeafThrowable(t));
-                    } finally {
-                        publishTrace(Trace.builder()
-                                .caller(this.clientConfiguration.getClientName())
-                                .service(this.serviceConfiguration.getService())
-                                .api(request.getApi())
-                                .duration(watch.stop().elapsed(TimeUnit.MILLISECONDS))
-                                .transactionId(traceInfo.getTransactionId())
-                                .requestId(traceInfo.getRequestId())
-                                .parentRequestId(traceInfo.getParentRequestId())
-                                .timestamp(traceInfo.getTimestamp())
-                                .attributes(traceInfo.getAttributes())
-                                .error(!Strings.isNullOrEmpty(errorMessage))
-                                .errorReason(errorMessage).build());
-                        removeContextInfo();
-                    }
-                }
-        );
+            try {
+                return responseFuture.get();
+            } catch (Throwable t) {
+                throw new RevolverExecutionException(RevolverExecutionException.Type.SERVICE_ERROR,
+                        String.format("Error executing command %s",
+                                RevolverCommandHelper.getName(request)),
+                        RevolverExceptionHelper.getLeafThrowable(t));
+            } finally {
+                removeContextInfo();
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")
-    public Observable<ResponseType> executeAsyncAsObservable(final RequestType request) {
-        final RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
-        final TraceInfo traceInfo = normalizedRequest.getTrace();
+    public Observable<ResponseType> executeAsyncAsObservable(RequestType request) {
+        RequestType normalizedRequest = RevolverCommandHelper.normalize(request);
+        TraceInfo traceInfo = normalizedRequest.getTrace();
         addContextInfo(request, traceInfo);
-        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()), this.context, this, normalizedRequest).toObservable();
-    }
-
-    private void publishTrace(Trace build) {
-        traceCollector.publish(build);
+        return new RevolverCommandHandler(RevolverCommandHelper.setter(this, request.getApi()),
+                this.context, this, normalizedRequest).toObservable();
     }
 
     private void removeContextInfo() {
@@ -175,9 +136,10 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         return true;
     }
 
-    protected abstract ResponseType execute(final ContextType context, final RequestType request) throws Exception;
+    protected abstract ResponseType execute(ContextType context, RequestType request)
+            throws Exception;
 
-    protected abstract ResponseType fallback(final ContextType context, final RequestType request);
+    protected abstract ResponseType fallback(ContextType context, RequestType request);
 
     protected ClientConfig getClientConfiguration() {
         return clientConfiguration;
@@ -192,17 +154,20 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     }
 
 
-    public Map<String, CommandHandlerConfigType> getApiConfigurations() {
-        return this.apiConfigurations;
+    public CommandHandlerConfigType getApiConfiguration() {
+        return this.apiConfiguration;
     }
 
-    private static class RevolverCommandHandler<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig>
-            extends HystrixCommand<ResponseType> {
+    private static class RevolverCommandHandler<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig, CommandHandlerConfigurationType extends CommandHandlerConfig> extends
+            HystrixCommand<ResponseType> {
+
         private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
         private final RequestType request;
         private final ContextType context;
 
-        RevolverCommandHandler(final HystrixCommand.Setter setter, final ContextType context, final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler, final RequestType request) {
+        RevolverCommandHandler(HystrixCommand.Setter setter, ContextType context,
+                RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler,
+                RequestType request) {
             super(setter);
             this.context = context;
             this.handler = handler;

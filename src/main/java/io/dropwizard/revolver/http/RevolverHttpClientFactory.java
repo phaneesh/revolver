@@ -17,32 +17,46 @@
 
 package io.dropwizard.revolver.http;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import io.dropwizard.revolver.RevolverBundle;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.core.HttpHeaders;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
 import okhttp3.Credentials;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
+import okhttp3.OkHttpClient.Builder;
 import okhttp3.internal.tls.OkHostnameVerifier;
 import org.apache.commons.lang3.StringUtils;
-
-import javax.net.ssl.*;
-import javax.ws.rs.core.HttpHeaders;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.util.Collections;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author phaneesh
@@ -50,33 +64,54 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class RevolverHttpClientFactory {
 
-    private static LoadingCache<RevolverHttpServiceConfig, OkHttpClient> clientCache = CacheBuilder.newBuilder()
-            .build(new CacheLoader<RevolverHttpServiceConfig, OkHttpClient>() {
-                @Override
-                public OkHttpClient load(RevolverHttpServiceConfig serviceConfiguration) throws Exception {
-                    return getOkHttpClient(serviceConfiguration);
+    private static final LoadingCache<String, OkHttpClient> clientCache = Caffeine.newBuilder()
+            .removalListener((RemovalListener<String, OkHttpClient>) (service, client, cause) -> {
+                if (Objects.nonNull(client)) {
+                    try {
+                        client.dispatcher().executorService().shutdown();
+                        client.connectionPool().evictAll();
+                    } catch (Exception e) {
+                        log.error("Error cleaning up stale client for service: {}", service, e);
+                    }
                 }
-            });
+            }).build(RevolverHttpClientFactory::getOkHttpClient);
 
-    public static OkHttpClient buildClient(final RevolverHttpServiceConfig serviceConfiguration) throws CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, IOException, UnrecoverableKeyException, ExecutionException {
+    static OkHttpClient buildClient(RevolverHttpServiceConfig serviceConfiguration) {
         Preconditions.checkNotNull(serviceConfiguration);
-        return clientCache.get(serviceConfiguration);
+        return clientCache.get(serviceConfiguration.getService());
     }
 
-    private static OkHttpClient getOkHttpClient(RevolverHttpServiceConfig serviceConfiguration) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
-        final OkHttpClient.Builder builder = new OkHttpClient.Builder();
+    public static void refreshClient(RevolverHttpServiceConfig serviceConfiguration) {
+        clientCache.invalidate(serviceConfiguration.getService());
+    }
+
+    private static OkHttpClient getOkHttpClient(String service)
+            throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
+        RevolverHttpServiceConfig serviceConfiguration = RevolverBundle.getServiceConfig()
+                .get(service);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.followRedirects(false);
+        builder.followSslRedirects(false);
+        val dispatcher = new Dispatcher();
+        dispatcher.setMaxRequestsPerHost(serviceConfiguration.getConnectionPoolSize());
+        dispatcher.setMaxRequests(serviceConfiguration.getConnectionPoolSize());
+        builder.retryOnConnectionFailure(true);
+        setTimeouts(serviceConfiguration, builder);
+        builder.dispatcher(dispatcher);
         if (serviceConfiguration.isAuthEnabled()) {
             switch (serviceConfiguration.getAuth().getType().toLowerCase()) {
                 case "basic":
                     val basicAuthConfig = (BasicAuthConfig) serviceConfiguration.getAuth();
                     if (!Strings.isNullOrEmpty(basicAuthConfig.getUsername())) {
-                        throw new RuntimeException(String.format("No valid authentication data for service %s", serviceConfiguration.getAuth().getType()));
+                        throw new RuntimeException(
+                                String.format("No valid authentication data for service %s",
+                                        serviceConfiguration.getAuth().getType()));
                     }
                     builder.authenticator((route, response) -> {
-                        String credentials = Credentials.basic(basicAuthConfig.getUsername(), basicAuthConfig.getPassword());
+                        String credentials = Credentials.basic(basicAuthConfig.getUsername(),
+                                basicAuthConfig.getPassword());
                         return response.request().newBuilder()
-                                .addHeader(HttpHeaders.AUTHORIZATION, credentials)
-                                .build();
+                                .addHeader(HttpHeaders.AUTHORIZATION, credentials).build();
                     });
                     break;
                 case "token":
@@ -87,57 +122,90 @@ public class RevolverHttpClientFactory {
                                 .build());
                     } else { //with configured prefix
                         builder.authenticator((route, response) -> response.request().newBuilder()
-                                .addHeader(HttpHeaders.AUTHORIZATION, String.format("%s %s", tokenAuthConfig.getPrefix(), tokenAuthConfig.getToken()))
-                                .build());
+                                .addHeader(HttpHeaders.AUTHORIZATION,
+                                        String.format("%s %s", tokenAuthConfig.getPrefix(),
+                                                tokenAuthConfig.getToken())).build());
                     }
                     break;
                 default:
-                    throw new RuntimeException(String.format("Authentication type %s is not supported", serviceConfiguration.getAuth().getType()));
+                    throw new RuntimeException(
+                            String.format("Authentication type %s is not supported",
+                                    serviceConfiguration.getAuth().getType()));
             }
         }
         if (serviceConfiguration.isSecured()) {
-            final ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .allEnabledTlsVersions()
-                    .allEnabledCipherSuites()
-                    .build();
+            ConnectionSpec spec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .allEnabledTlsVersions().allEnabledCipherSuites().build();
             builder.connectionSpecs(Collections.singletonList(spec));
-            final String keystorePath = serviceConfiguration.getKeyStorePath();
-            final String keystorePassword = (serviceConfiguration.getKeystorePassword() == null) ? "" : serviceConfiguration.getKeystorePassword();
+            String keystorePath = serviceConfiguration.getKeyStorePath();
+            String keystorePassword =
+                    (serviceConfiguration.getKeystorePassword() == null) ? ""
+                            : serviceConfiguration.getKeystorePassword();
             if (!StringUtils.isBlank(keystorePath)) {
-                configureSSL(keystorePath, keystorePassword, builder);
+                setSSLContext(keystorePath, keystorePassword, builder);
+                builder.hostnameVerifier(OkHostnameVerifier.INSTANCE);
             } else {
                 HostnameVerifier hostNameVerifier = (s, sslSession) -> true;
                 builder.hostnameVerifier(hostNameVerifier);
             }
         }
         if (serviceConfiguration.getConnectionKeepAliveInMillis() <= 0) {
-            builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), 30, TimeUnit.SECONDS));
+            builder.connectionPool(
+                    new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), 30,
+                            TimeUnit.SECONDS));
         } else {
-            builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(), serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
+            builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(),
+                    serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
-        builder.retryOnConnectionFailure(true);
-        builder.connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.readTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.writeTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.connectTimeout(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-        builder.followRedirects(false);
-        builder.followSslRedirects(false);
         return builder.build();
     }
 
-    private static void configureSSL(final String keyStorePath, final String keyStorePassword, OkHttpClient.Builder clientBuilder) throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
-        final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream instream = RevolverHttpClientFactory.class.getClassLoader().getResourceAsStream(keyStorePath)) {
-            keyStore.load(instream, keyStorePassword.toCharArray());
+    private static void setTimeouts(RevolverHttpServiceConfig serviceConfiguration,
+            Builder builder) {
+
+        boolean timeoutSet = false;
+        if (serviceConfiguration.getThreadPoolGroupConfig() != null && !serviceConfiguration
+                .getThreadPoolGroupConfig().getThreadPools().isEmpty()) {
+
+            Optional maxTimeout = serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()
+                    .stream().max(Comparator
+                            .comparing(ThreadPoolConfig::getTimeout));
+            if (maxTimeout.isPresent() && maxTimeout.get() instanceof ThreadPoolConfig) {
+                builder.connectTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.readTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                builder.writeTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
+                        TimeUnit.MILLISECONDS);
+                timeoutSet = true;
+            }
         }
-        final TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keyStore);
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
-        final SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
-        clientBuilder.hostnameVerifier(OkHostnameVerifier.INSTANCE);
-        clientBuilder.sslSocketFactory(sslContext.getSocketFactory(), (X509TrustManager)trustManagerFactory.getTrustManagers()[0]);
+        if (!timeoutSet) {
+            builder.connectTimeout(0, TimeUnit.MILLISECONDS);
+            builder.readTimeout(0, TimeUnit.MILLISECONDS);
+            builder.writeTimeout(0, TimeUnit.MILLISECONDS);
+        }
     }
 
+    private static void setSSLContext(String keyStorePath, String keyStorePassword,
+            OkHttpClient.Builder builder)
+            throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, KeyManagementException, UnrecoverableKeyException {
+        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        try (InputStream instream = RevolverHttpClientFactory.class.getClassLoader()
+                .getResourceAsStream(keyStorePath)) {
+            keyStore.load(instream, keyStorePassword.toCharArray());
+        }
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory
+                .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init(keyStore);
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory
+                .getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(),
+                new SecureRandom());
+        X509TrustManager trustManager = (X509TrustManager) trustManagerFactory
+                .getTrustManagers()[0];
+        builder.sslSocketFactory(sslContext.getSocketFactory(), trustManager);
+    }
 }

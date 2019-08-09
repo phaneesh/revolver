@@ -37,9 +37,9 @@ Use the following repository:
 Use the following maven dependency:
 ```xml
 <dependency>
-    <groupId>io.dropwizard</groupId>
+    <groupId>io.dropwizard.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>1.2.2-2</version>
+    <version>1.3.7-38-6</version>
 </dependency>
 ```
 
@@ -79,6 +79,14 @@ revolver:
         type: simple
         host: www.mocky.io
         port: 80
+      threadPoolGroupConfig:
+        threadPools:
+          - threadPoolName: group1-thread-pool
+            concurrency: 5
+            maxRequestQueueSize: 10
+          - threadPoolName: group2-thread-pool
+            concurrency: 5
+            maxRequestQueueSize: 10
       apis:
         - api: ping
           async: false
@@ -96,6 +104,42 @@ revolver:
             threadPool:
               concurrency: 5
               timeout: 10000
+        - api: pong
+          async: false
+          path: "{version}/56da42e80f0000ac31a427ce"
+          whitelist: true #Optional metadata for external authentication & authorization systems. Omitting the config will not effect behaviour.
+          methods:
+            - GET
+          authorization:  #Optional metadata for external authorization systems. Omitting the config will not effect behaviour  
+            type: dynamic #can 
+            methods:
+                - GET
+            roles:
+                - user
+          runtime:
+            threadPool:
+              timeout: 10000
+          groupThreadPool:
+            enabled: true
+            name: group1-thread-pool
+        - api: retryer
+          async: false
+          path: "{version}/retry"
+          whitelist: true #Optional metadata for external authentication & authorization systems. Omitting the config will not effect behaviour.
+          methods:
+            - GET
+          authorization:  #Optional metadata for external authorization systems. Omitting the config will not effect behaviour  
+            type: dynamic #can 
+            methods:
+                - GET
+            roles:
+                - user
+          runtime:
+            threadPool:
+              timeout: 10000
+          retryConfig:
+            enabled: true
+            maxRetry: 3
 ```
 
 #### Dashboard
@@ -105,6 +149,7 @@ Contributors
 ------------
 * [@phaneeshn](https://twitter.com/phaneeshn)
 * [Shailesh Satarkar](https://in.linkedin.com/in/theinfiniteloop) - UI/UX Ninja
+* [Nitish Goyal](https://www.linkedin.com/in/nitish-goyal/)
 
 LICENSE
 -------

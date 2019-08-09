@@ -17,14 +17,17 @@
 
 package io.dropwizard.revolver.http.config;
 
-import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
-
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
 
 /**
- * A metadata element that can be used to supply authorization info to any external authorization system
- * for basic role based authorizations
+ * A metadata element that can be used to supply authorization info to any external authorization system for basic role
+ * based authorizations
+ *
  * @author phaneesh
  */
 @Data
@@ -33,14 +36,17 @@ import java.util.Set;
 @Builder
 public class RevolverHttpAuthorizationConfig {
 
+    private String namespace;
+
     @Builder.Default
     private String type = "dynamic";
 
     @Singular
-    @NotEmpty
     private Set<String> methods;
 
     @Singular
-    @NotEmpty
     private Set<String> roles;
+
+    @Singular
+    private Set<String> permissions;
 }

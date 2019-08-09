@@ -18,11 +18,10 @@
 package io.dropwizard.revolver.exception;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.collect.ImmutableMap;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.util.ResponseTransformationUtil;
-
+import java.util.Map;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
@@ -30,45 +29,42 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import java.util.Map;
 
 /**
  * @author phaneesh
  */
 @Provider
-@Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK, MediaType.APPLICATION_XML})
+@Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
+        MediaType.APPLICATION_XML})
 public class RevolverExceptionMapper implements ExceptionMapper<RevolverException> {
 
     private ObjectMapper jsonObjectMapper;
-
-    private XmlMapper xmlObjectMapper;
 
     private ObjectMapper msgPackObjectMapper;
 
     @Context
     private HttpHeaders headers;
 
-    public RevolverExceptionMapper(ObjectMapper objectMapper, XmlMapper xmlObjectMapper, ObjectMapper msgPackObjectMapper) {
+    public RevolverExceptionMapper(ObjectMapper objectMapper, ObjectMapper msgPackObjectMapper) {
         this.jsonObjectMapper = objectMapper;
-        this.xmlObjectMapper = xmlObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
     }
 
     @Override
     public Response toResponse(RevolverException exception) {
-        Map response = ImmutableMap.builder()
-                .put("errorCode", exception.getErrorCode())
+        Map response = ImmutableMap.builder().put("errorCode", exception.getErrorCode())
                 .put("message", exception.getMessage()).build();
         try {
-            if(headers.getAcceptableMediaTypes().size() == 0) {
-                return Response.ok(ResponseTransformationUtil.transform(response,
-                        MediaType.APPLICATION_JSON, jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
-                        MediaType.APPLICATION_JSON).build();
+            if (headers.getAcceptableMediaTypes().size() == 0) {
+                return Response.ok(ResponseTransformationUtil
+                        .transform(response, MediaType.APPLICATION_JSON, jsonObjectMapper,
+                                msgPackObjectMapper), MediaType.APPLICATION_JSON).build();
             }
-            return Response.ok(ResponseTransformationUtil.transform(response,
-                    headers.getAcceptableMediaTypes().get(0).toString(), jsonObjectMapper, xmlObjectMapper, msgPackObjectMapper),
+            return Response.ok(ResponseTransformationUtil
+                            .transform(response, headers.getAcceptableMediaTypes().get(0).toString(),
+                                    jsonObjectMapper, msgPackObjectMapper),
                     headers.getAcceptableMediaTypes().get(0).toString()).build();
-        } catch(Exception e) {
+        } catch (Exception e) {
             return Response.serverError().entity("Server Error".getBytes()).build();
         }
     }

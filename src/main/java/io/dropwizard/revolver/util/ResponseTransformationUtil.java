@@ -18,11 +18,9 @@
 package io.dropwizard.revolver.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.dropwizard.msgpack.MsgPackMediaType;
-
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
+import javax.ws.rs.core.MediaType;
 
 /**
  * @author phaneesh
@@ -30,14 +28,13 @@ import java.io.IOException;
 public interface ResponseTransformationUtil {
 
     static byte[] transform(Object response, String mediaType, ObjectMapper jsonObjectMapper,
-                            XmlMapper xmlObjectMapper, ObjectMapper msgPackObjectMapper) throws IOException {
-        if(mediaType.startsWith(MediaType.APPLICATION_JSON))
+            ObjectMapper msgPackObjectMapper) throws IOException {
+        if (mediaType.startsWith(MediaType.APPLICATION_JSON)) {
             return jsonObjectMapper.writeValueAsBytes(response);
-        if(mediaType.startsWith(MediaType.APPLICATION_XML))
-            return xmlObjectMapper.writer()
-                    .withRootName("Response").writeValueAsBytes(response);
-        if(mediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK))
+        }
+        if (mediaType.startsWith(MsgPackMediaType.APPLICATION_MSGPACK)) {
             return msgPackObjectMapper.writeValueAsBytes(response);
+        }
         return jsonObjectMapper.writeValueAsBytes(response);
     }
 }

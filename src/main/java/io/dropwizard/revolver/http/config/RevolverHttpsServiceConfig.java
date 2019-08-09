@@ -18,13 +18,19 @@
 package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
+import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
-import lombok.*;
-
+import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
+import java.util.Set;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.Singular;
 
 /**
  * @author phaneesh
@@ -48,12 +54,16 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
     private boolean trackingHeaders;
     private boolean compression;
     private int connectionKeepAliveInMillis = 60000;
+    private RevolverHttpServiceSplitConfig serviceSplitConfig;
 
     @Builder
-    public RevolverHttpsServiceConfig(final String type, final String service, final EndpointSpec enpoint, final int connectionPoolSize,
-                                      final boolean authEnabled, final AuthConfig auth, final String keyStorePath,
-                                      final String keystorePassword, @Singular("api") final Set<RevolverHttpApiConfig> apis, final boolean trackingHeaders,
-                                      final boolean compression, final int connectionKeepAliveInMillis) {
+    public RevolverHttpsServiceConfig(final String type, final String service,
+            final EndpointSpec enpoint, final int connectionPoolSize, final boolean authEnabled,
+            final AuthConfig auth, final String keyStorePath, final String keystorePassword,
+            @Singular("api") final Set<RevolverHttpApiConfig> apis, final boolean trackingHeaders,
+            final boolean compression, final int connectionKeepAliveInMillis,
+            ThreadPoolGroupConfig threadPoolGroupConfig,
+            final RevolverHttpServiceSplitConfig serviceSplitConfig) {
         super(type, service);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
@@ -65,5 +75,7 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
         this.trackingHeaders = trackingHeaders;
         this.compression = compression;
         this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
+        this.threadPoolGroupConfig = threadPoolGroupConfig;
+        this.serviceSplitConfig = serviceSplitConfig;
     }
 }

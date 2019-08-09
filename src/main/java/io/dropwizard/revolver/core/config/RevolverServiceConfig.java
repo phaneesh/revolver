@@ -18,13 +18,12 @@
 package io.dropwizard.revolver.core.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.validator.constraints.NotBlank;
-
-import javax.validation.constraints.NotNull;
 
 /**
  * @author phaneesh
@@ -32,21 +31,21 @@ import javax.validation.constraints.NotNull;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type", visible = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 @ToString
 public class RevolverServiceConfig {
 
+    protected ThreadPoolGroupConfig threadPoolGroupConfig;
     @NotNull
     @NotBlank
     private String type;
-
     @NotNull
     @NotBlank
     private String service;
-
+    private String fallbackAddress;
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
 
-    public RevolverServiceConfig(final String type, final String service) {
+    public RevolverServiceConfig(String type, String service) {
         this.type = type;
         this.service = service;
     }

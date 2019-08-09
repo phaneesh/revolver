@@ -36,16 +36,10 @@ public class SimpleEndpointSpec extends EndpointSpec {
 
     @Getter
     @Setter
-    @NotBlank
     private int port;
 
     public SimpleEndpointSpec() {
         super(EndpointSpecType.simple);
-    }
-
-    @Override
-    public void accept(final SpecVisitor visitor) {
-        visitor.visit(this);
     }
 
     @Builder
@@ -53,5 +47,10 @@ public class SimpleEndpointSpec extends EndpointSpec {
         super(type);
         this.host = host;
         this.port = port;
+    }
+
+    @Override
+    public void accept(final SpecVisitor visitor) {
+        visitor.visit(this);
     }
 }

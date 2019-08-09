@@ -17,12 +17,12 @@
 
 package io.dropwizard.revolver;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * @author phaneesh
@@ -33,10 +33,11 @@ public class RevolverBundleTest extends BaseRevolverTest {
 
     @Test
     public void testBootstrap() {
-        assertTrue(bundle.getPersistenceProvider(configuration, environment) instanceof InMemoryPersistenceProvider);
+        assertTrue(bundle.getPersistenceProvider(configuration,
+                environment) instanceof InMemoryPersistenceProvider);
         assertNotNull(bundle.getRevolverConfig(configuration));
         assertNotNull(RevolverBundle.matchPath("test", "v1/test"));
-        assertNotNull(RevolverBundle.getHttpCommand("test"));
+        assertNotNull(RevolverBundle.getHttpCommand("test", "test"));
     }
 
 

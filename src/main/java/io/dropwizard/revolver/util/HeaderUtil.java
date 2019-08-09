@@ -19,7 +19,6 @@ package io.dropwizard.revolver.util;
 
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -29,9 +28,10 @@ import java.util.List;
 public interface HeaderUtil {
 
     static int getTTL(RevolverCallbackRequest callbackRequest) {
-        List<String> ttl = callbackRequest.getHeaders().getOrDefault(RevolversHttpHeaders.MAILBOX_TTL_HEADER, Collections.emptyList());
+        List<String> ttl = callbackRequest.getHeaders()
+                .getOrDefault(RevolversHttpHeaders.MAILBOX_TTL_HEADER, Collections.emptyList());
         int mailboxTtl = -1;
-        if(!ttl.isEmpty()) {
+        if (!ttl.isEmpty()) {
             mailboxTtl = Integer.parseInt(ttl.get(0));
         }
         return mailboxTtl;

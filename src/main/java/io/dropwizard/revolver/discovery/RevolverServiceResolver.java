@@ -17,28 +17,26 @@
 
 package io.dropwizard.revolver.discovery;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flipkart.ranger.ServiceFinderBuilders;
-import com.flipkart.ranger.finder.sharded.SimpleShardedServiceFinder;
 import com.flipkart.ranger.healthcheck.HealthcheckStatus;
 import com.flipkart.ranger.model.ServiceNode;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import io.dropwizard.discovery.client.io.dropwizard.ranger.ServiceDiscoveryClient;
+import io.dropwizard.discovery.common.ShardInfo;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
-import lombok.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryNTimes;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author phaneesh
@@ -46,22 +44,25 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class RevolverServiceResolver {
 
-    private ObjectMapper objectMapper;
     private final boolean discoverEnabled;
     private final CuratorFramework curatorFramework;
     private final ServiceResolverConfig resolverConfig;
-    @Getter
-    private Map<String, ShardedServiceDiscoveryInfo> serviceFinders = Maps.newConcurrentMap();
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private ObjectMapper objectMapper;
+    @Getter
+    private Map<String, ServiceDiscoveryClient> serviceFinders = Maps.newConcurrentMap();
 
     @Builder
-    public RevolverServiceResolver(final ServiceResolverConfig resolverConfig, final ObjectMapper objectMapper) {
+    public RevolverServiceResolver(ServiceResolverConfig resolverConfig,
+            ObjectMapper objectMapper) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
         if (resolverConfig != null) {
             if (!Strings.isNullOrEmpty(resolverConfig.getZkConnectionString())) {
-                this.curatorFramework = CuratorFrameworkFactory.builder().connectString(resolverConfig.getZkConnectionString())
-                        .namespace(resolverConfig.getNamespace()).retryPolicy(new RetryNTimes(1000, 500)).build();
+                this.curatorFramework = CuratorFrameworkFactory.builder()
+                        .connectString(resolverConfig.getZkConnectionString())
+                        .namespace(resolverConfig.getNamespace())
+                        .retryPolicy(new RetryNTimes(1000, 500)).build();
                 this.curatorFramework.start();
                 this.discoverEnabled = true;
             } else {
@@ -75,119 +76,98 @@ public class RevolverServiceResolver {
     }
 
     @Builder(builderMethodName = "usingCurator")
-    public RevolverServiceResolver(final ServiceResolverConfig resolverConfig, final ObjectMapper objectMapper, final CuratorFramework curatorFramework) {
+    public RevolverServiceResolver(ServiceResolverConfig resolverConfig, ObjectMapper objectMapper,
+            CuratorFramework curatorFramework) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
         this.curatorFramework = curatorFramework;
         this.discoverEnabled = true;
     }
 
-    public Endpoint resolve(final EndpointSpec endpointSpecification) {
-        return new SpecResolver(this.discoverEnabled, this.serviceFinders).resolve(endpointSpecification);
+    public Endpoint resolve(EndpointSpec endpointSpecification) {
+        return new SpecResolver(this.discoverEnabled, this.serviceFinders)
+                .resolve(endpointSpecification);
     }
 
 
-    public void register(final EndpointSpec endpointSpecification) {
+    public void register(EndpointSpec endpointSpecification) {
         endpointSpecification.accept(new SpecVisitor() {
 
             @Override
-            public void visit(final SimpleEndpointSpec simpleEndpointSpecification) {
+            public void visit(SimpleEndpointSpec simpleEndpointSpecification) {
                 log.info("Initialized simple service: " + simpleEndpointSpecification.getHost());
             }
 
             @Override
             @SuppressWarnings("unchecked")
-            public void visit(final RangerEndpointSpec rangerEndpointSpecification) {
+            public void visit(RangerEndpointSpec rangerEndpointSpecification) {
                 try {
-                    final SimpleShardedServiceFinder serviceFinder = (SimpleShardedServiceFinder) ServiceFinderBuilders
-                            .shardedFinderBuilder().withCuratorFramework(curatorFramework)
-                            .withNamespace(resolverConfig.getNamespace())
-                            .withServiceName(rangerEndpointSpecification.getService()).withDeserializer(data -> {
-                                        try {
-                                            JsonNode nodeInfoRoot = objectMapper.readTree(data);
-                                            if (nodeInfoRoot.has("node_data")) {
-                                                ServiceNode serviceNode = new ServiceNode(nodeInfoRoot.get("host").asText(), nodeInfoRoot.get("port").asInt(), objectMapper.treeToValue(nodeInfoRoot.get("node_data"), ShardInfo.class));
-                                                serviceNode.setHealthcheckStatus(HealthcheckStatus.valueOf(nodeInfoRoot.get("healthcheck_status").asText()));
-                                                serviceNode.setLastUpdatedTimeStamp(nodeInfoRoot.get("last_updated_time_stamp").asLong());
-                                                return serviceNode;
-                                            }
-                                            return objectMapper.readValue(data, new TypeReference<ServiceNode<ShardInfo>>() {
-                                            });
-                                        } catch (IOException e) {
-                                            throw new RuntimeException("Error deserializing results", e);
-                                        }
-                                    }
-                            ).build();
-                    serviceFinders.put(rangerEndpointSpecification.getService(), ShardedServiceDiscoveryInfo.builder().environment(rangerEndpointSpecification.getEnvironment()).shardFinder(serviceFinder).build());
-                    executorService.submit(() -> {
-                                try {
-                                    log.info("Service finder starting for: " + rangerEndpointSpecification.getService());
-                                    serviceFinder.start();
-                                } catch (Exception e) {
-                                    log.error("Error registering service finder started for: " + rangerEndpointSpecification.getService(), e);
-                                }
-                                return null;
+                    if (!serviceFinders.containsKey(rangerEndpointSpecification
+                            .getService())) { //Avoid duplicate registration
+                        ServiceDiscoveryClient discoveryClient = ServiceDiscoveryClient
+                                .fromCurator().curator(curatorFramework)
+                                .environment(rangerEndpointSpecification.getEnvironment())
+                                .namespace(resolverConfig.getNamespace()).objectMapper(objectMapper)
+                                .serviceName(rangerEndpointSpecification.getService()).build();
+                        serviceFinders
+                                .put(rangerEndpointSpecification.getService(), discoveryClient);
+                        executorService.submit(() -> {
+                            try {
+                                log.info("Service finder starting for: "
+                                        + rangerEndpointSpecification.getService());
+                                discoveryClient.start();
+                                log.info("Initialized ZK service: " + rangerEndpointSpecification
+                                        .getService());
+                            } catch (Exception e) {
+                                log.error("Error registering service finder started for: "
+                                        + rangerEndpointSpecification.getService(), e);
                             }
-                    );
-                    log.info("Initialized ZK service: " + rangerEndpointSpecification.getService());
+                            return null;
+                        });
+                    }
                 } catch (Exception e) {
-                    log.error("Error registering hander for service: " + rangerEndpointSpecification.getService(), e);
+                    log.error("Error registering hander for service: " + rangerEndpointSpecification
+                            .getService(), e);
                 }
             }
         });
     }
 
-    @Data
-    @Builder
-    @NoArgsConstructor
-    public static final class ShardedServiceDiscoveryInfo {
-
-        private String environment;
-        private SimpleShardedServiceFinder<ShardInfo> shardFinder;
-
-        ShardedServiceDiscoveryInfo(final String environment, final SimpleShardedServiceFinder<ShardInfo> shardFinder) {
-            this.environment = environment;
-            this.shardFinder = shardFinder;
-        }
-    }
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Builder
-    public static final class ShardInfo {
-        private String environment;
-    }
-
     private static class SpecResolver implements SpecVisitor {
-        private Endpoint endpoint;
+
         private final boolean discoverEnabled;
-        private final Map<String, ShardedServiceDiscoveryInfo> serviceFinders;
+        private final Map<String, ServiceDiscoveryClient> serviceDiscoveryClients;
+        private Endpoint endpoint;
 
-        private SpecResolver(final boolean discoverEnabled, final Map<String, ShardedServiceDiscoveryInfo> serviceFinders) {
+        private SpecResolver(boolean discoverEnabled,
+                Map<String, ServiceDiscoveryClient> serviceDiscoveryClients) {
             this.discoverEnabled = discoverEnabled;
-            this.serviceFinders = serviceFinders;
+            this.serviceDiscoveryClients = serviceDiscoveryClients;
         }
 
         @Override
-        public void visit(final SimpleEndpointSpec simpleEndpointSpecification) {
-            this.endpoint = Endpoint.builder().host(simpleEndpointSpecification.getHost()).port(simpleEndpointSpecification.getPort()).build();
+        public void visit(SimpleEndpointSpec simpleEndpointSpecification) {
+            this.endpoint = Endpoint.builder().host(simpleEndpointSpecification.getHost())
+                    .port(simpleEndpointSpecification.getPort()).build();
         }
 
         @Override
-        public void visit(final RangerEndpointSpec rangerEndpointSpecification) {
+        public void visit(RangerEndpointSpec rangerEndpointSpecification) {
             if (!this.discoverEnabled) {
-                throw new IllegalAccessError("Zookeeper is not initialized in config. Discovery based lookups will not be possible.");
+                throw new IllegalAccessError(
+                        "Zookeeper is not initialized in config. Discovery based lookups will not be possible.");
             }
-            final SimpleShardedServiceFinder<ShardInfo> finder = this.serviceFinders.get(rangerEndpointSpecification.getService()).getShardFinder();
-            final ServiceNode<ShardInfo> node = finder.get(ShardInfo.builder().environment(rangerEndpointSpecification.getEnvironment()).build());
+            Optional<ServiceNode<ShardInfo>> node = serviceDiscoveryClients
+                    .get(rangerEndpointSpecification.getService()).getNode();
             //Get only the nodes that are healthy
-            if (node != null && node.getHealthcheckStatus() == HealthcheckStatus.healthy) {
-                this.endpoint = Endpoint.builder().host(node.getHost()).port(node.getPort()).build();
-            }
+            node.ifPresent(n -> {
+                if (n.getHealthcheckStatus() == HealthcheckStatus.healthy) {
+                    this.endpoint = Endpoint.builder().host(n.getHost()).port(n.getPort()).build();
+                }
+            });
         }
 
-        Endpoint resolve(final EndpointSpec specification) {
+        Endpoint resolve(EndpointSpec specification) {
             specification.accept(this);
             return this.endpoint;
         }

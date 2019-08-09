@@ -17,10 +17,12 @@
 
 package io.dropwizard.revolver.core.config;
 
-import lombok.*;
-import org.hibernate.validator.constraints.NotEmpty;
-
 import javax.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.hibernate.validator.constraints.NotEmpty;
 
 /**
  * @author phaneesh
@@ -28,7 +30,6 @@ import javax.validation.constraints.NotNull;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @ToString
 public class CommandHandlerConfig {
 
@@ -36,5 +37,9 @@ public class CommandHandlerConfig {
     @NotEmpty
     private String api;
 
+    private boolean sharedPool = false;
+
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
+
+
 }

@@ -17,12 +17,11 @@
 
 package io.dropwizard.revolver.core.config.hystrix;
 
+import javax.validation.constraints.Max;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.validation.constraints.Max;
 
 /**
  * @author phaneesh
@@ -43,4 +42,6 @@ public class MetricsConfig {
     private int percentileTimeInMillis = 60000;
 
     private int percentileBucketSize = 100;
+
+    private double corePoolSizeReductionParam = 0.75;
 }

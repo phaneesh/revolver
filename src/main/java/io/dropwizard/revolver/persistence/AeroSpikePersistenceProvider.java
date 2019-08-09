@@ -38,6 +38,9 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.glassfish.jersey.internal.util.collection.StringKeyIgnoreCaseMultivaluedMap;
+
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -45,8 +48,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
-import org.glassfish.jersey.internal.util.collection.StringKeyIgnoreCaseMultivaluedMap;
 
 /**
  * @author phaneesh
@@ -230,7 +231,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         statement.setNamespace(mailBoxConfig.getNamespace());
         statement.setSetName(MAILBOX_SET_NAME);
         statement.setIndexName(IDX_MAILBOX_ID);
-        statement.setFilters(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
+        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
         List<RevolverCallbackResponses> responses = new ArrayList<>();
         try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
             while (records.next()) {
@@ -268,7 +269,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         statement.setNamespace(mailBoxConfig.getNamespace());
         statement.setSetName(MAILBOX_SET_NAME);
         statement.setIndexName(IDX_MAILBOX_ID);
-        statement.setFilters(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
+        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
         List<RevolverCallbackRequest> requests = new ArrayList<>();
         try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
             while (records.next()) {

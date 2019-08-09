@@ -230,7 +230,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         statement.setNamespace(mailBoxConfig.getNamespace());
         statement.setSetName(MAILBOX_SET_NAME);
         statement.setIndexName(IDX_MAILBOX_ID);
-        statement.setFilters(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
+        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
         List<RevolverCallbackResponses> responses = new ArrayList<>();
         try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
             while (records.next()) {
@@ -268,7 +268,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         statement.setNamespace(mailBoxConfig.getNamespace());
         statement.setSetName(MAILBOX_SET_NAME);
         statement.setIndexName(IDX_MAILBOX_ID);
-        statement.setFilters(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
+        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
         List<RevolverCallbackRequest> requests = new ArrayList<>();
         try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
             while (records.next()) {

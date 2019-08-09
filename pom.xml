@@ -52,7 +52,7 @@
         <hystrix.version>1.5.12</hystrix.version>
         <ranger.version>0.3.0-SNAPSHOT</ranger.version>
         <okhttp.version>3.10.0</okhttp.version>
-        <aerospike.version>4.1.5</aerospike.version>
+        <aerospike.version>4.4.3</aerospike.version>
         <commons.text.version>1.1</commons.text.version>
         <junit.version>4.12</junit.version>
         <mockito.version>2.13.0</mockito.version>

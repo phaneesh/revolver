@@ -105,11 +105,13 @@ public class RevolverConfig extends Configuration {
 
     private OptimizerConfig optimizerConfig;
 
+    private ServiceDiscoveryConfig serviceDiscoveryConfig;
+
     @Builder
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
             ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
             @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
-            OptimizerConfig optimizerConfig) {
+            OptimizerConfig optimizerConfig, ServiceDiscoveryConfig serviceDiscoveryConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;
@@ -119,6 +121,7 @@ public class RevolverConfig extends Configuration {
         this.callbackTimeout = 3000;
         this.dynamicConfig = false;
         this.optimizerConfig = optimizerConfig;
+        this.serviceDiscoveryConfig = serviceDiscoveryConfig;
     }
 
 

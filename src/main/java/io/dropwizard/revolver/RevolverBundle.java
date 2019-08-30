@@ -15,6 +15,7 @@
  */
 package io.dropwizard.revolver;
 
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.json.MetricsModule;
 import com.collections.CollectionUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -371,36 +372,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
                 .persistenceProvider(persistenceProvider).revolverConfig(revolverConfig).build();
 
-        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
-        if (optimizerConfig != null && optimizerConfig.isEnabled()) {
-            log.info("Optimizer config enabled");
-            OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
-                    .getMetricsCollectorConfig();
-            OptimizerConfigUpdaterConfig configUpdaterConfig = optimizerConfig
-                    .getConfigUpdaterConfig();
-            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
-                    optimizerMetricsCollectorConfig(optimizerMetricsCollectorConfig)
-                    .build();
-            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
-                    .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
-                    .optimizerConfig(optimizerConfig).build();
-
-            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                    optimizerConfig.getInitialDelay(),
-                    optimizerMetricsCollectorConfig.getRepeatAfter(),
-                    optimizerMetricsCollectorConfig.getTimeUnit());
-
-            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
-                    .optimizerConfig(optimizerConfig)
-                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
-                    .build();
-
-            configUpdaterExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
-                    optimizerConfig.getInitialDelay(),
-                    configUpdaterConfig.getRepeatAfter(),
-                    configUpdaterConfig.getTimeUnit());
-
-        }
+        setupOptimizer(metrics, scheduledExecutorService, configUpdaterExecutorService);
 
         environment.jersey().register(new RevolverRequestFilter(revolverConfig));
 
@@ -484,12 +456,48 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .resolverConfig(revolverConfig.getServiceResolverConfig()).build()
                     : RevolverServiceResolver.builder()
                             .resolverConfig(revolverConfig.getServiceResolverConfig())
-                            .objectMapper(environment.getObjectMapper()).build();
+                            .objectMapper(environment.getObjectMapper()).
+                                    serviceDiscoveryConfig(revolverConfig.getServiceDiscoveryConfig()).build();
         } else {
             serviceNameResolver = RevolverServiceResolver.builder()
-                    .objectMapper(environment.getObjectMapper()).build();
+                    .objectMapper(environment.getObjectMapper())
+                    .serviceDiscoveryConfig(revolverConfig.getServiceDiscoveryConfig()).build();
         }
         loadServiceConfiguration(revolverConfig);
+    }
+
+    private void setupOptimizer(MetricRegistry metrics, ScheduledExecutorService scheduledExecutorService,
+            ScheduledExecutorService configUpdaterExecutorService) {
+        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
+        if (optimizerConfig != null && optimizerConfig.isEnabled()) {
+            log.info("Optimizer config enabled");
+            OptimizerMetricsCollectorConfig optimizerMetricsCollectorConfig = optimizerConfig
+                    .getMetricsCollectorConfig();
+            OptimizerConfigUpdaterConfig configUpdaterConfig = optimizerConfig
+                    .getConfigUpdaterConfig();
+            OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
+                    optimizerMetricsCollectorConfig(optimizerMetricsCollectorConfig)
+                    .build();
+            OptimizerMetricsCollector optimizerMetricsCollector = OptimizerMetricsCollector
+                    .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
+                    .optimizerConfig(optimizerConfig).build();
+
+            scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
+                    optimizerConfig.getInitialDelay(),
+                    optimizerMetricsCollectorConfig.getRepeatAfter(),
+                    optimizerMetricsCollectorConfig.getTimeUnit());
+
+            RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
+                    .optimizerConfig(optimizerConfig)
+                    .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                    .build();
+
+            configUpdaterExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
+                    optimizerConfig.getInitialDelay(),
+                    configUpdaterConfig.getRepeatAfter(),
+                    configUpdaterConfig.getTimeUnit());
+
+        }
     }
 
     public MultivaluedMap<String, ApiPathMap> getServiceToPathMap() {

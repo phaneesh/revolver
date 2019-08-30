@@ -36,6 +36,7 @@ import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
 import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
+import io.dropwizard.revolver.core.config.ServiceDiscoveryConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
@@ -449,7 +450,11 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private void initializeRevolver(T configuration, Environment environment) {
         revolverConfig = getRevolverConfig(configuration);
-        log.info("ServiceDiscovery : " + revolverConfig.getServiceDiscoveryConfig());
+        ServiceDiscoveryConfig serviceDiscoveryConfig = revolverConfig.getServiceDiscoveryConfig();
+        if (serviceDiscoveryConfig == null) {
+            serviceDiscoveryConfig = ServiceDiscoveryConfig.builder().build();
+        }
+        log.info("ServiceDiscovery : " + serviceDiscoveryConfig);
         if (revolverConfig.getServiceResolverConfig() != null) {
             serviceNameResolver = revolverConfig.getServiceResolverConfig().isUseCurator()
                     ? RevolverServiceResolver.usingCurator().curatorFramework(getCurator())
@@ -458,11 +463,11 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     : RevolverServiceResolver.builder()
                             .resolverConfig(revolverConfig.getServiceResolverConfig())
                             .objectMapper(environment.getObjectMapper()).
-                                    serviceDiscoveryConfig(revolverConfig.getServiceDiscoveryConfig()).build();
+                                    serviceDiscoveryConfig(serviceDiscoveryConfig).build();
         } else {
             serviceNameResolver = RevolverServiceResolver.builder()
                     .objectMapper(environment.getObjectMapper())
-                    .serviceDiscoveryConfig(revolverConfig.getServiceDiscoveryConfig()).build();
+                    .serviceDiscoveryConfig(serviceDiscoveryConfig).build();
         }
         loadServiceConfiguration(revolverConfig);
     }

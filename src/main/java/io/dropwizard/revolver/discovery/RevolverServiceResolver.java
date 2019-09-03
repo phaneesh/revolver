@@ -22,8 +22,9 @@ import com.flipkart.ranger.healthcheck.HealthcheckStatus;
 import com.flipkart.ranger.model.ServiceNode;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import io.dropwizard.discovery.client.io.dropwizard.ranger.ServiceDiscoveryClient;
-import io.dropwizard.discovery.common.ShardInfo;
+import io.appform.dropwizard.discovery.client.ServiceDiscoveryClient;
+import io.appform.dropwizard.discovery.common.ShardInfo;
+import io.dropwizard.revolver.core.config.ServiceDiscoveryConfig;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
@@ -48,15 +49,17 @@ public class RevolverServiceResolver {
     private final CuratorFramework curatorFramework;
     private final ServiceResolverConfig resolverConfig;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ServiceDiscoveryConfig serviceDiscoveryConfig;
     private ObjectMapper objectMapper;
     @Getter
     private Map<String, ServiceDiscoveryClient> serviceFinders = Maps.newConcurrentMap();
 
     @Builder
     public RevolverServiceResolver(ServiceResolverConfig resolverConfig,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper, ServiceDiscoveryConfig serviceDiscoveryConfig) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
+        this.serviceDiscoveryConfig = serviceDiscoveryConfig;
         if (resolverConfig != null) {
             if (!Strings.isNullOrEmpty(resolverConfig.getZkConnectionString())) {
                 this.curatorFramework = CuratorFrameworkFactory.builder()
@@ -77,11 +80,12 @@ public class RevolverServiceResolver {
 
     @Builder(builderMethodName = "usingCurator")
     public RevolverServiceResolver(ServiceResolverConfig resolverConfig, ObjectMapper objectMapper,
-            CuratorFramework curatorFramework) {
+            CuratorFramework curatorFramework, ServiceDiscoveryConfig serviceDiscoveryConfig) {
         this.resolverConfig = resolverConfig;
         this.objectMapper = objectMapper;
         this.curatorFramework = curatorFramework;
         this.discoverEnabled = true;
+        this.serviceDiscoveryConfig = serviceDiscoveryConfig;
     }
 
     public Endpoint resolve(EndpointSpec endpointSpecification) {
@@ -108,7 +112,9 @@ public class RevolverServiceResolver {
                                 .fromCurator().curator(curatorFramework)
                                 .environment(rangerEndpointSpecification.getEnvironment())
                                 .namespace(resolverConfig.getNamespace()).objectMapper(objectMapper)
-                                .serviceName(rangerEndpointSpecification.getService()).build();
+                                .serviceName(rangerEndpointSpecification.getService())
+                                .disableWatchers(serviceDiscoveryConfig.isWatcherDisabled())
+                                .refreshTimeMs(serviceDiscoveryConfig.getRefreshTimeInMs()).build();
                         serviceFinders
                                 .put(rangerEndpointSpecification.getService(), discoveryClient);
                         executorService.submit(() -> {
@@ -126,7 +132,7 @@ public class RevolverServiceResolver {
                         });
                     }
                 } catch (Exception e) {
-                    log.error("Error registering hander for service: " + rangerEndpointSpecification
+                    log.error("Error registering handler for service: " + rangerEndpointSpecification
                             .getService(), e);
                 }
             }

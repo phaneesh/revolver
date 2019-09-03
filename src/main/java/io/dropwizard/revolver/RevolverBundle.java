@@ -452,6 +452,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         revolverConfig = getRevolverConfig(configuration);
         ServiceDiscoveryConfig serviceDiscoveryConfig = revolverConfig.getServiceDiscoveryConfig();
         if (serviceDiscoveryConfig == null) {
+            log.info("ServiceDiscovery in null");
             serviceDiscoveryConfig = ServiceDiscoveryConfig.builder().build();
         }
         log.info("ServiceDiscovery : " + serviceDiscoveryConfig);
@@ -459,7 +460,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             serviceNameResolver = revolverConfig.getServiceResolverConfig().isUseCurator()
                     ? RevolverServiceResolver.usingCurator().curatorFramework(getCurator())
                     .objectMapper(environment.getObjectMapper())
-                    .resolverConfig(revolverConfig.getServiceResolverConfig()).build()
+                    .resolverConfig(revolverConfig.getServiceResolverConfig())
+                    .serviceDiscoveryConfig(serviceDiscoveryConfig).build()
                     : RevolverServiceResolver.builder()
                             .resolverConfig(revolverConfig.getServiceResolverConfig())
                             .objectMapper(environment.getObjectMapper()).

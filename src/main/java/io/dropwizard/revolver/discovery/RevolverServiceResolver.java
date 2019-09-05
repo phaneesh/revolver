@@ -93,6 +93,9 @@ public class RevolverServiceResolver {
                 .resolve(endpointSpecification);
     }
 
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
 
     public void register(EndpointSpec endpointSpecification) {
         endpointSpecification.accept(new SpecVisitor() {

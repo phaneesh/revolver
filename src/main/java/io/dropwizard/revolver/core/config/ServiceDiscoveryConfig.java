@@ -21,4 +21,7 @@ public class ServiceDiscoveryConfig {
     @Default
     private int refreshTimeInMs = 1000;
 
+    @Default
+    private int waitForDiscoveryInMs = 90000;
+
 }

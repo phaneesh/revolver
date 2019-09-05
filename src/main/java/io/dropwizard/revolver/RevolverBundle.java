@@ -472,6 +472,12 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .serviceDiscoveryConfig(serviceDiscoveryConfig).build();
         }
         loadServiceConfiguration(revolverConfig);
+        try {
+            serviceNameResolver.getExecutorService()
+                    .awaitTermination(serviceDiscoveryConfig.getWaitForDiscoveryInMs(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            log.error("Error occurred in service discovery completion : ", e);
+        }
     }
 
     private void setupOptimizer(MetricRegistry metrics, ScheduledExecutorService scheduledExecutorService,

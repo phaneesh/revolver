@@ -147,7 +147,7 @@
         <dependency>
             <groupId>org.hystrix</groupId>
             <artifactId>hystrix-core</artifactId>
-            <version>${hystrix.version}.13-SNAPSHOT</version>
+            <version>${hystrix.version}.18</version>
         </dependency>
         <dependency>
             <groupId>com.netflix.hystrix</groupId>

@@ -103,7 +103,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public static RevolverServiceResolver serviceNameResolver = null;
     public static ConcurrentHashMap<String, Boolean> apiStatus = new ConcurrentHashMap<>();
     private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
     private static MultivaluedMap<String, ApiPathMap> serviceToPathMap = new MultivaluedHashMap<>();
     private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
 

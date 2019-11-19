@@ -17,10 +17,12 @@
 
 package io.dropwizard.revolver.persistence;
 
+import com.google.common.base.Strings;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
+
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.inject.Singleton;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
+
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,6 +45,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     private final ConcurrentHashMap<String, RevolverCallbackResponse> callbackResponse = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RevolverRequestState> callbackStates = new ConcurrentHashMap<>();
     private final MultivaluedMap<String, String> mailbox = new MultivaluedHashMap<>();
+    private final ConcurrentHashMap<String, String> requestToMailboxMap = new ConcurrentHashMap<>();
 
     @Override
     public boolean exists(String requestId) {
@@ -50,33 +54,35 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
 
     @Override
     public void saveRequest(String requestId, String mailBoxId,
-            RevolverCallbackRequest request) {
+                            RevolverCallbackRequest request) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+            requestToMailboxMap.put(requestId, mailBoxId);
         }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
     public void saveRequest(String requestId, String mailBoxId,
-            RevolverCallbackRequest request, int ttl) {
+                            RevolverCallbackRequest request, int ttl) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+            requestToMailboxMap.put(requestId, mailBoxId);
         }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
     public void setRequestState(String requestId, RevolverRequestState state,
-            int ttl) {
+                                int ttl) {
         callbackStates.put(requestId, state);
     }
 
     @Override
     public void saveResponse(String requestId, RevolverCallbackResponse response,
-            int ttl) {
+                             int ttl) {
         callbackResponse.put(requestId, response);
         callbackStates.put(requestId, RevolverRequestState.RESPONDED);
     }
@@ -92,7 +98,31 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public RevolverCallbackResponse response(String requestId) {
+    public RevolverRequestState requestState(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
+            return RevolverRequestState.UNKNOWN;
+        }
+        return callbackStates.get(requestId);
+    }
+
+    private boolean isInvalidMailboxId(String requestId, String mailBoxId) {
+        return !Strings.isNullOrEmpty(requestToMailboxMap.get(requestId))
+                && !requestToMailboxMap.get(requestId).equals(mailBoxId);
+    }
+
+    @Override
+    public RevolverCallbackRequest request(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
+            return null;
+        }
+        return callbackRequests.get(requestId);
+    }
+
+    @Override
+    public RevolverCallbackResponse response(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
+            return null;
+        }
         return callbackResponse.get(requestId);
     }
 
@@ -121,4 +151,5 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
                     .collect(Collectors.toList());
         }
     }
+
 }

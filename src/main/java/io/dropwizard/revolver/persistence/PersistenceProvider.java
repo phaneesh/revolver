@@ -44,11 +44,15 @@ public interface PersistenceProvider {
 
     RevolverRequestState requestState(String requestId);
 
-    RevolverCallbackResponse response(String requestId);
+    RevolverRequestState requestState(String requestId, String mailBoxId);
+
+    RevolverCallbackResponse response(String requestId, String mailBoxId);
 
     List<RevolverCallbackResponses> responses(String mailboxId);
 
     RevolverCallbackRequest request(String requestId);
+
+    RevolverCallbackRequest request(String requestId, String mailBoxId);
 
     List<RevolverCallbackRequest> requests(String mailboxId);
 

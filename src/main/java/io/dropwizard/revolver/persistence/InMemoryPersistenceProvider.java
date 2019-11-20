@@ -54,7 +54,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
 
     @Override
     public void saveRequest(String requestId, String mailBoxId,
-                            RevolverCallbackRequest request) {
+            RevolverCallbackRequest request) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
@@ -65,7 +65,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
 
     @Override
     public void saveRequest(String requestId, String mailBoxId,
-                            RevolverCallbackRequest request, int ttl) {
+            RevolverCallbackRequest request, int ttl) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
@@ -76,13 +76,13 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
 
     @Override
     public void setRequestState(String requestId, RevolverRequestState state,
-                                int ttl) {
+            int ttl) {
         callbackStates.put(requestId, state);
     }
 
     @Override
     public void saveResponse(String requestId, RevolverCallbackResponse response,
-                             int ttl) {
+            int ttl) {
         callbackResponse.put(requestId, response);
         callbackStates.put(requestId, RevolverRequestState.RESPONDED);
     }

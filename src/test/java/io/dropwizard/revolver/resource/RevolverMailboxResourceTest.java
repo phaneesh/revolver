@@ -75,7 +75,8 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), null);
 
         final String statusResponse = requestStatusResponse.readEntity(String.class);
-        RevolverRequestStateResponse requestStateResponse = mapper.readValue(statusResponse, RevolverRequestStateResponse.class);
+        RevolverRequestStateResponse requestStateResponse = mapper
+                .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), null);
@@ -99,7 +100,8 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
         final String statusResponse = requestStatusResponse.readEntity(String.class);
-        RevolverRequestStateResponse requestStateResponse = mapper.readValue(statusResponse, RevolverRequestStateResponse.class);
+        RevolverRequestStateResponse requestStateResponse = mapper
+                .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), "MAILBOX_123");
@@ -122,7 +124,8 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), null);
 
         final String statusResponse = requestStatusResponse.readEntity(String.class);
-        RevolverRequestStateResponse requestStateResponse = mapper.readValue(statusResponse, RevolverRequestStateResponse.class);
+        RevolverRequestStateResponse requestStateResponse = mapper
+                .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "UNKNOWN");
     }
 
@@ -139,7 +142,8 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
         final String statusResponse = requestStatusResponse.readEntity(String.class);
-        RevolverRequestStateResponse requestStateResponse = mapper.readValue(statusResponse, RevolverRequestStateResponse.class);
+        RevolverRequestStateResponse requestStateResponse = mapper
+                .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), null);
@@ -159,7 +163,8 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
         final String statusResponse = requestStatusResponse.readEntity(String.class);
-        RevolverRequestStateResponse requestStateResponse = mapper.readValue(statusResponse, RevolverRequestStateResponse.class);
+        RevolverRequestStateResponse requestStateResponse = mapper
+                .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response mailboxResponse1 = fetchMailboxResponse(revolverAckMessage.getRequestId(), null);

@@ -90,7 +90,7 @@ public class RevolverMailboxResource {
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
     public Response requestStatus(@PathParam("requestId") String requestId,
-                                  @Context HttpHeaders headers) throws RevolverException {
+            @Context HttpHeaders headers) throws RevolverException {
         try {
             val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
             RevolverRequestState state = persistenceProvider.requestState(requestId, mailBoxId);
@@ -159,7 +159,7 @@ public class RevolverMailboxResource {
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
     public Response request(@PathParam("requestId") String requestId,
-                            @Context HttpHeaders headers) throws RevolverException {
+            @Context HttpHeaders headers) throws RevolverException {
         try {
             val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
             RevolverCallbackRequest callbackRequest = persistenceProvider.request(requestId, mailBoxId);
@@ -212,7 +212,7 @@ public class RevolverMailboxResource {
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
     public Response getResponse(@PathParam("requestId") String requestId,
-                                @Context HttpHeaders headers) throws RevolverException {
+            @Context HttpHeaders headers) throws RevolverException {
         try {
             val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
             RevolverRequestState state = persistenceProvider.requestState(requestId, mailBoxId);
@@ -345,7 +345,7 @@ public class RevolverMailboxResource {
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
     public Response persistRequest(@Context HttpHeaders headers,
-                                   @Context UriInfo uriInfo, byte[] body) throws RevolverException {
+            @Context UriInfo uriInfo, byte[] body) throws RevolverException {
         try {
             val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
             val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);

@@ -62,7 +62,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
     private final ObjectMapper objectMapper;
 
     public AeroSpikePersistenceProvider(AerospikeMailBoxConfig mailBoxConfig,
-                                        ObjectMapper objectMapper) {
+            ObjectMapper objectMapper) {
         this.mailBoxConfig = mailBoxConfig;
         this.objectMapper = objectMapper;
         try {
@@ -90,7 +90,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
     @Override
     public void saveRequest(String requestId, String mailboxId, RevolverCallbackRequest request,
-                            int ttl) throws Exception {
+            int ttl) throws Exception {
         Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         try {
             Bin service = new Bin(BinNames.SERVICE, request.getService());
@@ -283,8 +283,8 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
      * Checks mailbox id saved earlier in record against mailbox id coming in access request
      *
      * @param enforceMailboxIdCheck : flag to enforce mailbox id check
-     * @param mailBoxId             :  mailbox id in access request
-     * @param record                : Aerospike record
+     * @param mailBoxId :  mailbox id in access request
+     * @param record : Aerospike record
      * @return boolean
      */
     private boolean isInvalidMailboxId(boolean enforceMailboxIdCheck, String mailBoxId, Record record) {

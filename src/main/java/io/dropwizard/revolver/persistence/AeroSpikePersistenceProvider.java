@@ -211,16 +211,6 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         return requestState(requestId, mailBoxId, true);
     }
 
-    private RevolverRequestState requestState(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
-        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
-        Record record = AerospikeConnectionManager.getClient()
-                .get(AerospikeConnectionManager.readPolicy, key);
-        if (record == null || isInvalidMailboxId(enforceMailboxIdCheck, mailBoxId, record)) {
-            return RevolverRequestState.UNKNOWN;
-        }
-        return RevolverRequestState.valueOf(record.getString(BinNames.STATE));
-    }
-
     @Override
     public RevolverCallbackResponse response(String requestId, String mailBoxId) {
         Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
@@ -265,7 +255,33 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
         return request(requestId, mailBoxId, true);
     }
 
-    public RevolverCallbackRequest request(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
+    @Override
+    public List<RevolverCallbackRequest> requests(String mailboxId) {
+        Statement statement = new Statement();
+        statement.setNamespace(mailBoxConfig.getNamespace());
+        statement.setSetName(MAILBOX_SET_NAME);
+        statement.setIndexName(IDX_MAILBOX_ID);
+        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
+        List<RevolverCallbackRequest> requests = new ArrayList<>();
+        try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
+            while (records.next()) {
+                requests.add(recordToRequest(records.getRecord()));
+            }
+        }
+        return requests;
+    }
+
+    private RevolverRequestState requestState(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
+        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
+        Record record = AerospikeConnectionManager.getClient()
+                .get(AerospikeConnectionManager.readPolicy, key);
+        if (record == null || isInvalidMailboxId(enforceMailboxIdCheck, mailBoxId, record)) {
+            return RevolverRequestState.UNKNOWN;
+        }
+        return RevolverRequestState.valueOf(record.getString(BinNames.STATE));
+    }
+
+    private RevolverCallbackRequest request(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
         long start = System.currentTimeMillis();
         Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         Record record = AerospikeConnectionManager.getClient()
@@ -290,22 +306,6 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
     private boolean isInvalidMailboxId(boolean enforceMailboxIdCheck, String mailBoxId, Record record) {
         return enforceMailboxIdCheck && !DEFAULT_MAILBOX_ID.equals(record.getString(BinNames.MAILBOX_ID))
                 && !record.getString(BinNames.MAILBOX_ID).equals(mailBoxId);
-    }
-
-    @Override
-    public List<RevolverCallbackRequest> requests(String mailboxId) {
-        Statement statement = new Statement();
-        statement.setNamespace(mailBoxConfig.getNamespace());
-        statement.setSetName(MAILBOX_SET_NAME);
-        statement.setIndexName(IDX_MAILBOX_ID);
-        statement.setFilter(Filter.equal(BinNames.MAILBOX_ID, mailboxId));
-        List<RevolverCallbackRequest> requests = new ArrayList<>();
-        try (RecordSet records = AerospikeConnectionManager.getClient().query(null, statement)) {
-            while (records.next()) {
-                requests.add(recordToRequest(records.getRecord()));
-            }
-        }
-        return requests;
     }
 
     private RevolverCallbackRequest recordToRequest(Record record) {

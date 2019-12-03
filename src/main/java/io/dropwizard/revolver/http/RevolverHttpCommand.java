@@ -202,6 +202,7 @@ public class RevolverHttpCommand extends
         } catch (Exception e) {
             log.error("Error executing service request for service : " + request.url(), e);
             throw e;
+            OptimizerMetricsCollectorTest
         } finally {
             if (response != null) {
                 response.close();

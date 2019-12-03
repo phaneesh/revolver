@@ -130,7 +130,7 @@ public class OptimizerMetricsCollectorTest extends BaseRevolverTest {
     public void testNoConfigUpdateInRevolver() {
         optimizerMetricsCollector.run();
         revolverConfigUpdater.run();
-        Assert.assertEquals(10,
+        Assert.assertEquals(11,
                 RevolverBundle.getServiceConfig().get("test").getConnectionPoolSize());
     }
 

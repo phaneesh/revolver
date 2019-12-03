@@ -115,10 +115,14 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
     }
 
     private RevolverExecutorType getExecutionType(CommandHandlerConfigType apiConfiguration) {
+        RevolverExecutorType revolverExecutorType = null;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
-            return ((RevolverHttpApiConfig) apiConfiguration).getRevolverExecutorType();
+            revolverExecutorType = ((RevolverHttpApiConfig) apiConfiguration).getRevolverExecutorType();
         }
-        return RevolverExecutorType.HYSTRIX;
+        if (revolverExecutorType == null) {
+            revolverExecutorType = RevolverExecutorType.HYSTRIX;
+        }
+        return revolverExecutorType;
     }
 
     @SuppressWarnings("unchecked")

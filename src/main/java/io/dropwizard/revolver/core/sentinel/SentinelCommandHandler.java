@@ -38,8 +38,6 @@ public class SentinelCommandHandler<RequestType extends RevolverRequest, Respons
     public ResponseType executeSync() throws Exception {
         String resourceName = getResourceName(handler, request);
         try (Entry entry = SphU.entry(resourceName)) {
-            //TODO Remove this after testing
-            Thread.sleep(5000);
             return this.handler.execute(this.context, this.request);
         } catch (Throwable throwable) {
             throw getException(throwable);

@@ -20,6 +20,7 @@ package io.dropwizard.revolver.http.config;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
@@ -58,6 +59,8 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
     private int connectionKeepAliveInMillis = 30000;
     private RevolverHttpServiceSplitConfig serviceSplitConfig;
 
+    private RevolverExecutorType revolverExecutorType;
+
     @Builder
     public RevolverHttpServiceConfig(String type, String service, EndpointSpec enpoint,
             int connectionPoolSize, boolean authEnabled, boolean secured, AuthConfig auth,
@@ -65,7 +68,8 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
             @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders,
             boolean compression, int connectionKeepAliveInMillis,
             ThreadPoolGroupConfig threadPoolGroupConfig,
-            RevolverHttpServiceSplitConfig serviceSplitConfig, SentinelCommandConfig sentinelCommandConfig) {
+            RevolverHttpServiceSplitConfig serviceSplitConfig, SentinelCommandConfig sentinelCommandConfig,
+            RevolverExecutorType revolverExecutorType) {
         super(type, service, sentinelCommandConfig);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
@@ -80,6 +84,7 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
         this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
         this.threadPoolGroupConfig = threadPoolGroupConfig;
         this.serviceSplitConfig = serviceSplitConfig;
+        this.revolverExecutorType = revolverExecutorType;
     }
 
 }

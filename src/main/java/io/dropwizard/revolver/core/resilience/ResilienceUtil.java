@@ -6,7 +6,6 @@ import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
-import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
@@ -148,10 +147,6 @@ public class ResilienceUtil {
                                 HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
                                 if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
                                     return;
-                                }
-                                if (RevolverExecutorType.RESILIENCE == revolverHttpApiConfig
-                                        .getRevolverExecutorType()) {
-                                    log.info("API is executing via resilience : {} ", revolverHttpApiConfig.getApi());
                                 }
                                 String threadPoolName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
                                 if (StringUtils.isEmpty(threadPoolName)) {

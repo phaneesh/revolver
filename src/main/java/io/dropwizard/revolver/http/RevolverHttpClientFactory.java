@@ -17,12 +17,15 @@
 
 package io.dropwizard.revolver.http;
 
+import com.collections.CollectionUtils;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import io.dropwizard.revolver.RevolverBundle;
+import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.http.auth.BasicAuthConfig;
 import io.dropwizard.revolver.http.auth.TokenAuthConfig;
@@ -38,6 +41,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -167,9 +171,7 @@ public class RevolverHttpClientFactory {
         if (serviceConfiguration.getThreadPoolGroupConfig() != null && !serviceConfiguration
                 .getThreadPoolGroupConfig().getThreadPools().isEmpty()) {
 
-            Optional maxTimeout = serviceConfiguration.getThreadPoolGroupConfig().getThreadPools()
-                    .stream().max(Comparator
-                            .comparing(ThreadPoolConfig::getTimeout));
+            Optional maxTimeout = getMaxTimeout(serviceConfiguration);
             if (maxTimeout.isPresent() && maxTimeout.get() instanceof ThreadPoolConfig) {
                 builder.connectTimeout(((ThreadPoolConfig) maxTimeout.get()).getTimeout(),
                         TimeUnit.MILLISECONDS);
@@ -185,6 +187,27 @@ public class RevolverHttpClientFactory {
             builder.readTimeout(0, TimeUnit.MILLISECONDS);
             builder.writeTimeout(0, TimeUnit.MILLISECONDS);
         }
+    }
+
+    private static Optional getMaxTimeout(RevolverHttpServiceConfig serviceConfiguration) {
+        List<ThreadPoolConfig> threadPoolConfigList = Lists.newArrayList();
+
+        if (CollectionUtils.isNotEmpty(serviceConfiguration.getThreadPoolGroupConfig().getThreadPools())) {
+            threadPoolConfigList.addAll(serviceConfiguration.getThreadPoolGroupConfig().getThreadPools());
+        }
+
+        serviceConfiguration.getApis().forEach(revolverHttpApiConfig -> {
+
+            HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig
+                    .getRuntime();
+            if (hystrixCommandConfig != null && hystrixCommandConfig.getThreadPool() != null) {
+                threadPoolConfigList.add(hystrixCommandConfig.getThreadPool());
+            }
+        });
+
+        return threadPoolConfigList
+                .stream().max(Comparator
+                        .comparing(ThreadPoolConfig::getTimeout));
     }
 
     private static void setSSLContext(String keyStorePath, String keyStorePassword,

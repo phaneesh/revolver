@@ -32,6 +32,7 @@ import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.core.util.RevolverExceptionHelper;
 import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -74,7 +75,8 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         RevolverCommandHelper.addContextInfo(RevolverCommandHelper.getName(request), traceInfo);
         try {
             ResponseType response;
-            RevolverExecutorType revolverExecutorType = getExecutionType(this.getApiConfiguration());
+            RevolverExecutorType revolverExecutorType = getExecutionType(this.getServiceConfiguration(),
+                    this.getApiConfiguration());
             log.info("Execution type : " + revolverExecutorType);
             switch (revolverExecutorType) {
                 case SENTINEL:
@@ -114,10 +116,14 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         }
     }
 
-    private RevolverExecutorType getExecutionType(CommandHandlerConfigType apiConfiguration) {
+    private RevolverExecutorType getExecutionType(ServiceConfigurationType serviceConfiguration,
+            CommandHandlerConfigType apiConfiguration) {
         RevolverExecutorType revolverExecutorType = null;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
             revolverExecutorType = ((RevolverHttpApiConfig) apiConfiguration).getRevolverExecutorType();
+        }
+        if (revolverExecutorType == null && serviceConfiguration instanceof RevolverHttpServiceConfig) {
+            revolverExecutorType = ((RevolverHttpServiceConfig) serviceConfiguration).getRevolverExecutorType();
         }
         if (revolverExecutorType == null) {
             revolverExecutorType = RevolverExecutorType.HYSTRIX;
@@ -131,7 +137,8 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         TraceInfo traceInfo = normalizedRequest.getTrace();
         RevolverCommandHelper.addContextInfo(RevolverCommandHelper.getName(request), traceInfo);
 
-        RevolverExecutorType revolverExecutorType = request.getRevolverExecutorType();
+        RevolverExecutorType revolverExecutorType = getExecutionType(this.getServiceConfiguration(),
+                this.getApiConfiguration());
         switch (revolverExecutorType) {
             case SENTINEL:
                 return new SentinelCommandHandler(
@@ -154,7 +161,8 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         TraceInfo traceInfo = normalizedRequest.getTrace();
         RevolverCommandHelper.addContextInfo(RevolverCommandHelper.getName(request), traceInfo);
 
-        RevolverExecutorType revolverExecutorType = request.getRevolverExecutorType();
+        RevolverExecutorType revolverExecutorType = getExecutionType(this.getServiceConfiguration(),
+                this.getApiConfiguration());
         switch (revolverExecutorType) {
             case SENTINEL:
                 return new SentinelCommandHandler<>(this.context, this, request).executeAsyncAsObservable();

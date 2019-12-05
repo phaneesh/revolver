@@ -63,8 +63,6 @@ import io.dropwizard.revolver.optimizer.OptimizerMetricsCache;
 import io.dropwizard.revolver.optimizer.OptimizerMetricsCollector;
 import io.dropwizard.revolver.optimizer.RevolverConfigUpdater;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
-import io.dropwizard.revolver.optimizer.config.OptimizerConfigUpdaterConfig;
-import io.dropwizard.revolver.optimizer.config.OptimizerMetricsCollectorConfig;
 import io.dropwizard.revolver.persistence.AeroSpikePersistenceProvider;
 import io.dropwizard.revolver.persistence.InMemoryPersistenceProvider;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
@@ -216,7 +214,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             throw new RevolverExecutionException(RevolverExecutionException.Type.BAD_REQUEST,
                     "No api spec defined for service: " + service);
         }
-        RevolverHttpContext revolverContext = getRevolverContext(serviceKey);
+        RevolverHttpContext revolverContext = getRevolverContext(service, serviceKey);
         return RevolverHttpCommand.builder().apiConfiguration(apiConfig.get(serviceKey))
                 .clientConfiguration(revolverConfig.getClientConfig())
                 .runtimeConfig(revolverConfig.getGlobal())
@@ -224,11 +222,21 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .serviceConfiguration(serviceConfig.get(service)).build();
     }
 
-    private static RevolverHttpContext getRevolverContext(String serviceKey) {
+    private static RevolverHttpContext getRevolverContext(String service, String serviceKey) {
         RevolverHttpApiConfig revolverHttpApiConfig = apiConfig.get(serviceKey);
         RevolverExecutorType revolverExecutorType = revolverHttpApiConfig.getRevolverExecutorType();
+        if (revolverExecutorType != null) {
+            return getContext(revolverExecutorType);
+        }
+
+        RevolverHttpServiceConfig revolverHttpServiceConfig = serviceConfig.get(service);
+        revolverExecutorType = revolverHttpServiceConfig.getRevolverExecutorType();
+        return getContext(revolverExecutorType);
+    }
+
+    private static RevolverHttpContext getContext(RevolverExecutorType revolverExecutorType) {
         if (revolverExecutorType == null) {
-            return new ResilienceHttpContext();
+            return new RevolverHttpContext();
         }
         switch (revolverExecutorType) {
             case RESILIENCE:

@@ -66,7 +66,7 @@ public class RevolverHttpApiConfig extends CommandHandlerConfig {
 
     private ApiLatencyConfig apiLatencyConfig;
 
-    private RevolverExecutorType revolverExecutorType = RevolverExecutorType.HYSTRIX;
+    private RevolverExecutorType revolverExecutorType;
 
     @NotNull
     @NotEmpty

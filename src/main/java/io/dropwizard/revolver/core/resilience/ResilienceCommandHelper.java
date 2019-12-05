@@ -62,7 +62,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         }
     }
 
-    private ResilienceHttpContext getResilienceExtent() {
+    private ResilienceHttpContext getResilienceContext() {
         ResilienceHttpContext resilienceHttpContext;
         if (context instanceof ResilienceHttpContext) {
             resilienceHttpContext = (ResilienceHttpContext) context;
@@ -130,7 +130,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     }
 
     private ResponseType execute() throws Exception {
-        ResilienceHttpContext resilienceHttpContext = getResilienceExtent();
+        ResilienceHttpContext resilienceHttpContext = getResilienceContext();
 
         CircuitBreaker circuitBreaker = getCircuitBreaker(resilienceHttpContext, request,
                 handler.getServiceConfiguration(), handler.getApiConfiguration());

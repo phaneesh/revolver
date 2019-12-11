@@ -17,8 +17,6 @@ import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
@@ -35,14 +33,12 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
     private final RequestType request;
     private final ContextType context;
-    private final ExecutorService executor;
 
     public ResilienceCommandHelper(ContextType context, RevolverCommand<RequestType, ResponseType, ContextType,
             ServiceConfigurationType, CommandHandlerConfigurationType> handler, RequestType request) {
         this.context = context;
         this.handler = handler;
         this.request = request;
-        executor = Executors.newCachedThreadPool();
     }
 
     public ResponseType executeSync() throws Exception {
@@ -145,7 +141,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         log.info("Time Limiter : " + timeLimiter);
 
         Supplier<Future> supplier = () -> {
-            return executor.submit(() -> {
+            return resilienceHttpContext.getExecutor().submit(() -> {
                 log.info("Executing the resilience request for api :" + request.getApi());
                 return handler.execute(context, request);
             });

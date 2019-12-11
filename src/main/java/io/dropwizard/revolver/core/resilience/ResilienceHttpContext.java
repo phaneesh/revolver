@@ -4,6 +4,8 @@ import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,5 +27,7 @@ public class ResilienceHttpContext extends RevolverHttpContext {
     private Map<String, Bulkhead> poolVsBulkHeadMap;
 
     private Map<String, Integer> poolVsTimeout;
+
+    private ExecutorService executor = Executors.newCachedThreadPool();
 
 }

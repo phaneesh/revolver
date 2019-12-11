@@ -35,12 +35,14 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
     private final RequestType request;
     private final ContextType context;
+    private final ExecutorService executor;
 
     public ResilienceCommandHelper(ContextType context, RevolverCommand<RequestType, ResponseType, ContextType,
             ServiceConfigurationType, CommandHandlerConfigurationType> handler, RequestType request) {
         this.context = context;
         this.handler = handler;
         this.request = request;
+        executor = Executors.newCachedThreadPool();
     }
 
     public ResponseType executeSync() throws Exception {
@@ -143,8 +145,6 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         log.info("Time Limiter : " + timeLimiter);
 
         Supplier<Future> supplier = () -> {
-            ExecutorService executor
-                    = Executors.newSingleThreadExecutor();
             return executor.submit(() -> {
                 log.info("Executing the resilience request for api :" + request.getApi());
                 return handler.execute(context, request);

@@ -35,6 +35,7 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.glassfish.jersey.internal.util.collection.StringKeyIgnoreCaseMultivaluedMap;
 
@@ -101,7 +102,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
                             : request.getMethod().toUpperCase());
             Bin path = new Bin(BinNames.PATH, request.getPath());
             Bin mailBoxId = new Bin(BinNames.MAILBOX_ID,
-                    mailboxId == null ? DEFAULT_MAILBOX_ID : mailboxId);
+                    mailboxId == null ? mailBoxConfig.getDefaultMailboxId() : mailboxId);
             Bin queryParams = new Bin(BinNames.QUERY_PARAMS,
                     objectMapper.writeValueAsString(request.getQueryParams()));
             Bin callbackUri = new Bin(BinNames.CALLBACK_URI, request.getCallbackUri());
@@ -136,7 +137,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
                             : request.getMethod().toUpperCase());
             Bin path = new Bin(BinNames.PATH, request.getPath());
             Bin mailBoxId = new Bin(BinNames.MAILBOX_ID,
-                    mailboxId == null ? DEFAULT_MAILBOX_ID : mailboxId);
+                    mailboxId == null ? mailBoxConfig.getDefaultMailboxId() : mailboxId);
             Bin queryParams = new Bin(BinNames.QUERY_PARAMS,
                     objectMapper.writeValueAsString(request.getQueryParams()));
             Bin callbackUri = new Bin(BinNames.CALLBACK_URI, request.getCallbackUri());
@@ -304,7 +305,10 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
      * @return boolean
      */
     private boolean isInvalidMailboxId(boolean enforceMailboxIdCheck, String mailBoxId, Record record) {
-        return enforceMailboxIdCheck && !DEFAULT_MAILBOX_ID.equals(record.getString(BinNames.MAILBOX_ID))
+        return enforceMailboxIdCheck
+                // support both old and new default mailbox id during deployment duration
+                && !(Arrays.asList(DEFAULT_MAILBOX_ID, mailBoxConfig.getDefaultMailboxId())
+                .contains(record.getString(BinNames.MAILBOX_ID)))
                 && !record.getString(BinNames.MAILBOX_ID).equals(mailBoxId);
     }
 

@@ -91,8 +91,10 @@ public class ResilienceUtil {
             ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
             if (threadPoolGroupConfig != null) {
                 threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    poolVsCircuitBreaker.put(threadPoolConfig.getThreadPoolName(),
-                            circuitBreakerRegistry.circuitBreaker(threadPoolConfig.getThreadPoolName()));
+                    String threadPoolName =
+                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
+                    poolVsCircuitBreaker.put(threadPoolName,
+                            circuitBreakerRegistry.circuitBreaker(threadPoolName));
                 });
             }
 
@@ -183,7 +185,9 @@ public class ResilienceUtil {
             ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
             if (threadPoolGroupConfig != null) {
                 threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    poolVsTimeout.put(threadPoolConfig.getThreadPoolName(),
+                    String threadPoolName =
+                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
+                    poolVsTimeout.put(threadPoolName,
                             threadPoolConfig.getTimeout());
                 });
             }

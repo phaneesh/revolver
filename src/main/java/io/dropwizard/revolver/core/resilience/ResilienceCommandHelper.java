@@ -15,6 +15,7 @@ import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -79,11 +80,14 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         if (bulkhead != null) {
             return bulkhead;
         }
+        log.info("No bulk head defined for threadpool {} service {}, api {}", threadPoolName, request.getService(),
+                request.getApi());
         threadPoolName = serviceConfiguration.getRuntime().getThreadPool().getThreadPoolName();
         bulkhead = resilienceHttpContext.getPoolVsBulkHeadMap().get(threadPoolName);
 
         if (bulkhead == null) {
-            log.error("No bulk head defined for service {}, api {}", request.getService(), request.getApi());
+            log.info("No bulk head defined for service {}, api {} threadpoolName", request.getService(),
+                    request.getApi(), threadPoolName);
             bulkhead = Bulkhead.ofDefaults("revolver");
         }
 
@@ -97,27 +101,53 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         if (StringUtils.isEmpty(threadPoolName)) {
             threadPoolName = request.getService() + "." + request.getApi();
         }
-        return threadPoolName;
+        return request.getService() + "." + threadPoolName;
     }
 
     private TimeLimiter getTimeoutConfig(
             ResilienceHttpContext resilienceHttpContext,
             ServiceConfigurationType serviceConfiguration, CommandHandlerConfigurationType apiConfiguration) {
-        ThreadPoolConfig threadPoolConfig = apiConfiguration.getRuntime().getThreadPool();
-        long ttl;
-        if (threadPoolConfig != null && threadPoolConfig.getTimeout() != 0) {
-            ttl = threadPoolConfig.getTimeout();
-        } else if (threadPoolConfig != null) {
-            ttl = resilienceHttpContext.getPoolVsTimeout().get(threadPoolConfig.getThreadPoolName());
-        } else if (StringUtils.isNotEmpty(serviceConfiguration.getRuntime().getThreadPool().getThreadPoolName())) {
-            ttl = resilienceHttpContext.getPoolVsTimeout()
-                    .get(serviceConfiguration.getRuntime().getThreadPool().getThreadPoolName());
-        } else {
-            ttl = serviceConfiguration.getRuntime().getThreadPool().getTimeout();
+        long ttl = 0;
+        Map<String, Integer> poolVsTimeout = resilienceHttpContext.getPoolVsTimeout();
+
+        ttl = getTtlFromApiConfig(apiConfiguration, ttl, poolVsTimeout);
+        if (ttl == 0) {
+            ttl = getTtlFromServiceConfig(serviceConfiguration, poolVsTimeout);
         }
         TimeLimiterConfig config
                 = TimeLimiterConfig.custom().timeoutDuration(Duration.ofMillis(ttl)).build();
         return TimeLimiter.of(config);
+    }
+
+    private long getTtlFromServiceConfig(ServiceConfigurationType serviceConfiguration,
+            Map<String, Integer> poolVsTimeout) {
+        long ttl;
+        String threadPoolName =
+                serviceConfiguration.getService() + "." + serviceConfiguration.getRuntime().getThreadPool()
+                        .getThreadPoolName();
+        if (StringUtils.isNotEmpty(threadPoolName) && poolVsTimeout.get(threadPoolName) != 0) {
+            ttl = poolVsTimeout
+                    .get(threadPoolName);
+            log.info("TTL for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
+        } else {
+            ttl = serviceConfiguration.getRuntime().getThreadPool().getTimeout();
+        }
+        log.info("TTL from service config for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
+        return ttl;
+    }
+
+    private long getTtlFromApiConfig(CommandHandlerConfigurationType apiConfiguration,
+            long ttl, Map<String, Integer> poolVsTimeout) {
+        ThreadPoolConfig threadPoolConfig = apiConfiguration.getRuntime().getThreadPool();
+        if (threadPoolConfig != null && threadPoolConfig.getTimeout() != 0) {
+            ttl = threadPoolConfig.getTimeout();
+            log.info("TTL from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
+        } else if (threadPoolConfig != null
+                && poolVsTimeout.get(threadPoolConfig.getThreadPoolName()) != 0) {
+            ttl = poolVsTimeout.get(threadPoolConfig.getThreadPoolName());
+            log.info("TTL from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
+        }
+        return ttl;
     }
 
     private RevolverExecutionException getException(Throwable throwable) {

@@ -133,8 +133,10 @@ public class ResilienceUtil {
             ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
             if (threadPoolGroupConfig != null) {
                 threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    poolVsBulkHead.put(threadPoolConfig.getThreadPoolName(),
-                            bulkheadRegistry.bulkhead(threadPoolConfig.getThreadPoolName(),
+                    String bulkHeadName =
+                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
+                    poolVsBulkHead.put(bulkHeadName,
+                            bulkheadRegistry.bulkhead(bulkHeadName,
                                     BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
                                             .build()));
                 });

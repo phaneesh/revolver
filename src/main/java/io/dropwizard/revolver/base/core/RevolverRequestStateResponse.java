@@ -20,15 +20,13 @@ package io.dropwizard.revolver.base.core;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * @author phaneesh
  */
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class RevolverRequestStateResponse {
 
     private String requestId;

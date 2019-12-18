@@ -19,6 +19,7 @@ package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.base.Strings;
+import com.google.common.io.ByteStreams;
 import io.dropwizard.msgpack.MsgPackMediaType;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
@@ -28,6 +29,7 @@ import io.dropwizard.revolver.util.HeaderUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import javax.inject.Singleton;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
@@ -72,14 +74,14 @@ public class RevolverCallbackResource {
             MediaType.APPLICATION_XML})
     public Response handleCallback(@PathParam("requestId") String requestId,
             @HeaderParam(RESPONSE_CODE_HEADER) String responseCode,
-            @Context HttpHeaders headers, byte[] responseBody) {
+            @Context HttpHeaders headers, @Context HttpServletRequest request) {
         long start = System.currentTimeMillis();
         try {
             val callbackRequest = persistenceProvider.request(requestId);
-            log.debug("Callback request in handleCallback : " + callbackRequest);
             if (callbackRequest == null) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
+            byte[] responseBody = ByteStreams.toByteArray(request.getInputStream());
             val response = RevolverCallbackResponse.builder().body(responseBody)
                     .headers(headers.getRequestHeaders()).statusCode(
                             responseCode != null ? Integer.parseInt(responseCode)

@@ -229,6 +229,9 @@ public class ResilienceUtil {
 
     private static String getThreadPoolName(RevolverServiceConfig revolverServiceConfig,
             ThreadPoolConfig threadPoolConfig) {
+        if (StringUtils.isEmpty(threadPoolConfig.getThreadPoolName())) {
+            return StringUtils.EMPTY;
+        }
         return revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
     }
 

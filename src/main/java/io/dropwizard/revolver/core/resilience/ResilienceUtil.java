@@ -6,6 +6,7 @@ import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
+import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
@@ -88,40 +89,14 @@ public class ResilienceUtil {
 
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
 
-            ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
-            if (threadPoolGroupConfig != null) {
-                threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    String threadPoolName =
-                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
-                    poolVsCircuitBreaker.put(threadPoolName,
-                            circuitBreakerRegistry.circuitBreaker(threadPoolName));
-                });
-            }
+            updateCBForThreadPools(poolVsCircuitBreaker, revolverServiceConfig);
+            updateCBForApiConfigs(poolVsCircuitBreaker, revolverServiceConfig);
+            updateCBForDefaultServiceConfig(poolVsCircuitBreaker, revolverServiceConfig);
 
-            if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
-                ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
-                        .forEach(revolverHttpApiConfig -> {
-                            if (revolverHttpApiConfig.getRuntime() != null) {
-                                HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
-                                if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
-                                    return;
-                                }
-                                String threadPoolName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
-                                if (StringUtils.isEmpty(threadPoolName)) {
-                                    threadPoolName =
-                                            revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
-                                }
-                                poolVsCircuitBreaker.putIfAbsent(threadPoolName,
-                                        circuitBreakerRegistry.circuitBreaker(
-                                                threadPoolName));
-                            }
-                        });
-            }
         }
-        poolVsCircuitBreaker.forEach((s, circuitBreaker) -> {
-            log.info("Resilience circuit breaker : {}, circuit break config : {} ", s,
-                    circuitBreaker.getCircuitBreakerConfig().getFailureRateThreshold());
-        });
+        poolVsCircuitBreaker.forEach(
+                (s, circuitBreaker) -> log.info("Resilience circuit breaker : {}, circuit break config : {} ", s,
+                        circuitBreaker.getCircuitBreakerConfig().getFailureRateThreshold()));
         resilienceHttpContext.setPoolVsCircuitBreaker(poolVsCircuitBreaker);
     }
 
@@ -132,46 +107,13 @@ public class ResilienceUtil {
 
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
 
-            ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
-            if (threadPoolGroupConfig != null) {
-                threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    String bulkHeadName =
-                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
-                    poolVsBulkHead.put(bulkHeadName,
-                            bulkheadRegistry.bulkhead(bulkHeadName,
-                                    BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
-                                            .build()));
-                });
-            }
-
-            if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
-                ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
-                        .forEach(revolverHttpApiConfig -> {
-                            if (revolverHttpApiConfig.getRuntime() != null) {
-                                HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
-                                if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
-                                    return;
-                                }
-                                String threadPoolName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
-                                if (StringUtils.isEmpty(threadPoolName)) {
-                                    threadPoolName =
-                                            revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
-                                }
-                                poolVsBulkHead.putIfAbsent(threadPoolName,
-                                        bulkheadRegistry.bulkhead(
-                                                threadPoolName,
-                                                BulkheadConfig.custom().maxConcurrentCalls(
-                                                        hystrixCommandConfig.getThreadPool()
-                                                                .getConcurrency())
-                                                        .build()));
-                            }
-                        });
-            }
+            updateBulkheadsForThreadPools(poolVsBulkHead, revolverServiceConfig);
+            updateBulkheadsForApiConfigs(poolVsBulkHead, revolverServiceConfig);
+            updateBulkHeadsForDefaultServiceConfig(poolVsBulkHead, revolverServiceConfig);
         }
-        poolVsBulkHead.forEach((s, bulkhead) -> {
-            log.info("Resilience bulk head Key : {}, bulk head value : {} ", s,
-                    bulkhead.getBulkheadConfig().getMaxConcurrentCalls());
-        });
+
+        poolVsBulkHead.forEach((s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {} ", s,
+                bulkhead.getBulkheadConfig().getMaxConcurrentCalls()));
         resilienceHttpContext.setPoolVsBulkHeadMap(poolVsBulkHead);
     }
 
@@ -182,39 +124,174 @@ public class ResilienceUtil {
 
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
 
-            ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
-            if (threadPoolGroupConfig != null) {
-                threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                    String threadPoolName =
-                            revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
-                    poolVsTimeout.put(threadPoolName,
-                            threadPoolConfig.getTimeout());
-                });
-            }
-
-            if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
-                ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
-                        .forEach(revolverHttpApiConfig -> {
-                            if (revolverHttpApiConfig.getRuntime() != null) {
-                                HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
-                                if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
-                                    return;
-                                }
-                                String threadPoolName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
-                                if (StringUtils.isEmpty(threadPoolName)) {
-                                    threadPoolName =
-                                            revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
-                                }
-                                poolVsTimeout.putIfAbsent(threadPoolName,
-                                        hystrixCommandConfig.getThreadPool().getTimeout());
-                            }
-                        });
-            }
-            poolVsTimeout.forEach((s, timeout) -> {
-                log.info("Resilience timeout  Key : {}, timeput value : {} ", s, timeout);
-            });
+            updateTimeoutsForThreadPools(poolVsTimeout, revolverServiceConfig);
+            updateTimeoutsForApiConfigs(poolVsTimeout, revolverServiceConfig);
+            updateTimeoutsForDefaultServiceConfig(poolVsTimeout, revolverServiceConfig);
         }
+
+        poolVsTimeout
+                .forEach((s, timeout) -> log.info("Resilience timeout  Key : {}, timeout value : {} ", s, timeout));
         resilienceHttpContext.setPoolVsTimeout(poolVsTimeout);
     }
 
+    private static void updateCBForApiConfigs(Map<String, CircuitBreaker> poolVsCircuitBreaker,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
+                    .forEach(revolverHttpApiConfig -> {
+                        if (revolverHttpApiConfig.getRuntime() != null) {
+                            HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
+                            if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
+                                return;
+                            }
+                            String threadPoolName = getThreadPoolName(revolverServiceConfig,
+                                    hystrixCommandConfig.getThreadPool());
+                            if (StringUtils.isEmpty(threadPoolName)) {
+                                threadPoolName =
+                                        revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
+                            }
+                            poolVsCircuitBreaker.putIfAbsent(threadPoolName,
+                                    circuitBreakerRegistry.circuitBreaker(
+                                            threadPoolName));
+                        }
+                    });
+        }
+    }
+
+    private static void updateCBForThreadPools(Map<String, CircuitBreaker> poolVsCircuitBreaker,
+            RevolverServiceConfig revolverServiceConfig) {
+        ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
+        if (threadPoolGroupConfig != null) {
+            threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
+                String threadPoolName =
+                        getThreadPoolName(revolverServiceConfig, threadPoolConfig);
+                poolVsCircuitBreaker.put(threadPoolName,
+                        circuitBreakerRegistry.circuitBreaker(threadPoolName));
+            });
+        }
+    }
+
+    private static void updateCBForDefaultServiceConfig(Map<String, CircuitBreaker> poolVsCircuitBreaker,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ThreadPoolConfig threadPoolConfig = revolverServiceConfig.getRuntime().getThreadPool();
+            if (threadPoolConfig == null) {
+                return;
+            }
+            poolVsCircuitBreaker.put(revolverServiceConfig.getService(),
+                    circuitBreakerRegistry.circuitBreaker(revolverServiceConfig.getService()));
+        }
+    }
+
+    private static void updateBulkheadsForApiConfigs(Map<String, Bulkhead> poolVsBulkHead,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
+                    .forEach(revolverHttpApiConfig -> {
+                        if (revolverHttpApiConfig.getRuntime() != null) {
+                            HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
+                            if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
+                                return;
+                            }
+                            String threadPoolName = getThreadPoolName(revolverServiceConfig,
+                                    hystrixCommandConfig.getThreadPool());
+                            if (StringUtils.isEmpty(threadPoolName)) {
+                                threadPoolName =
+                                        revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
+                            }
+                            poolVsBulkHead.putIfAbsent(threadPoolName,
+                                    bulkheadRegistry.bulkhead(
+                                            threadPoolName,
+                                            BulkheadConfig.custom().maxConcurrentCalls(
+                                                    hystrixCommandConfig.getThreadPool()
+                                                            .getConcurrency())
+                                                    .build()));
+                        }
+                    });
+        }
+    }
+
+    private static void updateBulkheadsForThreadPools(Map<String, Bulkhead> poolVsBulkHead,
+            RevolverServiceConfig revolverServiceConfig) {
+        ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
+        if (threadPoolGroupConfig != null) {
+            threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
+                String threadPoolName =
+                        getThreadPoolName(revolverServiceConfig, threadPoolConfig);
+                log.info("ThreadPool Name : {} ", threadPoolName);
+                poolVsBulkHead.put(threadPoolName,
+                        bulkheadRegistry.bulkhead(threadPoolName,
+                                BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
+                                        .build()));
+            });
+        }
+    }
+
+    private static String getThreadPoolName(RevolverServiceConfig revolverServiceConfig,
+            ThreadPoolConfig threadPoolConfig) {
+        return revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
+    }
+
+
+    private static void updateTimeoutsForDefaultServiceConfig(Map<String, Integer> poolVsTimeout,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ThreadPoolConfig threadPoolConfig = revolverServiceConfig.getRuntime().getThreadPool();
+            if (threadPoolConfig == null) {
+                return;
+            }
+            poolVsTimeout.put(revolverServiceConfig.getService(), threadPoolConfig.getTimeout());
+        }
+    }
+
+    private static void updateTimeoutsForThreadPools(Map<String, Integer> poolVsTimeout,
+            RevolverServiceConfig revolverServiceConfig) {
+        ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
+        if (threadPoolGroupConfig != null) {
+            threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
+                String threadPoolName =
+                        getThreadPoolName(revolverServiceConfig, threadPoolConfig);
+                poolVsTimeout.put(threadPoolName,
+                        threadPoolConfig.getTimeout());
+            });
+        }
+    }
+
+    private static void updateTimeoutsForApiConfigs(Map<String, Integer> poolVsTimeout,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ((RevolverHttpServiceConfig) revolverServiceConfig).getApis()
+                    .forEach(revolverHttpApiConfig -> {
+                        if (revolverHttpApiConfig.getRuntime() != null) {
+                            HystrixCommandConfig hystrixCommandConfig = revolverHttpApiConfig.getRuntime();
+                            if (hystrixCommandConfig == null || hystrixCommandConfig.getThreadPool() == null) {
+                                return;
+                            }
+                            String threadPoolName = getThreadPoolName(revolverServiceConfig,
+                                    hystrixCommandConfig.getThreadPool());
+                            if (StringUtils.isEmpty(threadPoolName)) {
+                                threadPoolName =
+                                        revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
+                            }
+                            poolVsTimeout.putIfAbsent(threadPoolName,
+                                    hystrixCommandConfig.getThreadPool().getTimeout());
+                        }
+                    });
+        }
+    }
+
+
+    private static void updateBulkHeadsForDefaultServiceConfig(Map<String, Bulkhead> poolVsBulkHead,
+            RevolverServiceConfig revolverServiceConfig) {
+        if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
+            ThreadPoolConfig threadPoolConfig = revolverServiceConfig.getRuntime().getThreadPool();
+            if (threadPoolConfig == null) {
+                return;
+            }
+            poolVsBulkHead.put(revolverServiceConfig.getService(), bulkheadRegistry
+                    .bulkhead(revolverServiceConfig.getService(),
+                            BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()));
+
+        }
+    }
 }

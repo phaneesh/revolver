@@ -179,8 +179,8 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         } else if (serviceConfiguration.getRuntime() != null
                 && serviceConfiguration.getRuntime().getThreadPool() != null) {
             ttl = serviceConfiguration.getRuntime().getThreadPool().getTimeout();
+            log.info("TTL for service config for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
         }
-        log.info("TTL from service config for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
         return ttl;
     }
 
@@ -190,11 +190,11 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         long ttl = 0;
         if (threadPoolConfig != null && threadPoolConfig.getTimeout() != 0) {
             ttl = threadPoolConfig.getTimeout();
-            log.info("TTL override from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
+            log.debug("TTL override from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
         } else if (threadPoolConfig != null
                 && poolVsTimeout.get(threadPoolConfig.getThreadPoolName()) != 0) {
             ttl = poolVsTimeout.get(threadPoolConfig.getThreadPoolName());
-            log.info("TTL from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
+            log.debug("TTL from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
         }
         return ttl;
     }
@@ -222,7 +222,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
 
         if (circuitBreaker == null) {
             //Ideally should never happen
-            log.error("No bulk head defined for service {}, api {}", request.getService(), request.getApi());
+            log.error("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
             circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
         }
         return circuitBreaker;

@@ -58,7 +58,6 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
     private static final String IDX_MAILBOX_ID = "idx_mailbox_id";
     private static final String MAILBOX_SET_NAME = "mailbox_messages";
-    private static final String DEFAULT_MAILBOX_ID = "NONE";
     private static final TypeReference<Map<String, List<String>>> headerAndQueryParamTypeReference = new TypeReference<Map<String, List<String>>>() {
     };
     private final AerospikeMailBoxConfig mailBoxConfig;
@@ -104,7 +103,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
                             : request.getMethod().toUpperCase());
             Bin path = new Bin(BinNames.PATH, request.getPath());
             Bin mailBoxId = new Bin(BinNames.MAILBOX_ID,
-                    mailboxId == null ? DEFAULT_MAILBOX_ID : mailboxId);
+                    mailboxId == null ? "NONE" : mailboxId);
             Bin queryParams = new Bin(BinNames.QUERY_PARAMS,
                     objectMapper.writeValueAsString(request.getQueryParams()));
             Bin callbackUri = new Bin(BinNames.CALLBACK_URI, request.getCallbackUri());
@@ -139,7 +138,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
                             : request.getMethod().toUpperCase());
             Bin path = new Bin(BinNames.PATH, request.getPath());
             Bin mailBoxId = new Bin(BinNames.MAILBOX_ID,
-                    mailboxId == null ? DEFAULT_MAILBOX_ID : mailboxId);
+                    mailboxId == null ? "NONE" : mailboxId);
             Bin queryParams = new Bin(BinNames.QUERY_PARAMS,
                     objectMapper.writeValueAsString(request.getQueryParams()));
             Bin callbackUri = new Bin(BinNames.CALLBACK_URI, request.getCallbackUri());
@@ -206,20 +205,21 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
     @Override
     public RevolverRequestState requestState(String requestId) {
-        return requestState(requestId, null, false);
+        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
+        Record record = AerospikeConnectionManager.getClient()
+                .get(AerospikeConnectionManager.readPolicy, key, BinNames.STATE);
+        if (record == null) {
+            return RevolverRequestState.UNKNOWN;
+        }
+        return RevolverRequestState.valueOf(record.getString(BinNames.STATE));
     }
 
     @Override
-    public RevolverRequestState requestState(String requestId, String mailBoxId) {
-        return requestState(requestId, mailBoxId, true);
-    }
-
-    @Override
-    public RevolverCallbackResponse response(String requestId, String mailBoxId) {
+    public RevolverCallbackResponse response(String requestId) {
         Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
         Record record = AerospikeConnectionManager.getClient()
                 .get(AerospikeConnectionManager.readPolicy, key);
-        if (record == null || isInvalidMailboxId(true, mailBoxId, record)) {
+        if (record == null) {
             return null;
         }
         return recordToResponse(record);
@@ -250,12 +250,17 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
     @Override
     public RevolverCallbackRequest request(String requestId) {
-        return request(requestId, null, false);
-    }
-
-    @Override
-    public RevolverCallbackRequest request(String requestId, String mailBoxId) {
-        return request(requestId, mailBoxId, true);
+        long start = System.currentTimeMillis();
+        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
+        Record record = AerospikeConnectionManager.getClient()
+                .get(AerospikeConnectionManager.readPolicy, key);
+        if (record == null) {
+            return null;
+        }
+        RevolverCallbackRequest request = recordToRequest(record);
+        log.info("Callback request fetch for request id: {} complete in {} ms", requestId,
+                (System.currentTimeMillis() - start));
+        return request;
     }
 
     @Override
@@ -272,43 +277,6 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             }
         }
         return requests;
-    }
-
-    private RevolverRequestState requestState(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
-        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
-        Record record = AerospikeConnectionManager.getClient()
-                .get(AerospikeConnectionManager.readPolicy, key);
-        if (record == null || isInvalidMailboxId(enforceMailboxIdCheck, mailBoxId, record)) {
-            return RevolverRequestState.UNKNOWN;
-        }
-        return RevolverRequestState.valueOf(record.getString(BinNames.STATE));
-    }
-
-    private RevolverCallbackRequest request(String requestId, String mailBoxId, boolean enforceMailboxIdCheck) {
-        long start = System.currentTimeMillis();
-        Key key = new Key(mailBoxConfig.getNamespace(), MAILBOX_SET_NAME, requestId);
-        Record record = AerospikeConnectionManager.getClient()
-                .get(AerospikeConnectionManager.readPolicy, key);
-        if (record == null || isInvalidMailboxId(enforceMailboxIdCheck, mailBoxId, record)) {
-            return null;
-        }
-        RevolverCallbackRequest request = recordToRequest(record);
-        log.info("Callback request fetch for request id: {} complete in {} ms", requestId,
-                (System.currentTimeMillis() - start));
-        return request;
-    }
-
-    /**
-     * Checks mailbox id saved earlier in record against mailbox id coming in access request
-     *
-     * @param enforceMailboxIdCheck : flag to enforce mailbox id check
-     * @param mailBoxId :  mailbox id in access request
-     * @param record : Aerospike record
-     * @return boolean
-     */
-    private boolean isInvalidMailboxId(boolean enforceMailboxIdCheck, String mailBoxId, Record record) {
-        return enforceMailboxIdCheck && !DEFAULT_MAILBOX_ID.equals(record.getString(BinNames.MAILBOX_ID))
-                && !record.getString(BinNames.MAILBOX_ID).equals(mailBoxId);
     }
 
     private RevolverCallbackRequest recordToRequest(Record record) {

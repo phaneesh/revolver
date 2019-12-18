@@ -17,7 +17,6 @@
 
 package io.dropwizard.revolver.persistence;
 
-import com.google.common.base.Strings;
 import io.dropwizard.revolver.base.core.RevolverCallbackRequest;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverCallbackResponses;
@@ -43,7 +42,6 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     private final ConcurrentHashMap<String, RevolverCallbackResponse> callbackResponse = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RevolverRequestState> callbackStates = new ConcurrentHashMap<>();
     private final MultivaluedMap<String, String> mailbox = new MultivaluedHashMap<>();
-    private final ConcurrentHashMap<String, String> requestToMailboxMap = new ConcurrentHashMap<>();
 
     @Override
     public boolean exists(String requestId) {
@@ -56,7 +54,6 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
-            requestToMailboxMap.put(requestId, mailBoxId);
         }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
@@ -67,7 +64,6 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
-            requestToMailboxMap.put(requestId, mailBoxId);
         }
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
@@ -96,31 +92,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public RevolverRequestState requestState(String requestId, String mailBoxId) {
-        if (isInvalidMailboxId(requestId, mailBoxId)) {
-            return RevolverRequestState.UNKNOWN;
-        }
-        return callbackStates.get(requestId);
-    }
-
-    private boolean isInvalidMailboxId(String requestId, String mailBoxId) {
-        return !Strings.isNullOrEmpty(requestToMailboxMap.get(requestId))
-                && !requestToMailboxMap.get(requestId).equals(mailBoxId);
-    }
-
-    @Override
-    public RevolverCallbackRequest request(String requestId, String mailBoxId) {
-        if (isInvalidMailboxId(requestId, mailBoxId)) {
-            return null;
-        }
-        return callbackRequests.get(requestId);
-    }
-
-    @Override
-    public RevolverCallbackResponse response(String requestId, String mailBoxId) {
-        if (isInvalidMailboxId(requestId, mailBoxId)) {
-            return null;
-        }
+    public RevolverCallbackResponse response(String requestId) {
         return callbackResponse.get(requestId);
     }
 
@@ -149,5 +121,4 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
                     .collect(Collectors.toList());
         }
     }
-
 }

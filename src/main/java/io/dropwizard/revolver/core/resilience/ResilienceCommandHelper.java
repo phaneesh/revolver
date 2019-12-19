@@ -10,6 +10,7 @@ import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.model.RevolverResponse;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.core.util.RevolverExceptionHelper;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
@@ -31,7 +32,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig,
         CommandHandlerConfigurationType extends CommandHandlerConfig> {
 
-    private static final long DEFAULT_TTL = 5000;
+    private static final long DEFAULT_TTL = 3000;
     private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
     private final RequestType request;
     private final ContextType context;
@@ -122,15 +123,17 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         return request.getService() + "." + threadPoolName;
     }
 
-    private TimeLimiter getTimeoutConfig(
-            ResilienceHttpContext resilienceHttpContext,
+    private TimeLimiter getTimeoutConfig(ResilienceHttpContext resilienceHttpContext,
             ServiceConfigurationType serviceConfiguration, CommandHandlerConfigurationType apiConfiguration) {
-        Map<String, Integer> poolVsTimeout = resilienceHttpContext.getPoolVsTimeout();
 
-        long ttl = getTtlFromApiConfig(apiConfiguration, poolVsTimeout);
-        if (ttl == 0) {
-            ttl = getTtlFromServiceConfig(serviceConfiguration, poolVsTimeout);
+        Map<String, Integer> apiVsTimeout = resilienceHttpContext.getApiVsTimeout();
+        long ttl = 0;
+        if (apiConfiguration instanceof RevolverHttpApiConfig) {
+            String apiName = ResilienceUtil.getApiName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
+            ttl = apiVsTimeout.get(apiName);
+            log.info("Timeout set for api : {}, time : {}", apiName, ttl);
         }
+
         if (ttl == 0) {
             //Ideally timeout should be set for all apis. This case should never happen
             log.info("Timeout not set for api : {}", apiConfiguration.getApi());
@@ -168,37 +171,6 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
 
     }
 
-    private long getTtlFromServiceConfig(ServiceConfigurationType serviceConfiguration,
-            Map<String, Integer> poolVsTimeout) {
-        long ttl = 0;
-        String threadPoolName = serviceConfiguration.getService();
-        if (StringUtils.isNotEmpty(threadPoolName) && poolVsTimeout.get(threadPoolName) != 0) {
-            ttl = poolVsTimeout
-                    .get(threadPoolName);
-            log.info("TTL for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
-        } else if (serviceConfiguration.getRuntime() != null
-                && serviceConfiguration.getRuntime().getThreadPool() != null) {
-            ttl = serviceConfiguration.getRuntime().getThreadPool().getTimeout();
-            log.info("TTL for service config for threadPoolName : {}, ttl : {}", threadPoolName, ttl);
-        }
-        return ttl;
-    }
-
-    private long getTtlFromApiConfig(CommandHandlerConfigurationType apiConfiguration,
-            Map<String, Integer> poolVsTimeout) {
-        ThreadPoolConfig threadPoolConfig = apiConfiguration.getRuntime().getThreadPool();
-        long ttl = 0;
-        if (threadPoolConfig != null && threadPoolConfig.getTimeout() != 0) {
-            ttl = threadPoolConfig.getTimeout();
-            log.debug("TTL override from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
-        } else if (threadPoolConfig != null
-                && poolVsTimeout.get(threadPoolConfig.getThreadPoolName()) != 0) {
-            ttl = poolVsTimeout.get(threadPoolConfig.getThreadPoolName());
-            log.debug("TTL from api config for api : {}, ttl : {}", apiConfiguration.getApi(), ttl);
-        }
-        return ttl;
-    }
-
     private RevolverExecutionException getException(Throwable throwable) {
         return new RevolverExecutionException(RevolverExecutionException.Type.SERVICE_ERROR,
                 String.format("Error executing resilience command %s",
@@ -209,23 +181,22 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     private CircuitBreaker getCircuitBreaker(ResilienceHttpContext resilienceHttpContext, RequestType request,
             ServiceConfigurationType serviceConfiguration,
             CommandHandlerConfigurationType apiConfiguration) {
-        Map<String, CircuitBreaker> circuitBreakerMap = resilienceHttpContext.getPoolVsCircuitBreaker();
-        String threadPoolName = getThreadPoolName(request, apiConfiguration);
-        CircuitBreaker circuitBreaker = circuitBreakerMap.get(threadPoolName);
+        Map<String, CircuitBreaker> circuitBreakerMap = resilienceHttpContext.getApiVsCircuitBreaker();
+        String cbName;
+        if (apiConfiguration instanceof RevolverHttpApiConfig) {
+            cbName = ResilienceUtil.getCbName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
+        } else {
+            cbName = serviceConfiguration.getService();
+        }
+
+        CircuitBreaker circuitBreaker = circuitBreakerMap.get(cbName);
         if (circuitBreaker != null) {
             return circuitBreaker;
         }
-        threadPoolName = serviceConfiguration.getService();
-        if (StringUtils.isNotEmpty(threadPoolName)) {
-            circuitBreaker = circuitBreakerMap.get(threadPoolName);
-        }
 
-        if (circuitBreaker == null) {
-            //Ideally should never happen
-            log.error("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
-            circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
-        }
+        //Ideally should never happen
+        log.error("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
+        circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
         return circuitBreaker;
-
     }
 }

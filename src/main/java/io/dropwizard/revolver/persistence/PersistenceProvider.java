@@ -30,10 +30,10 @@ public interface PersistenceProvider {
 
     boolean exists(String requestId);
 
-    void saveRequest(String requestId, String mailboxId, String mailboxAuthId,
+    void saveRequest(String requestId, String mailboxId,
             RevolverCallbackRequest request);
 
-    void saveRequest(String requestId, String mailboxId, String mailboxAuthId,
+    void saveRequest(String requestId, String mailboxId,
             RevolverCallbackRequest request, int ttl) throws Exception;
 
     void setRequestState(String requestId, RevolverRequestState state, int ttl)
@@ -44,20 +44,16 @@ public interface PersistenceProvider {
 
     RevolverRequestState requestState(String requestId);
 
-    RevolverRequestState requestState(String requestId, String mailBoxAuthId);
+    RevolverRequestState requestState(String requestId, String mailBoxId);
 
-    RevolverCallbackResponse response(String requestId, String mailBoxAuthId);
+    RevolverCallbackResponse response(String requestId, String mailBoxId);
+
+    List<RevolverCallbackResponses> responses(String mailboxId);
 
     RevolverCallbackRequest request(String requestId);
 
-    RevolverCallbackRequest request(String requestId, String mailBoxAuthId);
+    RevolverCallbackRequest request(String requestId, String mailBoxId);
 
-    List<RevolverCallbackRequest> requestsByMailbox(String mailboxId);
-
-    List<RevolverCallbackRequest> requestsByMailboxAuth(String mailboxAuthId);
-
-    List<RevolverCallbackResponses> responsesByMailbox(String mailboxId);
-
-    List<RevolverCallbackResponses> responsesByMailboxAuth(String mailboxAuthId);
+    List<RevolverCallbackRequest> requests(String mailboxId);
 
 }

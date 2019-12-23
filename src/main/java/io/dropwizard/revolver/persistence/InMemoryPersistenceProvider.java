@@ -45,8 +45,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     private final ConcurrentHashMap<String, RevolverCallbackResponse> callbackResponse = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RevolverRequestState> callbackStates = new ConcurrentHashMap<>();
     private final MultivaluedMap<String, String> mailbox = new MultivaluedHashMap<>();
-    private final MultivaluedMap<String, String> mailboxAuth = new MultivaluedHashMap<>();
-    private final ConcurrentHashMap<String, String> requestToMailboxAuthMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> requestToMailboxMap = new ConcurrentHashMap<>();
 
     @Override
     public boolean exists(String requestId) {
@@ -54,34 +53,24 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public void saveRequest(String requestId, String mailBoxId, String mailboxAuthId,
+    public void saveRequest(String requestId, String mailBoxId,
             RevolverCallbackRequest request) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+            requestToMailboxMap.put(requestId, mailBoxId);
         }
-
-        if(!StringUtils.isBlank(mailboxAuthId)){
-            mailboxAuth.add(mailboxAuthId, requestId);
-            requestToMailboxAuthMap.put(requestId, mailboxAuthId);
-        }
-
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
     @Override
-    public void saveRequest(String requestId, String mailBoxId, String mailboxAuthId,
+    public void saveRequest(String requestId, String mailBoxId,
             RevolverCallbackRequest request, int ttl) {
         callbackRequests.put(requestId, request);
         if (!StringUtils.isBlank(mailBoxId)) {
             mailbox.add(mailBoxId, requestId);
+            requestToMailboxMap.put(requestId, mailBoxId);
         }
-
-        if(!StringUtils.isBlank(mailboxAuthId)){
-            mailboxAuth.add(mailboxAuthId, requestId);
-            requestToMailboxAuthMap.put(requestId, mailboxAuthId);
-        }
-
         callbackStates.put(requestId, RevolverRequestState.RECEIVED);
     }
 
@@ -109,36 +98,36 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public RevolverRequestState requestState(String requestId, String mailBoxAuthId) {
-        if (isInvalidMailboxAuthId(requestId, mailBoxAuthId)) {
+    public RevolverRequestState requestState(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
             return RevolverRequestState.UNKNOWN;
         }
         return callbackStates.get(requestId);
     }
 
-    private boolean isInvalidMailboxAuthId(String requestId, String mailBoxAuthId) {
-        return !Strings.isNullOrEmpty(requestToMailboxAuthMap.get(requestId))
-                && !requestToMailboxAuthMap.get(requestId).equals(mailBoxAuthId);
+    private boolean isInvalidMailboxId(String requestId, String mailBoxId) {
+        return !Strings.isNullOrEmpty(requestToMailboxMap.get(requestId))
+                && !requestToMailboxMap.get(requestId).equals(mailBoxId);
     }
 
     @Override
-    public RevolverCallbackRequest request(String requestId, String mailBoxAuthId) {
-        if (isInvalidMailboxAuthId(requestId, mailBoxAuthId)) {
+    public RevolverCallbackRequest request(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
             return null;
         }
         return callbackRequests.get(requestId);
     }
 
     @Override
-    public RevolverCallbackResponse response(String requestId, String mailBoxAuthId) {
-        if (isInvalidMailboxAuthId(requestId, mailBoxAuthId)) {
+    public RevolverCallbackResponse response(String requestId, String mailBoxId) {
+        if (isInvalidMailboxId(requestId, mailBoxId)) {
             return null;
         }
         return callbackResponse.get(requestId);
     }
 
     @Override
-    public List<RevolverCallbackRequest> requestsByMailbox(String mailboxId) {
+    public List<RevolverCallbackRequest> requests(String mailboxId) {
         val requestIds = mailbox.get(mailboxId);
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
@@ -149,18 +138,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
     }
 
     @Override
-    public List<RevolverCallbackRequest> requestsByMailboxAuth(String mailboxAuthId) {
-        val requestIds = mailboxAuth.get(mailboxAuthId);
-        if (requestIds == null || requestIds.isEmpty()) {
-            return Collections.emptyList();
-        } else {
-            return requestIds.stream().filter(callbackRequests::containsKey)
-                    .map(callbackRequests::get).collect(Collectors.toList());
-        }
-    }
-
-    @Override
-    public List<RevolverCallbackResponses> responsesByMailbox(String mailboxId) {
+    public List<RevolverCallbackResponses> responses(String mailboxId) {
         val requestIds = mailbox.get(mailboxId);
         if (requestIds == null || requestIds.isEmpty()) {
             return Collections.emptyList();
@@ -174,18 +152,4 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
         }
     }
 
-    @Override
-    public List<RevolverCallbackResponses> responsesByMailboxAuth(String mailboxAuthId) {
-        val requestIds = mailboxAuth.get(mailboxAuthId);
-        if (requestIds == null || requestIds.isEmpty()) {
-            return Collections.emptyList();
-        } else {
-            return requestIds.stream().filter(callbackResponse::containsKey)
-                    .map(callbackResponse::get)
-                    .map(e -> RevolverCallbackResponses.builder().headers(e.getHeaders())
-                            .statusCode(e.getStatusCode())
-                            .body(Base64.getEncoder().encodeToString(e.getBody())).build())
-                    .collect(Collectors.toList());
-        }
-    }
 }

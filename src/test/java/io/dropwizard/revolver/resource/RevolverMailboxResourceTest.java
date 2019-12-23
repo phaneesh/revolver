@@ -57,7 +57,7 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
             .build();
 
     @Test
-    public void shouldFetchResponseOnPollingWithoutMailboxAuthId() throws IOException {
+    public void shouldFetchResponseOnPollingWithoutMailboxId() throws IOException {
         WireMock wireMockClient = new WireMock("localhost", wireMockRule.port());
         wireMockClient.register(WireMock
                 .get(urlEqualTo("/v1/test"))
@@ -66,7 +66,7 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
 
         Response response = submitPollingRequest(null);
         assertEquals(
-                202,response.getStatus());
+                response.getStatus(), 202);
         final String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
@@ -80,17 +80,18 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), null);
-        assertEquals( 200,originalRequest.getStatus());
+        assertEquals(originalRequest.getStatus(), 200);
 
         Response mailboxResponse = fetchMailboxResponse(revolverAckMessage.getRequestId(), null);
-        assertEquals(200,mailboxResponse.getStatus());
+        assertEquals(mailboxResponse.getStatus(), 200);
     }
 
 
     @Test
-    public void shouldFetchResponseOnPollingWithMailboxAuthId() throws IOException {
+    public void shouldFetchResponseOnPollingWithMailboxId() throws IOException {
         Response response = submitPollingRequest("MAILBOX_123");
-        assertEquals(202,response.getStatus());
+        assertEquals(
+                response.getStatus(), 202);
         final String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
@@ -104,16 +105,17 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), "MAILBOX_123");
-        assertEquals(200,originalRequest.getStatus());
+        assertEquals(originalRequest.getStatus(), 200);
 
         Response mailboxResponse = fetchMailboxResponse(revolverAckMessage.getRequestId(), "MAILBOX_123");
-        assertEquals(200,mailboxResponse.getStatus());
+        assertEquals(mailboxResponse.getStatus(), 200);
     }
 
     @Test
-    public void shouldNotFetchRequestStateOnPollingWithoutMailboxAuthId() throws IOException {
+    public void shouldNotFetchRequestStateOnPollingWithoutMailboxId() throws IOException {
         Response response = submitPollingRequest("MAILBOX_123");
-        assertEquals(202, response.getStatus());
+        assertEquals(
+                response.getStatus(), 202);
         final String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
@@ -128,9 +130,10 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
     }
 
     @Test
-    public void shouldNotFetchRequestOnPollingWithoutMailboxAuthId() throws IOException {
+    public void shouldNotFetchRequestOnPollingWithoutMailboxId() throws IOException {
         Response response = submitPollingRequest("MAILBOX_123");
-        assertEquals(202,   response.getStatus());
+        assertEquals(
+                response.getStatus(), 202);
         final String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
@@ -144,13 +147,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response originalRequest = fetchMailboxRequest(revolverAckMessage.getRequestId(), null);
-        assertEquals( 500,originalRequest.getStatus());
+        assertEquals(originalRequest.getStatus(), 500);
     }
 
     @Test
-    public void shouldNotFetchResponseOnPollingWithoutMailboxAuthId() throws IOException {
+    public void shouldNotFetchResponseOnPollingWithoutMailboxId() throws IOException {
         Response response = submitPollingRequest("MAILBOX_123");
-        assertEquals(202,response.getStatus());
+        assertEquals(
+                response.getStatus(), 202);
         final String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
@@ -164,30 +168,30 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         assertEquals(requestStateResponse.getState(), "RESPONDED");
 
         Response mailboxResponse1 = fetchMailboxResponse(revolverAckMessage.getRequestId(), null);
-        assertEquals(500,mailboxResponse1.getStatus());
+        assertEquals(mailboxResponse1.getStatus(), 500);
 
         Response mailboxResponse2 = fetchMailboxResponse(revolverAckMessage.getRequestId(), "MAILBOX_1235");
-        assertEquals(500,mailboxResponse2.getStatus());
+        assertEquals(mailboxResponse2.getStatus(), 500);
     }
 
-    public Response fetchMailboxResponse(String requestId, String mailboxAuthId) {
+    public Response fetchMailboxResponse(String requestId, String mailboxId) {
         return resources.client()
                 .target("/revolver/v1/response/" + requestId).request()
-                .header(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER, mailboxAuthId)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, mailboxId)
                 .get();
     }
 
-    private Response fetchMailboxRequest(String requestId, String mailboxAuthId) {
+    private Response fetchMailboxRequest(String requestId, String mailboxId) {
         return resources.client()
                 .target("/revolver/v1/request/" + requestId).request()
-                .header(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER, mailboxAuthId)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, mailboxId)
                 .get();
     }
 
-    private Response fetchMailboxRequestStatus(String requestId, String mailboxAuthId) {
+    private Response fetchMailboxRequestStatus(String requestId, String mailboxId) {
         return resources.client()
                 .target("/revolver/v1/request/status/" + requestId).request()
-                .header(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER, mailboxAuthId)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, mailboxId)
                 .get();
     }
 
@@ -200,17 +204,17 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
                 .post(Entity
                         .entity(Collections.singletonMap("test", "test"),
                                 MediaType.APPLICATION_JSON));
-        assertEquals(202,callbackResponse.getStatus());
+        assertEquals(callbackResponse.getStatus(), 202);
     }
 
-    private Response submitPollingRequest(String mailboxAuthId) throws IOException {
+    private Response submitPollingRequest(String mailboxId) throws IOException {
         stubFor(get(urlEqualTo("/v1/test")).willReturn(
                 aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("{\"id\":1}")));
         return resources.client().target("/apis/test/v1/test").request()
                 .header(RevolversHttpHeaders.REQUEST_ID_HEADER, UUID.randomUUID().toString())
                 .header(RevolversHttpHeaders.TXN_ID_HEADER, UUID.randomUUID().toString())
                 .header(RevolversHttpHeaders.CALL_MODE_HEADER, CALL_MODE_POLLING)
-                .header(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER, mailboxAuthId)
+                .header(RevolversHttpHeaders.MAILBOX_ID_HEADER, mailboxId)
                 .get();
 
     }

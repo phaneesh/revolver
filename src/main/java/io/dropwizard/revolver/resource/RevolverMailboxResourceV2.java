@@ -67,7 +67,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 @AllArgsConstructor
 @Builder
 @Singleton
-@Api(value = "MailBox", description = "Revolver gateway api for interacting mailbox requests")
+@Api(value = "MailBox APIs V2", description = "Revolver gateway api v2 for interacting mailbox requests")
 public class RevolverMailboxResourceV2 {
 
     private static final RevolverException NOT_FOUND_ERROR = RevolverException.builder()

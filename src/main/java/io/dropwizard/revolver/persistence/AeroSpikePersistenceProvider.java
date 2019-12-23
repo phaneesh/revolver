@@ -55,7 +55,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
 
 
     private static final String IDX_MAILBOX_ID = "idx_mailbox_id";
-    private static final String IDX_MAILBOX_AUTH_ID = "idx_mailbox_auth_id";
+    private static final String IDX_MAILBOX_AUTH_ID = "ix_mailbx_auth";
     private static final String MAILBOX_SET_NAME = "mailbox_messages";
     private static final String DEFAULT_MAILBOX_ID = "NONE";
     private static final TypeReference<Map<String, List<String>>> headerAndQueryParamTypeReference = new TypeReference<Map<String, List<String>>>() {
@@ -413,7 +413,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
     private abstract static class BinNames {
 
         static final String MAILBOX_ID = "mailbox_id";
-        static final String MAILBOX_AUTH_ID = "mailbox_auth_id";
+        static final String MAILBOX_AUTH_ID = "mailbox_auth";
         static final String SERVICE = "service";
         static final String API = "api";
         static final String MODE = "mode";

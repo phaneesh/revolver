@@ -22,11 +22,11 @@ public class ResilienceHttpContext extends RevolverHttpContext {
 
     private CircuitBreaker defaultCircuitBreaker;
 
-    private Map<String, CircuitBreaker> apiVsCircuitBreaker;
+    private Map<String, CircuitBreaker> poolVsCircuitBreaker;
 
     private Map<String, Bulkhead> poolVsBulkHeadMap;
 
-    private Map<String, Integer> apiVsTimeout;
+    private Map<String, Integer> poolVsTimeout;
 
     private ExecutorService executor = Executors.newCachedThreadPool();
 

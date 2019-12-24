@@ -1,5 +1,6 @@
 package io.dropwizard.revolver.optimizer;
 
+import io.dropwizard.revolver.optimizer.hystrix.metrics.OptimizerMetricType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,6 +17,7 @@ public class OptimizerCacheKey {
 
     private long time;
     private String name;
+    private OptimizerMetricType metricType;
 
     @Override
     public boolean equals(Object o) {
@@ -31,13 +33,13 @@ public class OptimizerCacheKey {
         if (time != that.time) {
             return false;
         }
-        return name.equals(that.name);
+        return name.equals(that.name) && metricType.equals(that.metricType);
     }
 
     @Override
     public int hashCode() {
         int result = (int) (time ^ (time >>> 32));
-        result = 31 * result + name.hashCode();
+        result = 31 * result + name.hashCode() + metricType.hashCode();
         return result;
     }
 }

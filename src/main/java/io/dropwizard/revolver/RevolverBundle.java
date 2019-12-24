@@ -392,6 +392,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                     .isEnabled()) {
                 RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
                         .optimizerConfig(optimizerConfig)
+                        .metrics(metrics)
+                        .resilienceHttpContext(resilienceHttpContext)
                         .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
                         .build();
                 scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,

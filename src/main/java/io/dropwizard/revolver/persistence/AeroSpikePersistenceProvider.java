@@ -75,8 +75,11 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
             IndexTask idxMessageState = AerospikeConnectionManager.getClient()
                     .createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME,
                             "idx_message_state", BinNames.STATE, IndexType.STRING);
-            idxMailboxId.waitTillComplete();
             idxMessageState.waitTillComplete();
+            IndexTask idxMailboxAuth = AerospikeConnectionManager.getClient()
+                    .createIndex(null, mailBoxConfig.getNamespace(), MAILBOX_SET_NAME,
+                            IDX_MAILBOX_AUTH_ID, BinNames.MAILBOX_AUTH_ID, IndexType.STRING);
+            idxMailboxAuth.waitTillComplete();
         } catch (AerospikeException e) {
             log.warn("Failed to create indexes: Error Code - {} | Message: {}", e.getResultCode(),
                     e.getMessage());

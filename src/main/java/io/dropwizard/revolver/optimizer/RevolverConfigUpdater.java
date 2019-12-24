@@ -6,14 +6,11 @@ import static io.dropwizard.revolver.optimizer.resilience.metrics.BulkheadMetric
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
-import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.resilience.ResilienceHttpContext;
 import io.dropwizard.revolver.core.resilience.ResilienceUtil;
-import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.optimizer.OptimalThreadPoolAttributes.OptimalThreadPoolAttributesBuilder;
 import io.dropwizard.revolver.optimizer.OptimalTimeoutAttributes.OptimalTimeoutAttributesBuilder;
@@ -21,14 +18,8 @@ import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.optimizer.hystrix.metrics.AggregationAlgo;
-import io.dropwizard.revolver.optimizer.hystrix.metrics.LatencyMetric;
-import io.dropwizard.revolver.optimizer.resilience.metrics.BulkheadMetric;
-import io.dropwizard.revolver.optimizer.utils.OptimizerUtils;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -115,7 +106,7 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
-            ResilienceUtil.initializeResilience(revolverConfig, new ResilienceHttpContext(), metrics);
+            ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext, metrics);
             RevolverBundle.loadServiceConfiguration(revolverConfig);
         }
     }
@@ -125,8 +116,7 @@ public class RevolverConfigUpdater implements Runnable {
             String poolName) {
 
         OptimalThreadPoolAttributes optimalThreadPoolAttributes = calculateOptimalThreadPoolSize(
-                threadPoolConfig.getConcurrency(), poolName,
-                optimizerThreadPoolMetrics);
+                threadPoolConfig.getConcurrency(), poolName, optimizerThreadPoolMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
             log.info("Setting concurrency for pool : " + poolName + " from : " + threadPoolConfig.getConcurrency()
                     + " to : "
@@ -412,177 +402,4 @@ public class RevolverConfigUpdater implements Runnable {
         optimizerTimeConfig.setAppLatencyThresholdValue(latencyThresholdValue);
     }
 
-    private void updateRevolverConfig(
-            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap) {
-        AtomicBoolean configUpdated = new AtomicBoolean();
-        revolverConfig.getServices().forEach(revolverServiceConfig -> {
-            if (revolverServiceConfig.getThreadPoolGroupConfig() != null) {
-                revolverServiceConfig.getThreadPoolGroupConfig().getThreadPools()
-                        .forEach(threadPoolConfig -> {
-                            updatedPoolSettings(threadPoolConfig, optimizerAggregatedMetricsMap,
-                                    configUpdated);
-                        });
-            }
-            if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
-                ((RevolverHttpServiceConfig) revolverServiceConfig).getApis().forEach(api -> {
-                    updatedApiSettings(revolverServiceConfig, api, optimizerAggregatedMetricsMap,
-                            configUpdated);
-                });
-            }
-        });
-
-        if (configUpdated.get()) {
-            RevolverBundle.loadServiceConfiguration(revolverConfig);
-        }
-    }
-
-    private void updatedPoolSettings(ThreadPoolConfig threadPoolConfig,
-            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
-            AtomicBoolean configUpdated) {
-
-        OptimizerConcurrencyConfig optimizerConcurrencyConfig = optimizerConfig
-                .getConcurrencyConfig();
-        if (optimizerConcurrencyConfig == null || !optimizerConfig.getConcurrencyConfig()
-                .isEnabled()) {
-            return;
-        }
-        OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
-                .get(threadPoolConfig.getThreadPoolName());
-
-        if (optimizerAggregatedMetrics == null) {
-            return;
-        }
-        updateConcurrencySetting(threadPoolConfig, optimizerAggregatedMetrics, configUpdated,
-                threadPoolConfig.getThreadPoolName());
-
-    }
-
-    private void updatedApiSettings(RevolverServiceConfig revolverServiceConfig,
-            RevolverHttpApiConfig api,
-            Map<String, OptimizerAggregatedMetrics> optimizerAggregatedMetricsMap,
-            AtomicBoolean configUpdated) {
-
-        String key = revolverServiceConfig.getService() + "." + api.getApi();
-        OptimizerAggregatedMetrics optimizerAggregatedMetrics = optimizerAggregatedMetricsMap
-                .get(key);
-
-        if (optimizerAggregatedMetrics == null) {
-            return;
-        }
-        updateConcurrencySetting(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
-                configUpdated, api.getApi());
-        updateTimeoutSettings(api.getRuntime().getThreadPool(), optimizerAggregatedMetrics,
-                configUpdated, api);
-        updateLatencySettings(api, optimizerAggregatedMetrics);
-    }
-
-    private void updateConcurrencySetting(ThreadPoolConfig threadPoolConfig,
-            OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
-            String poolName) {
-        OptimizerConcurrencyConfig optimizerConcurrencyConfig = optimizerConfig
-                .getConcurrencyConfig();
-        if (optimizerConcurrencyConfig == null || !optimizerConfig.getConcurrencyConfig()
-                .isEnabled()) {
-            return;
-        }
-        if (optimizerAggregatedMetrics.getMetricsAggValueMap()
-                .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS) == null) {
-            return;
-        }
-        OptimizerConcurrencyConfig concurrencyConfig = optimizerConfig.getConcurrencyConfig();
-        log.info("Enabled : {}, MaxThreadsMultiplier : {}, MaxThreshold : {}, Initial Concurrency : {}, Pool : {}",
-                concurrencyConfig.isEnabled(), concurrencyConfig.getMaxThreadsMultiplier(),
-                concurrencyConfig.getMaxThreshold(), threadPoolConfig.getInitialConcurrency(),
-                threadPoolConfig.getThreadPoolName());
-        int maxRollingActiveThreads = optimizerAggregatedMetrics.getMetricsAggValueMap()
-                .get(OptimizerUtils.ROLLING_MAX_ACTIVE_THREADS).intValue();
-        int concurrency = threadPoolConfig.getConcurrency();
-
-        if (maxRollingActiveThreads == 0) {
-            threadPoolConfig.setConcurrency(3);
-            log.info("Setting concurrency for : " + poolName + " from : " + concurrency + " to : "
-                    + threadPoolConfig.getConcurrency() + ", maxRollingActiveThreads : "
-                    + maxRollingActiveThreads);
-            return;
-        }
-
-        if ((maxRollingActiveThreads > concurrency * concurrencyConfig.getMaxThreshold()
-                || maxRollingActiveThreads < concurrency * concurrencyConfig.getMinThreshold())
-                && maxRollingActiveThreads
-                < threadPoolConfig.getInitialConcurrency() * concurrencyConfig
-                .getMaxThreadsMultiplier()) {
-
-            int updatedConcurrency = (int) Math
-                    .ceil(maxRollingActiveThreads * concurrencyConfig.getBandwidth());
-            threadPoolConfig.setConcurrency(updatedConcurrency);
-            configUpdated.set(true);
-            log.info("Setting concurrency for : " + poolName + " from : " + concurrency + " to : "
-                    + updatedConcurrency + ", maxRollingActiveThreads : "
-                    + maxRollingActiveThreads);
-        }
-
-    }
-
-    private void updateTimeoutSettings(ThreadPoolConfig threadPool,
-            OptimizerAggregatedMetrics optimizerAggregatedMetrics, AtomicBoolean configUpdated,
-            RevolverHttpApiConfig api) {
-
-        OptimizerTimeConfig timeoutConfig = optimizerConfig.getTimeConfig();
-        if (timeoutConfig == null || !timeoutConfig.isEnabled()
-                || optimizerAggregatedMetrics.getMetricsAggValueMap()
-                .get(timeoutConfig.getTimeoutMetric()) == null) {
-            return;
-        }
-        int meanTimeoutValue = optimizerAggregatedMetrics.getMetricsAggValueMap()
-                .get(timeoutConfig.getTimeoutMetric()).intValue();
-
-        if (meanTimeoutValue <= 0) {
-            return;
-        }
-
-        int currentTimeout = threadPool.getTimeout();
-        int newTimeout = currentTimeout;
-
-        Set<RevolverHttpApiConfig.RequestMethod> methods = api.getMethods();
-        double timeoutBuffer;
-
-        if (methods.isEmpty() || !(methods.contains(RevolverHttpApiConfig.RequestMethod.GET))) {
-            timeoutBuffer = timeoutConfig.getAllMethodTimeoutBuffer();
-        } else {
-            timeoutBuffer = timeoutConfig.getGetMethodTimeoutBuffer();
-        }
-
-        if (currentTimeout < meanTimeoutValue || currentTimeout > (meanTimeoutValue
-                * timeoutBuffer)) {
-            newTimeout = (int) (meanTimeoutValue * timeoutBuffer);
-            configUpdated.set(true);
-        }
-        log.info("Setting timeout for : " + api.getApi() + " from : " + threadPool.getTimeout()
-                + " to : " + newTimeout + ", " + "meanTimeoutValue : " + meanTimeoutValue
-                + ", with timeout buffer : " + timeoutBuffer);
-        //threadPool.setTimeout(newTimeout);
-
-    }
-
-    private void updateLatencySettings(RevolverHttpApiConfig api,
-            OptimizerAggregatedMetrics optimizerAggregatedMetrics) {
-        OptimizerTimeConfig optimizerTimeConfig = optimizerConfig.getTimeConfig();
-        if (optimizerTimeConfig == null || !optimizerTimeConfig.isEnabled()) {
-            return;
-        }
-        String latencyMetric = optimizerTimeConfig.getApiLatencyMetric();
-        int apiLatency =
-                optimizerAggregatedMetrics.getMetricsAggValueMap().get(latencyMetric) == null ? 0
-                        : optimizerAggregatedMetrics.getMetricsAggValueMap().get(latencyMetric)
-                                .intValue();
-
-        if (apiLatency <= 0) {
-            return;
-        }
-        if (api.getApiLatencyConfig() == null) {
-            api.setApiLatencyConfig(ApiLatencyConfig.builder().build());
-        }
-        api.getApiLatencyConfig().setLatency(apiLatency);
-
-    }
 }

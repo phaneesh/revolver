@@ -108,23 +108,20 @@ public class OptimizerMetricsCollector implements Runnable {
      *                      "latencyExecute_percentile_90" : 80,
      *                      "latencyExecute_percentile_75" : 50,
      *                      "latencyExecute_percentile_50" : 10
-     *                  },
-     *              "aggregationAlgo" : "AVG"
+     *                  }
      *              }
      *
      * (THREAD_POOL) {
      *              "metrics": {
      *                     "propertyValue_maximumSize" : 5,
      *                     "rollingMaxActiveThreads" : 2,
-     *                  },
-     *              "aggregationAlgo" : "MAX"
+     *                  }
      *              }
      *
      *           {
      *              "metrics": {
      *                     "resilience4jBulkheadAvailableConcurrent_calls" : 5
-     *                  },
-     *              "aggregationAlgo" : "MAX"
+     *                  }
      *              }
      *
      */

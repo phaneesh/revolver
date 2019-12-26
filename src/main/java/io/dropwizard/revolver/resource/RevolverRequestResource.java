@@ -397,12 +397,12 @@ public class RevolverRequestResource {
         httpResponse.header("X-REQUESTED-PATH", path);
         httpResponse.header("X-REQUESTED-METHOD", method);
         httpResponse.header("X-REQUESTED-API", api);
-        String responseMediaType = response.getHeaders() != null && Strings
+        String responseMediaType = response.getHeaders() != null && !Strings
                 .isNullOrEmpty(response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE))
-                ? MediaType.TEXT_HTML : response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE);
-        String requestMediaType = headers != null && Strings
-                .isNullOrEmpty(headers.getHeaderString(HttpHeaders.ACCEPT)) ? null
-                : headers.getHeaderString(HttpHeaders.ACCEPT);
+                ? response.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE) : MediaType.TEXT_HTML;
+        String requestMediaType = headers != null && !Strings
+                .isNullOrEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))
+                ? headers.getHeaderString(HttpHeaders.ACCEPT) : null;
         //If no no accept was specified in request; just send it as the same content type as response
         //Also send it as the content type as response content type if there requested content type is the same;
         if (Strings.isNullOrEmpty(requestMediaType) || requestMediaType.equals(responseMediaType)) {

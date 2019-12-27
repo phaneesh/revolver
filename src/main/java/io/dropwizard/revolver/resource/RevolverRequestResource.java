@@ -403,9 +403,11 @@ public class RevolverRequestResource {
         String requestMediaType = headers != null && !Strings
                 .isNullOrEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))
                 ? headers.getHeaderString(HttpHeaders.ACCEPT) : null;
-        //If no no accept was specified in request; just send it as the same content type as response
+        //If no accept was specified in request or accept was wildcard; just send it as the same content type as response
         //Also send it as the content type as response content type if there requested content type is the same;
-        if (Strings.isNullOrEmpty(requestMediaType) || requestMediaType.equals(responseMediaType)) {
+        if (Strings.isNullOrEmpty(requestMediaType)
+                || requestMediaType.startsWith(MediaType.MEDIA_TYPE_WILDCARD)
+                || requestMediaType.equals(responseMediaType)) {
             httpResponse.header(HttpHeaders.CONTENT_TYPE, responseMediaType);
             httpResponse.entity(response.getBody());
             return httpResponse.build();
@@ -427,6 +429,8 @@ public class RevolverRequestResource {
             }
         }
         if (responseData == null) {
+            //By default send the same content type as response
+            httpResponse.header(HttpHeaders.CONTENT_TYPE, responseMediaType);
             httpResponse.entity(response.getBody());
         } else {
             if (requestMediaType.startsWith(MediaType.APPLICATION_JSON)) {

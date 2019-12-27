@@ -403,6 +403,7 @@ public class RevolverRequestResource {
         String requestMediaType = headers != null && !Strings
                 .isNullOrEmpty(headers.getHeaderString(HttpHeaders.ACCEPT))
                 ? headers.getHeaderString(HttpHeaders.ACCEPT) : null;
+        log.info("requestMediaType: {}, responseMediaType:{}", requestMediaType, responseMediaType);
         //If no accept was specified in request or accept was wildcard; just send it as the same content type as response
         //Also send it as the content type as response content type if there requested content type is the same;
         if (Strings.isNullOrEmpty(requestMediaType)

@@ -3,14 +3,14 @@ package io.dropwizard.revolver.optimizer;
 import static io.dropwizard.revolver.optimizer.hystrix.metrics.ThreadPoolMetric.ROLLING_MAX_ACTIVE_THREADS;
 import static io.dropwizard.revolver.optimizer.resilience.metrics.BulkheadMetric.BULKHEAD_AVAILABLE_CONCURRENT_CALLS;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.resilience.ResilienceHttpContext;
 import io.dropwizard.revolver.core.resilience.ResilienceUtil;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.optimizer.OptimalThreadPoolAttributes.OptimalThreadPoolAttributesBuilder;
 import io.dropwizard.revolver.optimizer.OptimalTimeoutAttributes.OptimalTimeoutAttributesBuilder;
@@ -98,15 +98,16 @@ public class RevolverConfigUpdater implements Runnable {
                             OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics
                                     .get(threadPoolConfig.getThreadPoolName());
                             OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics
-                                    .get(threadPoolConfig.getThreadPoolName());
+                                    .get(revolverServiceConfig.getService() + "." + threadPoolConfig
+                                            .getThreadPoolName());
                             updateConcurrencySettingForPool(threadPoolConfig, optimizerThreadPoolMetrics,
                                     optimizerBulkheadMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
                         });
             }
             if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
                 ((RevolverHttpServiceConfig) revolverServiceConfig).getApis().forEach(api -> {
-                    updateApiSettings(api.getRuntime(), apiLevelThreadPoolMetrics, apiLevelLatencyMetrics,
-                            apiLevelBulkheadMetrics, configUpdated);
+                    updateApiSettings(revolverServiceConfig, api, apiLevelThreadPoolMetrics,
+                            apiLevelBulkheadMetrics, apiLevelLatencyMetrics, configUpdated);
                 });
             }
         });
@@ -135,23 +136,26 @@ public class RevolverConfigUpdater implements Runnable {
 
     }
 
-    private void updateApiSettings(HystrixCommandConfig hystrixCommandConfig,
+    private void updateApiSettings(RevolverServiceConfig serviceConfig, RevolverHttpApiConfig apiConfig,
             Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics,
             Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics, AtomicBoolean configUpdated) {
 
-        String commandName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
-        OptimizerMetrics optimizerLatencyMetrics = apiLevelLatencyMetrics.get(commandName);
-        OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics.get(commandName);
-        OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics.get(commandName);
-        if (optimizerLatencyMetrics == null ||
-                (optimizerThreadPoolMetrics == null && optimizerBulkheadMetrics == null)) {
-            return;
+        String key = serviceConfig.getService() + "." + apiConfig.getApi();
+        OptimizerMetrics optimizerLatencyMetrics = apiLevelLatencyMetrics.get(key);
+        OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics.get(key);
+        OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics.get(key);
+        if (optimizerThreadPoolMetrics != null || optimizerBulkheadMetrics != null) {
+            updateConcurrencySettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerThreadPoolMetrics,
+                    optimizerBulkheadMetrics, configUpdated, key);
         }
-        updateConcurrencySettingForCommand(hystrixCommandConfig.getThreadPool(), optimizerThreadPoolMetrics,
-                optimizerBulkheadMetrics, configUpdated, commandName);
-        updateTimeoutSettingForCommand(hystrixCommandConfig.getThreadPool(), optimizerLatencyMetrics,
-                configUpdated, commandName);
+
+        if (optimizerLatencyMetrics != null) {
+            updateTimeoutSettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerLatencyMetrics,
+                    configUpdated, key);
+        }
+
+
     }
 
 

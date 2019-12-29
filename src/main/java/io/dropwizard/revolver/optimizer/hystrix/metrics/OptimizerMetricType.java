@@ -5,7 +5,8 @@ import lombok.Getter;
 @Getter
 public enum OptimizerMetricType {
     LATENCY("latency", 4, AggregationAlgo.AVG),
-    THREAD_POOL("threadPool", 3, AggregationAlgo.MAX);
+    THREAD_POOL("threadPool", 3, AggregationAlgo.MAX),
+    BULKHEAD("bulkhead", 3, AggregationAlgo.MIN);
 
 
     //
@@ -17,6 +18,9 @@ public enum OptimizerMetricType {
      *
      * THREADPOOL metrics pattern : HystrixThreadPool.{threadpoolGroupName}.rollingMaxActiveThreads
      *                              HystrixThreadPool.{serviceName}.{commandName}.rollingMaxActiveThreads
+     *
+     * BULKHEAD metrics pattern :  resilience4jBulkheadAvailableConcurrent_calls.name.{serviceName}.{apiName}
+     *
      * so minValidLength = 3
      */
     int minValidLength;

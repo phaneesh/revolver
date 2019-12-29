@@ -61,13 +61,16 @@ public class RevolverConfigUpdater implements Runnable {
             // Map to keep max values of thread pool metrics at api level
             Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics = Maps.newHashMap();
 
+            // Map to keep min values of bulkhead available concurrent calls metrics at api level
+            Map<String, OptimizerMetrics> apiLevelBulkheadMetrics = Maps.newHashMap();
+
             // Map to keep latency metrics' sum and count at api level
             Map<String, Map<String, OptimizerAggregatedMetric>> aggregateApiLevelLatencyMetrics = Maps.newHashMap();
 
             metricsCache.forEach((key, optimizerMetrics) -> {
                 optimizerMetrics.getMetrics().forEach((metric, value) -> {
                     aggregateAppLevelLatencyMetrics(aggregatedAppLatencyMetrics, metric, value);
-                    aggregateApiLevelMetrics(apiLevelThreadPoolMetrics,
+                    aggregateApiLevelMetrics(apiLevelThreadPoolMetrics, apiLevelBulkheadMetrics,
                             aggregateApiLevelLatencyMetrics, metric, value, key);
                 });
 
@@ -77,7 +80,7 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics = avgApiLevelLatencyMetrics(
                     aggregateApiLevelLatencyMetrics);
 
-            updateRevolverConfig(apiLevelThreadPoolMetrics, apiLevelLatencyMetrics);
+            updateRevolverConfig(apiLevelThreadPoolMetrics, apiLevelBulkheadMetrics, apiLevelLatencyMetrics);
             updateLatencyThreshold(appLevelLatencyMetrics);
         } catch (Exception e) {
             log.error("Revolver config couldn't be updated : " + e);
@@ -85,6 +88,7 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updateRevolverConfig(Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics,
+            Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics) {
         AtomicBoolean configUpdated = new AtomicBoolean();
         revolverConfig.getServices().forEach(revolverServiceConfig -> {
@@ -93,14 +97,16 @@ public class RevolverConfigUpdater implements Runnable {
                         .forEach(threadPoolConfig -> {
                             OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics
                                     .get(threadPoolConfig.getThreadPoolName());
+                            OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics
+                                    .get(threadPoolConfig.getThreadPoolName());
                             updateConcurrencySettingForPool(threadPoolConfig, optimizerThreadPoolMetrics,
-                                    configUpdated, threadPoolConfig.getThreadPoolName());
+                                    optimizerBulkheadMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
                         });
             }
             if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
                 ((RevolverHttpServiceConfig) revolverServiceConfig).getApis().forEach(api -> {
                     updateApiSettings(api.getRuntime(), apiLevelThreadPoolMetrics, apiLevelLatencyMetrics,
-                            configUpdated);
+                            apiLevelBulkheadMetrics, configUpdated);
                 });
             }
         });
@@ -112,11 +118,11 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updateConcurrencySettingForPool(ThreadPoolConfig threadPoolConfig,
-            OptimizerMetrics optimizerThreadPoolMetrics, AtomicBoolean configUpdated,
-            String poolName) {
+            OptimizerMetrics optimizerThreadPoolMetrics, OptimizerMetrics optimizerBulkheadMetrics,
+            AtomicBoolean configUpdated, String poolName) {
 
         OptimalThreadPoolAttributes optimalThreadPoolAttributes = calculateOptimalThreadPoolSize(
-                threadPoolConfig.getConcurrency(), poolName, optimizerThreadPoolMetrics);
+                threadPoolConfig.getConcurrency(), poolName, optimizerThreadPoolMetrics, optimizerBulkheadMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
             log.info("Setting concurrency for pool : " + poolName + " from : " + threadPoolConfig.getConcurrency()
                     + " to : "
@@ -129,30 +135,31 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private void updateApiSettings(HystrixCommandConfig hystrixCommandConfig,
-            Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics,
+            Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics,  Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics, AtomicBoolean configUpdated) {
 
         String commandName = hystrixCommandConfig.getThreadPool().getThreadPoolName();
         OptimizerMetrics optimizerLatencyMetrics = apiLevelLatencyMetrics.get(commandName);
         OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics.get(commandName);
-
+        OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics.get(commandName);
         if (optimizerLatencyMetrics == null || optimizerThreadPoolMetrics == null) {
             return;
         }
         updateConcurrencySettingForCommand(hystrixCommandConfig.getThreadPool(), optimizerThreadPoolMetrics,
-                configUpdated, commandName);
+                optimizerBulkheadMetrics, configUpdated, commandName);
         updateTimeoutSettingForCommand(hystrixCommandConfig.getThreadPool(), optimizerLatencyMetrics,
                 configUpdated, commandName);
     }
 
 
     private void updateConcurrencySettingForCommand(ThreadPoolConfig threadPoolConfig,
-            OptimizerMetrics optimizerThreadPoolMetrics, AtomicBoolean configUpdated,
+            OptimizerMetrics optimizerThreadPoolMetrics, OptimizerMetrics optimizerBulkheadMetrics,
+            AtomicBoolean configUpdated,
             String poolName) {
 
         OptimalThreadPoolAttributes optimalThreadPoolAttributes = calculateOptimalThreadPoolSize(
                 threadPoolConfig.getConcurrency(), poolName,
-                optimizerThreadPoolMetrics);
+                optimizerThreadPoolMetrics, optimizerBulkheadMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
             log.info("Setting concurrency for command : " + poolName + " from : " + threadPoolConfig.getConcurrency()
                     + " to : "
@@ -237,13 +244,13 @@ public class RevolverConfigUpdater implements Runnable {
                     .sum(0L)
                     .count(0L)
                     .build());
-        } else {
-            // aggregate metric value into sum and update count of metric
-            OptimizerAggregatedMetric optimizerAggregatedMetrics = aggregatedAppLatencyMetrics.get(metric);
-            optimizerAggregatedMetrics.setSum(optimizerAggregatedMetrics.getSum()
-                    + value.longValue());
-            optimizerAggregatedMetrics.setCount(optimizerAggregatedMetrics.getCount() + 1L);
         }
+
+        // aggregate metric value into sum and update count of metric
+        OptimizerAggregatedMetric optimizerAggregatedMetrics = aggregatedAppLatencyMetrics.get(metric);
+        optimizerAggregatedMetrics.setSum(optimizerAggregatedMetrics.getSum()
+                + value.longValue());
+        optimizerAggregatedMetrics.setCount(optimizerAggregatedMetrics.getCount() + 1L);
 
         aggregatedAppLatencyMetrics.forEach((metricName, aggregatedAppMetrics) -> {
             log.info("Aggregated " + metricName + " for app: "
@@ -253,15 +260,24 @@ public class RevolverConfigUpdater implements Runnable {
 
     private void aggregateApiLevelMetrics(
             Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics,
+            Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, Map<String, OptimizerAggregatedMetric>> aggregateApiLevelLatencyMetrics,
             String metric, Number value, OptimizerCacheKey key) {
         AggregationAlgo aggregationAlgo = key.getMetricType().getAggregationAlgo();
         switch (aggregationAlgo) {
             case MAX:
-                Map<String, Number> threadPoolMetricsMap = getThreadPoolMetricsMap(apiLevelThreadPoolMetrics, key);
+                Map<String, Number> threadPoolMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelThreadPoolMetrics,
+                        key);
                 if (!threadPoolMetricsMap.containsKey(metric)
                         || threadPoolMetricsMap.get(metric).intValue() < value.intValue()) {
                     threadPoolMetricsMap.put(metric, value);
+                }
+                break;
+            case MIN:
+                Map<String, Number> bulkheadMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelBulkheadMetrics, key);
+                if (!bulkheadMetricsMap.containsKey(metric)
+                        || bulkheadMetricsMap.get(metric).intValue() > value.intValue()) {
+                    bulkheadMetricsMap.put(metric, value);
                 }
                 break;
             case AVG:
@@ -273,7 +289,7 @@ public class RevolverConfigUpdater implements Runnable {
         }
     }
 
-    private Map<String, Number> getThreadPoolMetricsMap(
+    private Map<String, Number> getNullSafeOptimizerMetricsMap(
             Map<String, OptimizerMetrics> maxedThreadPoolMetrics, OptimizerCacheKey key) {
         if (!maxedThreadPoolMetrics.containsKey(key.getName())) {
             maxedThreadPoolMetrics.put(key.getName(),
@@ -336,20 +352,23 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private OptimalThreadPoolAttributes calculateOptimalThreadPoolSize(int initialConcurrency, String poolName,
-            OptimizerMetrics optimizerThreadPoolMetrics) {
+            OptimizerMetrics optimizerThreadPoolMetrics, OptimizerMetrics optimizerBulkheadMetrics) {
         OptimalThreadPoolAttributesBuilder initialConcurrencyAttrBuilder = OptimalThreadPoolAttributes.builder()
                 .optimalConcurrency(initialConcurrency);
 
         OptimizerConcurrencyConfig concurrencyConfig = optimizerConfig.getConcurrencyConfig();
         if (concurrencyConfig == null || !concurrencyConfig.isEnabled()
-                || (!optimizerThreadPoolMetrics.getMetrics()
-                .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName())
-                && !optimizerThreadPoolMetrics.getMetrics()
-                .containsKey(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName()))) {
+                || (
+                (optimizerThreadPoolMetrics == null || !optimizerThreadPoolMetrics.getMetrics()
+                        .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
+                        && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
+                        .containsKey(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName())))
+        ) {
             return initialConcurrencyAttrBuilder.build();
         }
 
-        int maxRollingActiveThreads = calculateMaxRollingActiveThreads(initialConcurrency, optimizerThreadPoolMetrics);
+        int maxRollingActiveThreads = calculateMaxRollingActiveThreads(initialConcurrency, optimizerThreadPoolMetrics,
+                optimizerBulkheadMetrics);
 
         log.info("Optimizer Concurrency Settings Enabled : {}, "
                         + "Max Threads Multiplier : {}, Max Threshold : {}, Initial Concurrency : {}, Pool Name: {}",
@@ -378,11 +397,12 @@ public class RevolverConfigUpdater implements Runnable {
         }
     }
 
-    private int calculateMaxRollingActiveThreads(int initialConcurrency, OptimizerMetrics optimizerThreadPoolMetrics) {
+    private int calculateMaxRollingActiveThreads(int initialConcurrency, OptimizerMetrics optimizerThreadPoolMetrics,
+            OptimizerMetrics optimizerBulkheadMetrics) {
         Number number = optimizerThreadPoolMetrics.getMetrics()
                 .get(ROLLING_MAX_ACTIVE_THREADS.getMetricName());
         if (number == null) {
-            number = initialConcurrency - optimizerThreadPoolMetrics.getMetrics()
+            number = initialConcurrency - optimizerBulkheadMetrics.getMetrics()
                     .getOrDefault(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName(), initialConcurrency).intValue();
         }
         return number.intValue();

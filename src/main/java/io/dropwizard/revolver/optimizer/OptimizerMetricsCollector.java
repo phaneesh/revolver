@@ -56,7 +56,7 @@ public class OptimizerMetricsCollector implements Runnable {
     private void captureBulkheadConcurrencyMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((key, gauge) -> {
             updateOptimizerMetricsCache(RevolverExecutorType.RESILIENCE, key, gauge, time, 2,
-                    OptimizerMetricType.THREAD_POOL,
+                    OptimizerMetricType.BULKHEAD,
                     BulkheadMetric.metrics());
         });
     }
@@ -98,7 +98,7 @@ public class OptimizerMetricsCollector implements Runnable {
      *
      * OptimizerCacheKey : {"time":1574682861000,
      *                      "name": "serviceName.commandName,
-     *                      "metricType": {LATENCY/THREAD_POOL}"
+     *                      "metricType": {LATENCY/THREAD_POOL/BULKHEAD}"
      *                      }
      *
      * OptimizerMetrics :
@@ -114,13 +114,12 @@ public class OptimizerMetricsCollector implements Runnable {
      * (THREAD_POOL) {
      *              "metrics": {
      *                     "propertyValue_maximumSize" : 5,
-     *                     "rollingMaxActiveThreads" : 2,
      *                  }
      *              }
      *
-     *           {
+     * (BULKHEAD) {
      *              "metrics": {
-     *                     "resilience4jBulkheadAvailableConcurrent_calls" : 5
+     *                     "resilience4jBulkheadAvailableConcurrent_calls" : 5,
      *                  }
      *              }
      *

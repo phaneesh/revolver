@@ -39,7 +39,6 @@ public class RevolverConfigUpdater implements Runnable {
 
     private RevolverConfig revolverConfig;
     private OptimizerConfig optimizerConfig;
-    private MetricRegistry metrics;
     private ResilienceHttpContext resilienceHttpContext;
     private OptimizerMetricsCache optimizerMetricsCache;
     private static final int DEFAULT_CONCURRENCY = 3;
@@ -113,7 +112,7 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
-            ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext, metrics);
+            ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
             RevolverBundle.loadServiceConfiguration(revolverConfig);
         }
     }

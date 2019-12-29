@@ -46,9 +46,16 @@ public class ResilienceUtil {
             CircuitBreakerRegistry.ofDefaults();
 
     public static void initializeResilience(RevolverConfig revolverConfig,
-            ResilienceHttpContext resilienceHttpContext, MetricRegistry metrics) {
+            ResilienceHttpContext resilienceHttpContext) {
 
         log.info("Initializing resilience util");
+
+        initializeBulkHeads(revolverConfig, resilienceHttpContext);
+        initializeCircuitBreakers(revolverConfig, resilienceHttpContext);
+        initializeTimeout(revolverConfig, resilienceHttpContext);
+    }
+
+    public static void bindResilienceMetrics(MetricRegistry metrics) {
         io.micrometer.core.instrument.MeterRegistry metricRegistry = new DropwizardMeterRegistry(
                 new DropwizardConfig() {
                     @Override
@@ -75,10 +82,6 @@ public class ResilienceUtil {
         TaggedCircuitBreakerMetrics
                 .ofCircuitBreakerRegistry(circuitBreakerRegistry)
                 .bindTo(metricRegistry);
-
-        initializeBulkHeads(revolverConfig, resilienceHttpContext);
-        initializeCircuitBreakers(revolverConfig, resilienceHttpContext);
-        initializeTimeout(revolverConfig, resilienceHttpContext);
     }
 
     private static void initializeCircuitBreakers(RevolverConfig revolverConfig,

@@ -146,7 +146,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixUtil.initializeHystrix(environment, metricsPublisher, revolverConfig);
         SentinelUtil.initializeSentinel(revolverConfig);
-        ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext, environment.metrics());
+
+        ResilienceUtil.bindResilienceMetrics(environment.metrics());
+        ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
 
         initializeOptimizer(metrics, scheduledExecutorService);
 
@@ -388,11 +390,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }
 
-            if (optimizerConfig.getTimeConfig() != null && optimizerConfig.getTimeConfig()
+            if (optimizerConfig.getConfigUpdaterConfig() != null && optimizerConfig.getConfigUpdaterConfig()
                     .isEnabled()) {
                 RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
                         .optimizerConfig(optimizerConfig)
-                        .metrics(metrics)
                         .resilienceHttpContext(resilienceHttpContext)
                         .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
                         .build();

@@ -51,6 +51,8 @@ public class OptimizerMetricsCollector implements Runnable {
      * Captures number of available permissions
      *
      * example gauge key name :
+     *
+     * resilience4jBulkheadAvailableConcurrent_calls.name.{serviceName}.{threadPoolGroupName}
      * resilience4jBulkheadAvailableConcurrent_calls.name.{serviceName}.{apiName}
      */
     private void captureBulkheadConcurrencyMetrics(SortedMap<String, Gauge> gauges, Long time) {

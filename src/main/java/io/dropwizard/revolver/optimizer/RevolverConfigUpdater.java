@@ -47,6 +47,7 @@ public class RevolverConfigUpdater implements Runnable {
     public void run() {
         try {
             log.info("Running revolver config updater job with exception catching enabled");
+            long time = System.currentTimeMillis();
             Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
             if (metricsCache.isEmpty()) {
                 log.info("Metrics cache is empty");
@@ -79,7 +80,10 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, Number> appLevelLatencyMetrics = avgAppLevelLatencyMetrics(aggregatedAppLatencyMetrics);
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics = avgApiLevelLatencyMetrics(
                     aggregateApiLevelLatencyMetrics);
-
+            log.debug("Aggregated appLevelLatencyMetrics at time: " + time + " : " + appLevelLatencyMetrics);
+            log.debug("Aggregated apiLevelLatencyMetrics at time: " + time + " : " + apiLevelLatencyMetrics);
+            log.debug("APILevelBulkheadMetrics at time: " + time + " : " + apiLevelBulkheadMetrics);
+            log.debug("APILevelThreadpoolMetrics at time: " + time + " : " + apiLevelThreadPoolMetrics);
             updateRevolverConfig(apiLevelThreadPoolMetrics, apiLevelBulkheadMetrics, apiLevelLatencyMetrics);
             updateLatencyThreshold(appLevelLatencyMetrics);
         } catch (Exception e) {
@@ -113,6 +117,7 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
+            log.debug("Updating revolver config to : " + revolverConfig);
             ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
             RevolverBundle.loadServiceConfiguration(revolverConfig);
         }
@@ -369,12 +374,12 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName())))
-                ) {
+        ) {
             return initialConcurrencyAttrBuilder.build();
         }
 
         int maxRollingActiveThreads = calculateMaxRollingActiveThreads(currentConcurrency, optimizerThreadPoolMetrics,
-                optimizerBulkheadMetrics);
+                optimizerBulkheadMetrics, poolName);
 
         log.info("Optimizer Concurrency Settings Enabled : {}, "
                         + "Max Threads Multiplier : {}, Max Threshold : {}, Initial Concurrency : {}, Pool Name: {}",
@@ -404,7 +409,10 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private int calculateMaxRollingActiveThreads(int currentConcurrency, OptimizerMetrics optimizerThreadPoolMetrics,
-            OptimizerMetrics optimizerBulkheadMetrics) {
+            OptimizerMetrics optimizerBulkheadMetrics, String poolName) {
+        log.info("Calculating maxRollingActiveThreads for command/pool : " + poolName
+                + " from optimizerThreadPoolMetrics: " + optimizerThreadPoolMetrics +
+                " optimizerBulkheadMetrics: " + optimizerBulkheadMetrics);
         int hystrixMaxActiveThreads = optimizerThreadPoolMetrics != null
                 ? optimizerThreadPoolMetrics.getMetrics()
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()

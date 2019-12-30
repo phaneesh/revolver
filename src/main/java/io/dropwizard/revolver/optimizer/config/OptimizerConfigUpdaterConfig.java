@@ -16,6 +16,6 @@ import lombok.NoArgsConstructor;
 public class OptimizerConfigUpdaterConfig {
 
     private int repeatAfter = 5;
-    private boolean enabled;
+    private boolean enabled = true;
     private TimeUnit timeUnit = TimeUnit.MINUTES;
 }

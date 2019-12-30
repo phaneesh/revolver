@@ -410,6 +410,8 @@ public class RevolverConfigUpdater implements Runnable {
 
     private int calculateMaxRollingActiveThreads(int currentConcurrency, OptimizerMetrics optimizerThreadPoolMetrics,
             OptimizerMetrics optimizerBulkheadMetrics) {
+        log.info("Calculating maxRollingActiveThreads from optimizerThreadPoolMetrics: "+optimizerThreadPoolMetrics+
+                " optimizerBulkheadMetrics: "+optimizerBulkheadMetrics);
         int hystrixMaxActiveThreads = optimizerThreadPoolMetrics != null
                 ? optimizerThreadPoolMetrics.getMetrics()
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()

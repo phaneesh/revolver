@@ -395,7 +395,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 RevolverConfigUpdater revolverConfigUpdater = RevolverConfigUpdater.builder()
                         .optimizerConfig(optimizerConfig)
                         .resilienceHttpContext(resilienceHttpContext)
-                        .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                        .optimizerMetricsCache(optimizerMetricsCache)
+                        .revolverConfig(revolverConfig)
                         .build();
                 scheduledExecutorService.scheduleAtFixedRate(revolverConfigUpdater,
                         optimizerConfig.getInitialDelay(),

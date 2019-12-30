@@ -136,7 +136,7 @@ public class OptimizerMetricsCollector implements Runnable {
 
         String metricName = resolveMetricName(executorType, splits);
         if (!(metricsToCapture.contains(metricName))
-                || !((gauge.getValue() instanceof Number))) {
+                || !(gauge.getValue() instanceof Number)) {
             return;
         }
 
@@ -182,18 +182,18 @@ public class OptimizerMetricsCollector implements Runnable {
             case RESILIENCE:
                 return splits[0];
             default:
-                log.error("executor type not supported while resolving metric name in optimizer collector");
+                log.error("Executor type not supported while resolving metric name in optimizer collector");
                 throw new IllegalArgumentException(
-                        "executor type not supported while resolving metric name in optimizer collector");
+                        "Executor type not supported while resolving metric name in optimizer collector");
         }
     }
 
     private int findKeyEndIndex(RevolverExecutorType executorType, int length) {
         switch (executorType){
             case RESILIENCE:
-                return length-1;
+                return length - 1;
             case HYSTRIX:
-                return length -2;
+                return length - 2;
             default:
                 log.error("executor type not supported while resolving key end index in optimizer collector");
                 throw new IllegalArgumentException(

@@ -33,7 +33,7 @@ public class OptimizerUtils {
         return OptimizerConfig.builder().initialDelay(2).timeUnit(TimeUnit.MINUTES)
                 .concurrencyConfig(
                         OptimizerConcurrencyConfig.builder().bandwidth(1.4).minThreshold(0.5)
-                                .maxThreshold(0.85).enabled(true).maxThreadsMultiplier(1.8).build())
+                                .maxThreshold(0.85).enabled(true).maxPoolExpansionLimit(1.8).build())
                 .configUpdaterConfig(OptimizerConfigUpdaterConfig.builder().repeatAfter(2)
                         .timeUnit(TimeUnit.MINUTES).build()).metricsCollectorConfig(
                         OptimizerMetricsCollectorConfig.builder().repeatAfter(30)

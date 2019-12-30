@@ -32,7 +32,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig,
         CommandHandlerConfigurationType extends CommandHandlerConfig> {
 
-    private static final long DEFAULT_TTL = 3000;
+    private static final long DEFAULT_TTL = 5000;
     private final RevolverCommand<RequestType, ResponseType, ContextType, ServiceConfigurationType, CommandHandlerConfigurationType> handler;
     private final RequestType request;
     private final ContextType context;

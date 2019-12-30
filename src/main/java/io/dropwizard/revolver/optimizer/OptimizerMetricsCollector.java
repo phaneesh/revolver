@@ -42,6 +42,8 @@ public class OptimizerMetricsCollector implements Runnable {
             captureThreadPoolMetrics(gauges, time);
             captureBulkheadConcurrencyMetrics(gauges, time);
             captureLatencyMetrics(gauges, time);
+            log.debug("Collected optimizer metrics at instant: " + time + " optimizer metrics cache: "
+                    + optimizerMetricsCache.getCache());
         } catch (Exception e) {
             log.error("Error occurred while executing metrics collector : ", e);
         }

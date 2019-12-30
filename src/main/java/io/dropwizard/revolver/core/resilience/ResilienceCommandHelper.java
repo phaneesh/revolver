@@ -127,10 +127,16 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
             ServiceConfigurationType serviceConfiguration, CommandHandlerConfigurationType apiConfiguration) {
         Map<String, Integer> poolVsTimeout = resilienceHttpContext.getPoolVsTimeout();
 
-        long ttl = getTtlFromApiConfig(apiConfiguration, poolVsTimeout);
-        if (ttl == 0) {
-            ttl = getTtlFromServiceConfig(serviceConfiguration, poolVsTimeout);
+        Map<String, Integer> apiVsTimeout = resilienceHttpContext.getApiVsTimeout();
+        long ttl = 0;
+        if (apiConfiguration instanceof RevolverHttpApiConfig) {
+            String apiName = ResilienceUtil.getApiName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
+            if (apiVsTimeout.get(apiName) != null) {
+                ttl = apiVsTimeout.get(apiName);
+            }
+            log.info("Timeout set for api : {}, time : {}", apiName, ttl);
         }
+
         if (ttl == 0) {
             //Ideally timeout should be set for all apis. This case should never happen
             log.info("Timeout not set for api : {}", apiConfiguration.getApi());

@@ -118,8 +118,7 @@ public class ResilienceUtil {
         resilienceHttpContext.setPoolVsBulkHeadMap(poolVsBulkHead);
     }
 
-    private static void initializeTimeout(RevolverConfig revolverConfig,
-            ResilienceHttpContext resilienceHttpContext) {
+    private static void initializeTimeout(RevolverConfig revolverConfig, ResilienceHttpContext resilienceHttpContext) {
         log.info("Initializing resilience time out");
         Map<String, Integer> poolVsTimeout = Maps.newHashMap();
         Map<String, Integer> apiVsTimeout = Maps.newHashMap();
@@ -131,9 +130,9 @@ public class ResilienceUtil {
             updateTimeoutsForDefaultServiceConfig(poolVsTimeout, revolverServiceConfig);
         }
 
-        poolVsTimeout
+        apiVsTimeout
                 .forEach((s, timeout) -> log.info("Resilience timeout  Key : {}, timeout value : {} ", s, timeout));
-        resilienceHttpContext.setApiVsTimeout(poolVsTimeout);
+        resilienceHttpContext.setApiVsTimeout(apiVsTimeout);
     }
 
     private static void updateCBForApiConfigs(Map<String, CircuitBreaker> apiVsCircuitBreaker,

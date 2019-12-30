@@ -130,7 +130,9 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         long ttl = 0;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
             String apiName = ResilienceUtil.getApiName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
-            ttl = apiVsTimeout.get(apiName);
+            if (apiVsTimeout.get(apiName) != null) {
+                ttl = apiVsTimeout.get(apiName);
+            }
             log.info("Timeout set for api : {}, time : {}", apiName, ttl);
         }
 

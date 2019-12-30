@@ -74,14 +74,14 @@ public class RevolverCallbackResource {
             MediaType.APPLICATION_XML})
     public Response handleCallback(@PathParam("requestId") String requestId,
             @HeaderParam(RESPONSE_CODE_HEADER) String responseCode,
-            @Context HttpHeaders headers, @Context HttpServletRequest request) {
+            @Context HttpHeaders headers, byte[] responseBody) {
         long start = System.currentTimeMillis();
         try {
             val callbackRequest = persistenceProvider.request(requestId);
+            log.debug("Callback request in handleCallback : " + callbackRequest);
             if (callbackRequest == null) {
                 return Response.status(Response.Status.BAD_REQUEST).build();
             }
-            byte[] responseBody = ByteStreams.toByteArray(request.getInputStream());
             val response = RevolverCallbackResponse.builder().body(responseBody)
                     .headers(headers.getRequestHeaders()).statusCode(
                             responseCode != null ? Integer.parseInt(responseCode)

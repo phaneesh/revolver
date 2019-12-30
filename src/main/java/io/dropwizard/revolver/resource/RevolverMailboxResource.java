@@ -90,7 +90,8 @@ public class RevolverMailboxResource {
     public Response requestStatus(@PathParam("requestId") String requestId,
             @Context HttpHeaders headers) throws RevolverException {
         try {
-            RevolverRequestState state = persistenceProvider.requestState(requestId);
+            val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+            RevolverRequestState state = persistenceProvider.requestState(requestId, mailBoxId);
             if (state == null) {
                 throw NOT_FOUND_ERROR;
             }
@@ -117,9 +118,11 @@ public class RevolverMailboxResource {
     @ApiOperation(value = "Send ack for a request so that the mailbox message can be marked as read")
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
-    public Response ack(@PathParam("requestId") String requestId) throws RevolverException {
+    public Response ack(@PathParam("requestId") String requestId, @Context HttpHeaders headers)
+            throws RevolverException {
         try {
-            RevolverRequestState state = persistenceProvider.requestState(requestId);
+            val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+            RevolverRequestState state = persistenceProvider.requestState(requestId, mailBoxId);
             if (state == null) {
                 throw NOT_FOUND_ERROR;
             }
@@ -127,7 +130,7 @@ public class RevolverMailboxResource {
                 case RESPONDED:
                 case ERROR:
                     RevolverCallbackRequest callbackRequest = persistenceProvider
-                            .request(requestId);
+                            .request(requestId, mailBoxId);
                     List<String> ttl = callbackRequest.getHeaders()
                             .getOrDefault(RevolversHttpHeaders.MAILBOX_TTL_HEADER,
                                     Collections.emptyList());
@@ -156,7 +159,8 @@ public class RevolverMailboxResource {
     public Response request(@PathParam("requestId") String requestId,
             @Context HttpHeaders headers) throws RevolverException {
         try {
-            RevolverCallbackRequest callbackRequest = persistenceProvider.request(requestId);
+            val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+            RevolverCallbackRequest callbackRequest = persistenceProvider.request(requestId, mailBoxId);
             if (callbackRequest == null) {
                 throw NOT_FOUND_ERROR;
             }
@@ -181,10 +185,11 @@ public class RevolverMailboxResource {
     @ApiOperation(value = "Get the response for a request in the mailbox")
     @Produces({MediaType.APPLICATION_JSON, MsgPackMediaType.APPLICATION_MSGPACK,
             MediaType.APPLICATION_XML, MediaType.TEXT_HTML})
-    public Response response(@PathParam("requestId") String requestId)
+    public Response response(@PathParam("requestId") String requestId, @Context HttpHeaders headers)
             throws RevolverException {
         try {
-            RevolverCallbackResponse callbackResponse = persistenceProvider.response(requestId);
+            val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+            RevolverCallbackResponse callbackResponse = persistenceProvider.response(requestId, mailBoxId);
             if (callbackResponse == null) {
                 throw NOT_FOUND_ERROR;
             }
@@ -207,14 +212,15 @@ public class RevolverMailboxResource {
     public Response getResponse(@PathParam("requestId") String requestId,
             @Context HttpHeaders headers) throws RevolverException {
         try {
-            RevolverRequestState state = persistenceProvider.requestState(requestId);
+            val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+            RevolverRequestState state = persistenceProvider.requestState(requestId, mailBoxId);
             if (state == null) {
                 throw NOT_FOUND_ERROR;
             }
             switch (state) {
                 case RESPONDED:
                     RevolverCallbackResponse callbackResponse = persistenceProvider
-                            .response(requestId);
+                            .response(requestId, mailBoxId);
                     if (callbackResponse == null) {
                         throw NOT_FOUND_ERROR;
                     }
@@ -227,7 +233,7 @@ public class RevolverMailboxResource {
                 default:
                     RevolverRequestStateResponse revolverRequestStateResponse = RevolverRequestStateResponse
                             .builder().requestId(requestId).state(state.name()).build();
-                    double retryAfter = getRetryAfter(requestId);
+                    double retryAfter = getRetryAfter(requestId, mailBoxId);
                     if (headers.getAcceptableMediaTypes().size() == 0) {
                         return Response.ok(ResponseTransformationUtil
                                         .transform(revolverRequestStateResponse, MediaType.APPLICATION_JSON,
@@ -248,8 +254,8 @@ public class RevolverMailboxResource {
         }
     }
 
-    private double getRetryAfter(@PathParam("requestId") String requestId) {
-        RevolverCallbackRequest revolverCallbackRequest = persistenceProvider.request(requestId);
+    private double getRetryAfter(@PathParam("requestId") String requestId, String mailBoxId) {
+        RevolverCallbackRequest revolverCallbackRequest = persistenceProvider.request(requestId, mailBoxId);
         RevolverHttpApiConfig revolverHttpApiConfig = apiConfig
                 .get(revolverCallbackRequest.getApi());
         double retryAfter;

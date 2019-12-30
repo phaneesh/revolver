@@ -400,7 +400,6 @@ public class BaseRevolverTest {
         when(environment.jersey()).thenReturn(jerseyEnvironment);
         when(environment.lifecycle()).thenReturn(lifecycleEnvironment);
         when(environment.healthChecks()).thenReturn(healthChecks);
-        when(environment.getObjectMapper()).thenReturn(mapper);
         when(bootstrap.getObjectMapper()).thenReturn(mapper);
         when(environment.metrics()).thenReturn(metricRegistry);
         when(environment.getApplicationContext()).thenReturn(new MutableServletContextHandler());

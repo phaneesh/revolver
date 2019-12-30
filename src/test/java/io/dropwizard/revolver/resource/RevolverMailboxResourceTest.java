@@ -17,6 +17,13 @@
 
 package io.dropwizard.revolver.resource;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static io.dropwizard.revolver.http.RevolverHttpCommand.CALL_MODE_POLLING;
+import static org.junit.Assert.assertEquals;
+
 import com.codahale.metrics.MetricRegistry;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import io.dropwizard.revolver.BaseRevolverTest;
@@ -25,19 +32,14 @@ import io.dropwizard.revolver.base.core.RevolverAckMessage;
 import io.dropwizard.revolver.base.core.RevolverRequestStateResponse;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.testing.junit.ResourceTestRule;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static io.dropwizard.revolver.http.RevolverHttpCommand.CALL_MODE_POLLING;
-import static org.junit.Assert.assertEquals;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * @author phaneesh
@@ -48,11 +50,12 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
     public static final ResourceTestRule resources = ResourceTestRule.builder()
             .addResource(
                     new RevolverRequestResource(environment.getObjectMapper(),
-                            RevolverBundle.msgPackObjectMapper, inMemoryPersistenceProvider,
+                            RevolverBundle.MSG_PACK_OBJECT_MAPPER, inMemoryPersistenceProvider,
                             callbackHandler, new MetricRegistry(), revolverConfig))
             .addResource(
                     new RevolverMailboxResource(inMemoryPersistenceProvider, environment.getObjectMapper(),
-                            RevolverBundle.msgPackObjectMapper, Collections.unmodifiableMap(RevolverBundle.apiConfig)))
+                            RevolverBundle.MSG_PACK_OBJECT_MAPPER,
+                            Collections.unmodifiableMap(RevolverBundle.apiConfig)))
             .addResource(new RevolverCallbackResource(inMemoryPersistenceProvider, callbackHandler))
             .build();
 
@@ -67,14 +70,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response response = submitPollingRequest(null);
         assertEquals(
                 response.getStatus(), 202);
-        final String json = response.readEntity(String.class);
+        String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
         postCallback(revolverAckMessage.getRequestId());
 
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), null);
 
-        final String statusResponse = requestStatusResponse.readEntity(String.class);
+        String statusResponse = requestStatusResponse.readEntity(String.class);
         RevolverRequestStateResponse requestStateResponse = mapper
                 .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
@@ -92,14 +95,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response response = submitPollingRequest("MAILBOX_123");
         assertEquals(
                 response.getStatus(), 202);
-        final String json = response.readEntity(String.class);
+        String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
         postCallback(revolverAckMessage.getRequestId());
 
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
-        final String statusResponse = requestStatusResponse.readEntity(String.class);
+        String statusResponse = requestStatusResponse.readEntity(String.class);
         RevolverRequestStateResponse requestStateResponse = mapper
                 .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
@@ -116,14 +119,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response response = submitPollingRequest("MAILBOX_123");
         assertEquals(
                 response.getStatus(), 202);
-        final String json = response.readEntity(String.class);
+        String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
         postCallback(revolverAckMessage.getRequestId());
 
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), null);
 
-        final String statusResponse = requestStatusResponse.readEntity(String.class);
+        String statusResponse = requestStatusResponse.readEntity(String.class);
         RevolverRequestStateResponse requestStateResponse = mapper
                 .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "UNKNOWN");
@@ -134,14 +137,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response response = submitPollingRequest("MAILBOX_123");
         assertEquals(
                 response.getStatus(), 202);
-        final String json = response.readEntity(String.class);
+        String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
         postCallback(revolverAckMessage.getRequestId());
 
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
-        final String statusResponse = requestStatusResponse.readEntity(String.class);
+        String statusResponse = requestStatusResponse.readEntity(String.class);
         RevolverRequestStateResponse requestStateResponse = mapper
                 .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");
@@ -155,14 +158,14 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
         Response response = submitPollingRequest("MAILBOX_123");
         assertEquals(
                 response.getStatus(), 202);
-        final String json = response.readEntity(String.class);
+        String json = response.readEntity(String.class);
         RevolverAckMessage revolverAckMessage = mapper.readValue(json, RevolverAckMessage.class);
 
         postCallback(revolverAckMessage.getRequestId());
 
         Response requestStatusResponse = fetchMailboxRequestStatus(revolverAckMessage.getRequestId(), "MAILBOX_123");
 
-        final String statusResponse = requestStatusResponse.readEntity(String.class);
+        String statusResponse = requestStatusResponse.readEntity(String.class);
         RevolverRequestStateResponse requestStateResponse = mapper
                 .readValue(statusResponse, RevolverRequestStateResponse.class);
         assertEquals(requestStateResponse.getState(), "RESPONDED");

@@ -189,21 +189,38 @@ public class ResilienceUtil {
                             }
                             String threadPoolName = getThreadPoolName(revolverServiceConfig,
                                     hystrixCommandConfig.getThreadPool());
-                            if (StringUtils.isEmpty(threadPoolName)) {
-                                threadPoolName =
-                                        revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
+                            if (StringUtils.isNotEmpty(threadPoolName)) {
+                                return;
                             }
+                            threadPoolName =
+                                    revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
                             log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
                                     hystrixCommandConfig.getThreadPool().getConcurrency());
-                            poolVsBulkHead.putIfAbsent(threadPoolName,
-                                    bulkheadRegistry.bulkhead(
-                                            threadPoolName,
-                                            BulkheadConfig.custom().maxConcurrentCalls(
-                                                    hystrixCommandConfig.getThreadPool()
-                                                            .getConcurrency())
-                                                    .build()));
+                            updateBulkheadRegistry(poolVsBulkHead, hystrixCommandConfig.getThreadPool(),
+                                    threadPoolName);
                         }
                     });
+        }
+    }
+
+    private static void updateBulkheadRegistry(Map<String, Bulkhead> poolVsBulkHead,
+            ThreadPoolConfig threadPoolConfig, String threadPoolName) {
+        if (poolVsBulkHead.get(threadPoolName) == null) {
+            bulkheadRegistry.bulkhead(
+                    threadPoolName,
+                    BulkheadConfig.custom().maxConcurrentCalls(
+                            threadPoolConfig
+                                    .getConcurrency())
+                            .build());
+        } else {
+            poolVsBulkHead.putIfAbsent(threadPoolName,
+                    bulkheadRegistry.replace(
+                            threadPoolName,
+                            Bulkhead.of(threadPoolName,
+                                    BulkheadConfig.custom().maxConcurrentCalls(
+                                            threadPoolConfig
+                                                    .getConcurrency())
+                                            .build())).get());
         }
     }
 
@@ -215,11 +232,9 @@ public class ResilienceUtil {
                 String threadPoolName =
                         getThreadPoolName(revolverServiceConfig, threadPoolConfig);
                 log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName, threadPoolConfig.getConcurrency());
-                poolVsBulkHead.put(threadPoolName,
-                        bulkheadRegistry.bulkhead(threadPoolName,
-                                BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
-                                        .build()));
+                updateBulkheadRegistry(poolVsBulkHead, threadPoolConfig, threadPoolName);
             });
+
         }
     }
 
@@ -230,7 +245,6 @@ public class ResilienceUtil {
         }
         return revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
     }
-
 
     private static void updateTimeoutsForDefaultServiceConfig(Map<String, Integer> poolVsTimeout,
             RevolverServiceConfig revolverServiceConfig) {
@@ -286,7 +300,6 @@ public class ResilienceUtil {
         return revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
     }
 
-
     private static void updateBulkHeadsForDefaultServiceConfig(Map<String, Bulkhead> poolVsBulkHead,
             RevolverServiceConfig revolverServiceConfig) {
         if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
@@ -294,9 +307,17 @@ public class ResilienceUtil {
             if (threadPoolConfig == null) {
                 return;
             }
+            if (poolVsBulkHead.get(revolverServiceConfig.getService()) == null) {
+                poolVsBulkHead.put(revolverServiceConfig.getService(), bulkheadRegistry
+                        .bulkhead(revolverServiceConfig.getService(),
+                                BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
+                                        .build()));
+                return;
+            }
             poolVsBulkHead.put(revolverServiceConfig.getService(), bulkheadRegistry
-                    .bulkhead(revolverServiceConfig.getService(),
-                            BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()));
+                    .replace(revolverServiceConfig.getService(), Bulkhead.of(revolverServiceConfig.getService(),
+                            BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()))
+                    .get());
 
         }
     }

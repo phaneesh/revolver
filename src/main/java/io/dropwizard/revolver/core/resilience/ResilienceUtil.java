@@ -204,12 +204,12 @@ public class ResilienceUtil {
 
     private static void updateBulkheadRegistry(ThreadPoolConfig threadPoolConfig, String threadPoolName) {
         if (POOL_VS_BULK_HEAD.get(threadPoolName) == null) {
-            bulkheadRegistry.bulkhead(
+            POOL_VS_BULK_HEAD.put(threadPoolName, bulkheadRegistry.bulkhead(
                     threadPoolName,
                     BulkheadConfig.custom().maxConcurrentCalls(
                             threadPoolConfig
                                     .getConcurrency())
-                            .build());
+                            .build()));
         } else {
             POOL_VS_BULK_HEAD.put(threadPoolName,
                     bulkheadRegistry.replace(

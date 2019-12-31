@@ -33,6 +33,7 @@ public class ResilienceUtil {
     private static final Map<String, String> DEFAULT_KEY_VALUE_MAP = Maps.newHashMap();
     private static final String METRIC_PREFIX = "resilience";
     private static final String DEFAULT_CIRCUIT_BREAKER = "revolver";
+    private static final Map<String, Bulkhead> POOL_VS_BULK_HEAD = Maps.newHashMap();
 
     static {
         DEFAULT_KEY_VALUE_MAP.put(METRIC_PREFIX + ".step", "PT1M");
@@ -107,18 +108,17 @@ public class ResilienceUtil {
     private static void initializeBulkHeads(RevolverConfig revolverConfig,
             ResilienceHttpContext resilienceHttpContext) {
         log.info("Initializing resilience bulk heads");
-        Map<String, Bulkhead> poolVsBulkHead = Maps.newHashMap();
 
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
 
-            updateBulkheadsForThreadPools(poolVsBulkHead, revolverServiceConfig);
-            updateBulkheadsForApiConfigs(poolVsBulkHead, revolverServiceConfig);
-            updateBulkHeadsForDefaultServiceConfig(poolVsBulkHead, revolverServiceConfig);
+            updateBulkheadsForThreadPools(POOL_VS_BULK_HEAD, revolverServiceConfig);
+            updateBulkheadsForApiConfigs(POOL_VS_BULK_HEAD, revolverServiceConfig);
+            updateBulkHeadsForDefaultServiceConfig(POOL_VS_BULK_HEAD, revolverServiceConfig);
         }
 
-        poolVsBulkHead.forEach((s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {} ", s,
+        POOL_VS_BULK_HEAD.forEach((s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {} ", s,
                 bulkhead.getBulkheadConfig().getMaxConcurrentCalls()));
-        resilienceHttpContext.setPoolVsBulkHeadMap(poolVsBulkHead);
+        resilienceHttpContext.setPoolVsBulkHeadMap(POOL_VS_BULK_HEAD);
     }
 
     private static void initializeTimeout(RevolverConfig revolverConfig, ResilienceHttpContext resilienceHttpContext) {

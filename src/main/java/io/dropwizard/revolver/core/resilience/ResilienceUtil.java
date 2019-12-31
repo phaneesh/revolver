@@ -195,16 +195,15 @@ public class ResilienceUtil {
                                     revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
                             log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
                                     hystrixCommandConfig.getThreadPool().getConcurrency());
-                            updateBulkheadRegistry(POOL_VS_BULK_HEAD, hystrixCommandConfig.getThreadPool(),
+                            updateBulkheadRegistry(hystrixCommandConfig.getThreadPool(),
                                     threadPoolName);
                         }
                     });
         }
     }
 
-    private static void updateBulkheadRegistry(Map<String, Bulkhead> poolVsBulkHead,
-            ThreadPoolConfig threadPoolConfig, String threadPoolName) {
-        if (poolVsBulkHead.get(threadPoolName) == null) {
+    private static void updateBulkheadRegistry(ThreadPoolConfig threadPoolConfig, String threadPoolName) {
+        if (POOL_VS_BULK_HEAD.get(threadPoolName) == null) {
             bulkheadRegistry.bulkhead(
                     threadPoolName,
                     BulkheadConfig.custom().maxConcurrentCalls(
@@ -212,7 +211,7 @@ public class ResilienceUtil {
                                     .getConcurrency())
                             .build());
         } else {
-            poolVsBulkHead.putIfAbsent(threadPoolName,
+            POOL_VS_BULK_HEAD.put(threadPoolName,
                     bulkheadRegistry.replace(
                             threadPoolName,
                             Bulkhead.of(threadPoolName,
@@ -231,7 +230,7 @@ public class ResilienceUtil {
                 String threadPoolName =
                         getThreadPoolName(revolverServiceConfig, threadPoolConfig);
                 log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName, threadPoolConfig.getConcurrency());
-                updateBulkheadRegistry(POOL_VS_BULK_HEAD, threadPoolConfig, threadPoolName);
+                updateBulkheadRegistry(threadPoolConfig, threadPoolName);
             });
 
         }
@@ -310,12 +309,13 @@ public class ResilienceUtil {
                         .bulkhead(revolverServiceConfig.getService(),
                                 BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
                                         .build()));
-                return;
+
+            } else {
+                POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkheadRegistry
+                        .replace(revolverServiceConfig.getService(), Bulkhead.of(revolverServiceConfig.getService(),
+                                BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()))
+                        .get());
             }
-            POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkheadRegistry
-                    .replace(revolverServiceConfig.getService(), Bulkhead.of(revolverServiceConfig.getService(),
-                            BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()))
-                    .get());
 
         }
     }

@@ -44,12 +44,12 @@ public class AerospikeMailBoxConfig extends MailBoxConfig {
 
     private int ttl;
 
-    private String defaultMailboxId = "NONE";
+    private String defaultMailboxAuthId = "NONE";
 
     @Builder
     public AerospikeMailBoxConfig(final String hosts, final String namespace,
             final int maxConnectionsPerNode, final int timeout, final int retries,
-            final int sleepBetweenRetries, final int ttl, final String defaultMailboxId) {
+            final int sleepBetweenRetries, final int ttl, final String defaultMailboxAuthId) {
         super("aerospike");
         this.hosts = hosts;
         this.namespace = namespace;
@@ -58,7 +58,7 @@ public class AerospikeMailBoxConfig extends MailBoxConfig {
         this.retries = retries;
         this.sleepBetweenRetries = sleepBetweenRetries;
         this.ttl = ttl;
-        this.defaultMailboxId = defaultMailboxId;
+        this.defaultMailboxAuthId = defaultMailboxAuthId;
     }
 
     //Default values

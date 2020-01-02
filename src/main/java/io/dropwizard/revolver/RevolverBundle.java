@@ -70,6 +70,7 @@ import io.dropwizard.revolver.resource.RevolverApiManageResource;
 import io.dropwizard.revolver.resource.RevolverCallbackResource;
 import io.dropwizard.revolver.resource.RevolverConfigResource;
 import io.dropwizard.revolver.resource.RevolverMailboxResource;
+import io.dropwizard.revolver.resource.RevolverMailboxResourceV2;
 import io.dropwizard.revolver.resource.RevolverMetadataResource;
 import io.dropwizard.revolver.resource.RevolverRequestResource;
 import io.dropwizard.revolver.splitting.PathExpressionSplitConfig;
@@ -525,7 +526,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         environment.jersey().register(
                 new RevolverMailboxResource(persistenceProvider, environment.getObjectMapper(),
                         MSG_PACK_OBJECT_MAPPER, Collections.unmodifiableMap(apiConfig)));
-
+        environment.jersey().register(
+                new RevolverMailboxResourceV2(persistenceProvider, environment.getObjectMapper(),
+                        MSG_PACK_OBJECT_MAPPER, Collections.unmodifiableMap(apiConfig)));
         DynamicConfigHandler dynamicConfigHandler = new DynamicConfigHandler(
                 getRevolverConfigAttribute(), revolverConfig, environment.getObjectMapper(),
                 getConfigSource(), this);

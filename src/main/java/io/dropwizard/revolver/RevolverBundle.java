@@ -385,7 +385,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
                         .optimizerConfig(optimizerConfig).build();
                 scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                        optimizerConfig.getInitialDelay(),
+                        1L,
                         optimizerConfig.getMetricsCollectorConfig().getRepeatAfter(),
                         optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }

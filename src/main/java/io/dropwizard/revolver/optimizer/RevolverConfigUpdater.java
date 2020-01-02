@@ -41,7 +41,7 @@ public class RevolverConfigUpdater implements Runnable {
     private OptimizerConfig optimizerConfig;
     private ResilienceHttpContext resilienceHttpContext;
     private OptimizerMetricsCache optimizerMetricsCache;
-    private static final int DEFAULT_CONCURRENCY = 2;
+    private static final int DEFAULT_CONCURRENCY = 30;
 
     @Override
     public void run() {
@@ -132,8 +132,7 @@ public class RevolverConfigUpdater implements Runnable {
                 optimizerThreadPoolMetrics, optimizerBulkheadMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
             log.info("Setting concurrency for pool : " + poolName + " from : " + threadPoolConfig.getConcurrency()
-                    + " to : "
-                    + optimalThreadPoolAttributes.getOptimalConcurrency() + ", maxRollingActiveThreads : "
+                    + " to : " + optimalThreadPoolAttributes.getOptimalConcurrency() + ", maxRollingActiveThreads : "
                     + optimalThreadPoolAttributes.getMaxRollingActiveThreads());
             threadPoolConfig.setConcurrency(optimalThreadPoolAttributes.getOptimalConcurrency());
             configUpdated.set(true);
@@ -166,8 +165,7 @@ public class RevolverConfigUpdater implements Runnable {
 
     private void updateConcurrencySettingForCommand(ThreadPoolConfig threadPoolConfig,
             OptimizerMetrics optimizerThreadPoolMetrics, OptimizerMetrics optimizerBulkheadMetrics,
-            AtomicBoolean configUpdated,
-            String poolName) {
+            AtomicBoolean configUpdated, String poolName) {
 
         OptimalThreadPoolAttributes optimalThreadPoolAttributes = calculateOptimalThreadPoolSize(
                 threadPoolConfig.getConcurrency(), threadPoolConfig.getInitialConcurrency(), poolName,
@@ -289,6 +287,7 @@ public class RevolverConfigUpdater implements Runnable {
                 Map<String, Number> bulkheadMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelBulkheadMetrics, key);
                 if (!bulkheadMetricsMap.containsKey(metric)
                         || bulkheadMetricsMap.get(metric).intValue() > value.intValue()) {
+                    log.info("Key : {}, Metric : {}, Value : {}", key, metric, value);
                     bulkheadMetricsMap.put(metric, value);
                 }
                 break;
@@ -374,17 +373,19 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName())))
-        ) {
+                ) {
+            log.error("No concurrency metrics found for pool : {} ", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
 
         int maxRollingActiveThreads = calculateMaxRollingActiveThreads(currentConcurrency, optimizerThreadPoolMetrics,
                 optimizerBulkheadMetrics, poolName);
 
-        log.info("Optimizer Concurrency Settings Enabled : {}, "
-                        + "Max Threads Multiplier : {}, Max Threshold : {}, Initial Concurrency : {}, Pool Name: {}",
-                concurrencyConfig.isEnabled(), concurrencyConfig.getMaxPoolExpansionLimit(),
-                concurrencyConfig.getMaxThreshold(), currentConcurrency, poolName);
+        log.info("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
+                        + " Initial Concurrency : {}, Current Concurrency: {}, MaxRollingActiveThreads : {}, "
+                        + "Pool Name: {}", concurrencyConfig.isEnabled(), concurrencyConfig.getMaxPoolExpansionLimit(),
+                concurrencyConfig.getMaxThreshold(), initialConcurrency, currentConcurrency, maxRollingActiveThreads,
+                poolName);
 
         if (maxRollingActiveThreads == 0) {
             return OptimalThreadPoolAttributes.builder()
@@ -418,11 +419,12 @@ public class RevolverConfigUpdater implements Runnable {
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()
                 : 0;
 
-        int bulkheadActiveCalls = optimizerBulkheadMetrics != null
-                ? (currentConcurrency - optimizerBulkheadMetrics.getMetrics()
+        int availableCalls = optimizerBulkheadMetrics != null ? optimizerBulkheadMetrics.getMetrics()
                 .getOrDefault(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName(),
-                        new AtomicInteger(currentConcurrency)).intValue())
-                : 0;
+                        new AtomicInteger(currentConcurrency)).intValue() : 0;
+        int bulkheadActiveCalls = currentConcurrency - availableCalls;
+        log.info("currentConcurrency: {}, resilience4jBulkheadAvailableConcurrent_calls : {}, poolName : {}",
+                currentConcurrency, availableCalls, poolName);
 
         return Math.max(hystrixMaxActiveThreads, bulkheadActiveCalls);
     }

@@ -148,8 +148,8 @@ public class OptimizerMetricsCollector implements Runnable {
                     .build());
         }
         OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(cacheKey);
-        if (optimizerMetrics == null) {
-            return;
+        if (RevolverExecutorType.RESILIENCE == executorType) {
+            log.info("MetricName : {},Key : {} Value : {}", metricName, key, gauge.getValue());
         }
         optimizerMetrics.getMetrics().put(metricName, (Number) gauge.getValue());
     }

@@ -153,6 +153,9 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         String threadPoolName = getThreadPoolName(request, apiConfiguration);
         Bulkhead bulkhead = bulkheadMap.get(threadPoolName);
         if (bulkhead != null) {
+            log.info("BulkheadName : {},  Available Calls : {}, Max Calls : {}", bulkhead.getName(),
+                    bulkhead.getMetrics().getAvailableConcurrentCalls(),
+                    bulkhead.getMetrics().getMaxAllowedConcurrentCalls());
             return bulkhead;
         }
         log.info("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,

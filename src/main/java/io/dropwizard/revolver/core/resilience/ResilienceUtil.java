@@ -94,7 +94,6 @@ public class ResilienceUtil {
 
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
 
-            //updateCBForThreadPools(apiVsCircuitBreaker, revolverServiceConfig);
             updateCBForApiConfigs(apiVsCircuitBreaker, revolverServiceConfig);
             updateCBForDefaultServiceConfig(apiVsCircuitBreaker, revolverServiceConfig);
 
@@ -157,19 +156,6 @@ public class ResilienceUtil {
         return revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
     }
 
-    private static void updateCBForThreadPools(Map<String, CircuitBreaker> poolVsCircuitBreaker,
-            RevolverServiceConfig revolverServiceConfig) {
-        ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
-        if (threadPoolGroupConfig != null) {
-            threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                String threadPoolName =
-                        getThreadPoolName(revolverServiceConfig, threadPoolConfig);
-                poolVsCircuitBreaker.put(threadPoolName,
-                        circuitBreakerRegistry.circuitBreaker(threadPoolName));
-            });
-        }
-    }
-
     private static void updateCBForDefaultServiceConfig(Map<String, CircuitBreaker> apiVsCircuitBreaker,
             RevolverServiceConfig revolverServiceConfig) {
         apiVsCircuitBreaker.put(revolverServiceConfig.getService(),
@@ -211,14 +197,13 @@ public class ResilienceUtil {
                                     .getConcurrency())
                             .build()));
         } else {
-            POOL_VS_BULK_HEAD.put(threadPoolName,
-                    bulkheadRegistry.replace(
-                            threadPoolName,
-                            Bulkhead.of(threadPoolName,
-                                    BulkheadConfig.custom().maxConcurrentCalls(
-                                            threadPoolConfig
-                                                    .getConcurrency())
-                                            .build())).get());
+            Bulkhead bulkhead = Bulkhead.of(threadPoolName,
+                    BulkheadConfig.custom().maxConcurrentCalls(
+                            threadPoolConfig
+                                    .getConcurrency())
+                            .build());
+            bulkheadRegistry.replace(threadPoolName, bulkhead);
+            POOL_VS_BULK_HEAD.put(threadPoolName, bulkhead);
         }
     }
 

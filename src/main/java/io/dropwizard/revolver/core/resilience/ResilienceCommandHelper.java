@@ -133,7 +133,6 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
             if (apiVsTimeout.get(apiName) != null) {
                 ttl = apiVsTimeout.get(apiName);
             }
-            log.info("Timeout set for api : {}, time : {}", apiName, ttl);
         }
 
         if (ttl == 0) {
@@ -168,7 +167,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
 
         if (bulkhead == null) {
             //Ideally should never happen
-            log.error("No bulk head defined for service : {}, api : {} threadPool : {}", request.getService(),
+            log.info("No bulk head defined for service : {}, api : {} threadPool : {}", request.getService(),
                     request.getApi(), threadPoolName);
             bulkhead = Bulkhead.ofDefaults("revolver");
         }
@@ -200,7 +199,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         }
 
         //Ideally should never happen
-        log.error("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
+        log.info("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
         circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
         return circuitBreaker;
     }

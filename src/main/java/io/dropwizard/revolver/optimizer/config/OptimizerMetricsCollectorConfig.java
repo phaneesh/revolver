@@ -15,9 +15,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class OptimizerMetricsCollectorConfig {
 
-    private int repeatAfter = 2;
+    private int repeatAfter = 30;
 
-    private TimeUnit timeUnit = TimeUnit.MINUTES;
+    private TimeUnit timeUnit = TimeUnit.SECONDS;
 
     private int cachingWindowInMinutes = 30;
 

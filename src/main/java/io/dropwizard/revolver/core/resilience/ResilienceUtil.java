@@ -296,12 +296,11 @@ public class ResilienceUtil {
                                         .build()));
 
             } else {
-                POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkheadRegistry
-                        .replace(revolverServiceConfig.getService(), Bulkhead.of(revolverServiceConfig.getService(),
-                                BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build()))
-                        .get());
+                Bulkhead bulkhead = Bulkhead.of(revolverServiceConfig.getService(),
+                        BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency()).build());
+                bulkheadRegistry.replace(revolverServiceConfig.getService(), bulkhead);
+                POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkhead);
             }
-
         }
     }
 }

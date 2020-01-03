@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 public class OptimizerMetricsCollector implements Runnable {
 
+    public static final String ALLOWED_CONCURRENT_CALLS_METRIC_NAME = "resilience4jBulkheadMax_allowedConcurrentCalls";
+    public static final String MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME = "maxRollingActiveThreads";
     private MetricRegistry metrics;
     private OptimizerMetricsCache optimizerMetricsCache;
     private OptimizerConfig optimizerConfig;
@@ -58,8 +60,7 @@ public class OptimizerMetricsCollector implements Runnable {
     private void captureBulkheadConcurrencyMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((key, gauge) -> {
             updateOptimizerMetricsCache(RevolverExecutorType.RESILIENCE, key, gauge, time, 2,
-                    OptimizerMetricType.BULKHEAD,
-                    BulkheadMetric.metrics());
+                    OptimizerMetricType.BULKHEAD, BulkheadMetric.metrics(), gauges);
         });
     }
 
@@ -69,13 +70,12 @@ public class OptimizerMetricsCollector implements Runnable {
      *
      * example gauge key names :
      *
-     * HystrixThreadPool.{threadpoolName}.rollingMaxActiveThreads,
-     * HystrixThreadPool.{serviceName}.{commandName}.rollingMaxActiveThreads
+     * HystrixThreadPool.{threadpoolName}.rollingMaxActiveThreads, HystrixThreadPool.{serviceName}.{commandName}.rollingMaxActiveThreads
      */
     private void captureThreadPoolMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((key, gauge) -> {
             updateOptimizerMetricsCache(HYSTRIX, key, gauge, time, 1, OptimizerMetricType.THREAD_POOL,
-                    ThreadPoolMetric.metrics());
+                    ThreadPoolMetric.metrics(), gauges);
         });
     }
 
@@ -88,46 +88,29 @@ public class OptimizerMetricsCollector implements Runnable {
      */
     private void captureLatencyMetrics(SortedMap<String, Gauge> gauges, Long time) {
         gauges.forEach((key, gauge) -> {
-            updateOptimizerMetricsCache(HYSTRIX,key, gauge, time, 1,OptimizerMetricType.LATENCY,
-                    LatencyMetric.metrics());
+            updateOptimizerMetricsCache(HYSTRIX, key, gauge, time, 1, OptimizerMetricType.LATENCY,
+                    LatencyMetric.metrics(), gauges);
         });
 
     }
 
     /**
-     *
      * OptimizerMetricsCache: Map<OptimizerCacheKey, OptimizerMetrics>
      *
-     * OptimizerCacheKey : {"time":1574682861000,
-     *                      "name": "serviceName.commandName,
-     *                      "metricType": {LATENCY/THREAD_POOL/BULKHEAD}"
-     *                      }
+     * OptimizerCacheKey : {"time":1574682861000, "name": "serviceName.commandName, "metricType":
+     * {LATENCY/THREAD_POOL/BULKHEAD}" }
      *
-     * OptimizerMetrics :
-     *   (LATENCY)   {
-     *                  "metrics": {
-     *                      "latencyExecute_percentile_995" : 100,
-     *                      "latencyExecute_percentile_90" : 80,
-     *                      "latencyExecute_percentile_75" : 50,
-     *                      "latencyExecute_percentile_50" : 10
-     *                  }
-     *              }
+     * OptimizerMetrics : (LATENCY)   { "metrics": { "latencyExecute_percentile_995" : 100,
+     * "latencyExecute_percentile_90" : 80, "latencyExecute_percentile_75" : 50, "latencyExecute_percentile_50" : 10 }
+     * }
      *
-     * (THREAD_POOL) {
-     *              "metrics": {
-     *                     "propertyValue_maximumSize" : 5,
-     *                  }
-     *              }
+     * (THREAD_POOL) { "metrics": { "propertyValue_maximumSize" : 5, } }
      *
-     * (BULKHEAD) {
-     *              "metrics": {
-     *                     "resilience4jBulkheadAvailableConcurrent_calls" : 5,
-     *                  }
-     *              }
-     *
+     * (BULKHEAD) { "metrics": { "resilience4jBulkheadAvailableConcurrent_calls" : 5, } }
      */
     private void updateOptimizerMetricsCache(RevolverExecutorType executorType, String key, Gauge gauge, long time,
-            int keyStartIndex, OptimizerMetricType metricType, Set<String> metricsToCapture) {
+            int keyStartIndex, OptimizerMetricType metricType, Set<String> metricsToCapture,
+            SortedMap<String, Gauge> gauges) {
         String[] splits = key.split("\\.");
         int length = splits.length;
         if (length < metricType.getMinValidLength()) {
@@ -148,10 +131,34 @@ public class OptimizerMetricsCollector implements Runnable {
                     .build());
         }
         OptimizerMetrics optimizerMetrics = optimizerMetricsCache.get(cacheKey);
-        if (RevolverExecutorType.RESILIENCE == executorType) {
-            log.info("MetricName : {},Key : {} Value : {}", metricName, key, gauge.getValue());
+
+        switch (executorType) {
+            case RESILIENCE:
+                updateMetricsCacheForResilience(optimizerMetrics, splits, gauges, gauge, key);
+                break;
+            default:
+                optimizerMetrics.getMetrics().put(metricName, (Number) gauge.getValue());
         }
-        optimizerMetrics.getMetrics().put(metricName, (Number) gauge.getValue());
+    }
+
+    private void updateMetricsCacheForResilience(OptimizerMetrics optimizerMetrics,
+            String[] splits, SortedMap<String, Gauge> gauges, Gauge gauge, String key) {
+        StringBuilder allowedCallsMetricNameBuilder = new StringBuilder();
+        allowedCallsMetricNameBuilder.append(ALLOWED_CONCURRENT_CALLS_METRIC_NAME);
+        for (int i = 1; i < splits.length; i++) {
+            allowedCallsMetricNameBuilder.append(".");
+            allowedCallsMetricNameBuilder.append(splits[i]);
+        }
+        String allowedCallsMetricName = allowedCallsMetricNameBuilder.toString();
+        Gauge allowedCallGauge = gauges.get(allowedCallsMetricName);
+        if (allowedCallGauge == null || !(allowedCallGauge.getValue() instanceof Number)) {
+            return;
+        }
+
+        Double maxRollingActiveThreads = (Double) allowedCallGauge.getValue() - (Double) gauge.getValue();
+        log.info("MetricName : {},Key : {} Value : {}", MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, key,
+                maxRollingActiveThreads);
+        optimizerMetrics.getMetrics().put(MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, maxRollingActiveThreads);
     }
 
     /**
@@ -176,7 +183,7 @@ public class OptimizerMetricsCollector implements Runnable {
 
     private String resolveMetricName(RevolverExecutorType executorType,
             String[] splits) {
-        switch (executorType){
+        switch (executorType) {
             case HYSTRIX:
                 return splits[splits.length - 1];
             case RESILIENCE:
@@ -189,7 +196,7 @@ public class OptimizerMetricsCollector implements Runnable {
     }
 
     private int findKeyEndIndex(RevolverExecutorType executorType, int length) {
-        switch (executorType){
+        switch (executorType) {
             case RESILIENCE:
                 return length - 1;
             case HYSTRIX:

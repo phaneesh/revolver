@@ -1,7 +1,6 @@
 package io.dropwizard.revolver.optimizer;
 
 import static io.dropwizard.revolver.optimizer.hystrix.metrics.ThreadPoolMetric.ROLLING_MAX_ACTIVE_THREADS;
-import static io.dropwizard.revolver.optimizer.resilience.metrics.BulkheadMetric.BULKHEAD_AVAILABLE_CONCURRENT_CALLS;
 
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.RevolverBundle;
@@ -18,6 +17,7 @@ import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerConfig;
 import io.dropwizard.revolver.optimizer.config.OptimizerTimeConfig;
 import io.dropwizard.revolver.optimizer.hystrix.metrics.AggregationAlgo;
+import io.dropwizard.revolver.optimizer.hystrix.metrics.OptimizerMetricType;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,13 +41,12 @@ public class RevolverConfigUpdater implements Runnable {
     private OptimizerConfig optimizerConfig;
     private ResilienceHttpContext resilienceHttpContext;
     private OptimizerMetricsCache optimizerMetricsCache;
-    private static final int DEFAULT_CONCURRENCY = 30;
+    private static final int DEFAULT_CONCURRENCY = 10;
 
     @Override
     public void run() {
         try {
             log.info("Running revolver config updater job with exception catching enabled");
-            long time = System.currentTimeMillis();
             Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
             if (metricsCache.isEmpty()) {
                 log.info("Metrics cache is empty");
@@ -62,7 +61,7 @@ public class RevolverConfigUpdater implements Runnable {
             // Map to keep max values of thread pool metrics at api level
             Map<String, OptimizerMetrics> apiLevelThreadPoolMetrics = Maps.newHashMap();
 
-            // Map to keep min values of bulkhead available concurrent calls metrics at api level
+            // Map to keep max values of bulkhead available concurrent calls metrics at api level
             Map<String, OptimizerMetrics> apiLevelBulkheadMetrics = Maps.newHashMap();
 
             // Map to keep latency metrics' sum and count at api level
@@ -80,10 +79,6 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, Number> appLevelLatencyMetrics = avgAppLevelLatencyMetrics(aggregatedAppLatencyMetrics);
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics = avgApiLevelLatencyMetrics(
                     aggregateApiLevelLatencyMetrics);
-            log.debug("Aggregated appLevelLatencyMetrics at time: " + time + " : " + appLevelLatencyMetrics);
-            log.debug("Aggregated apiLevelLatencyMetrics at time: " + time + " : " + apiLevelLatencyMetrics);
-            log.debug("APILevelBulkheadMetrics at time: " + time + " : " + apiLevelBulkheadMetrics);
-            log.debug("APILevelThreadpoolMetrics at time: " + time + " : " + apiLevelThreadPoolMetrics);
             updateRevolverConfig(apiLevelThreadPoolMetrics, apiLevelBulkheadMetrics, apiLevelLatencyMetrics);
             updateLatencyThreshold(appLevelLatencyMetrics);
         } catch (Exception e) {
@@ -274,21 +269,28 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, Map<String, OptimizerAggregatedMetric>> aggregateApiLevelLatencyMetrics,
             String metric, Number value, OptimizerCacheKey key) {
         AggregationAlgo aggregationAlgo = key.getMetricType().getAggregationAlgo();
+        OptimizerMetricType optimizerMetricType = key.getMetricType();
         switch (aggregationAlgo) {
             case MAX:
-                Map<String, Number> threadPoolMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelThreadPoolMetrics,
-                        key);
-                if (!threadPoolMetricsMap.containsKey(metric)
-                        || threadPoolMetricsMap.get(metric).intValue() < value.intValue()) {
-                    threadPoolMetricsMap.put(metric, value);
-                }
-                break;
-            case MIN:
-                Map<String, Number> bulkheadMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelBulkheadMetrics, key);
-                if (!bulkheadMetricsMap.containsKey(metric)
-                        || bulkheadMetricsMap.get(metric).intValue() > value.intValue()) {
-                    log.info("Key : {}, Metric : {}, Value : {}", key, metric, value);
-                    bulkheadMetricsMap.put(metric, value);
+                switch (optimizerMetricType) {
+                    case THREAD_POOL:
+                        Map<String, Number> threadPoolMetricsMap = getNullSafeOptimizerMetricsMap(
+                                apiLevelThreadPoolMetrics,
+                                key);
+                        if (!threadPoolMetricsMap.containsKey(metric)
+                                || threadPoolMetricsMap.get(metric).intValue() < value.intValue()) {
+                            threadPoolMetricsMap.put(metric, value);
+                        }
+                        break;
+                    case BULKHEAD:
+                        Map<String, Number> bulkheadMetricsMap = getNullSafeOptimizerMetricsMap(apiLevelBulkheadMetrics,
+                                key);
+                        if (!bulkheadMetricsMap.containsKey(metric)
+                                || bulkheadMetricsMap.get(metric).intValue() < value.intValue()) {
+                            log.info("Key : {}, Metric : {}, Value : {}", key, metric, value);
+                            bulkheadMetricsMap.put(metric, value);
+                        }
+                        break;
                 }
                 break;
             case AVG:
@@ -372,7 +374,7 @@ public class RevolverConfigUpdater implements Runnable {
                 (optimizerThreadPoolMetrics == null || !optimizerThreadPoolMetrics.getMetrics()
                         .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
-                        .containsKey(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName())))
+                        .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
                 ) {
             log.error("No concurrency metrics found for pool : {} ", poolName);
             return initialConcurrencyAttrBuilder.build();
@@ -387,7 +389,7 @@ public class RevolverConfigUpdater implements Runnable {
                 concurrencyConfig.getMaxThreshold(), initialConcurrency, currentConcurrency, maxRollingActiveThreads,
                 poolName);
 
-        if (maxRollingActiveThreads == 0) {
+        if (maxRollingActiveThreads <= 7) {
             return OptimalThreadPoolAttributes.builder()
                     .optimalConcurrency(DEFAULT_CONCURRENCY)
                     .maxRollingActiveThreads(maxRollingActiveThreads)
@@ -419,12 +421,11 @@ public class RevolverConfigUpdater implements Runnable {
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()
                 : 0;
 
-        int availableCalls = optimizerBulkheadMetrics != null ? optimizerBulkheadMetrics.getMetrics()
-                .getOrDefault(BULKHEAD_AVAILABLE_CONCURRENT_CALLS.getMetricName(),
+        int bulkheadActiveCalls = optimizerBulkheadMetrics != null ? optimizerBulkheadMetrics.getMetrics()
+                .getOrDefault(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME,
                         new AtomicInteger(currentConcurrency)).intValue() : 0;
-        int bulkheadActiveCalls = currentConcurrency - availableCalls;
-        log.info("currentConcurrency: {}, resilience4jBulkheadAvailableConcurrent_calls : {}, poolName : {}",
-                currentConcurrency, availableCalls, poolName);
+        log.info("currentConcurrency: {}, bulkheadActiveCalls : {}, poolName : {}",
+                currentConcurrency, bulkheadActiveCalls, poolName);
 
         return Math.max(hystrixMaxActiveThreads, bulkheadActiveCalls);
     }

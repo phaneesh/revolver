@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum OptimizerMetricType {
     LATENCY("latency", 4, AggregationAlgo.AVG),
     THREAD_POOL("threadPool", 3, AggregationAlgo.MAX),
-    BULKHEAD("bulkhead", 3, AggregationAlgo.MIN);
+    BULKHEAD("bulkhead", 3, AggregationAlgo.MAX);
 
 
     //

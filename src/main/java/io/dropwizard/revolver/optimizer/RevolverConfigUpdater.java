@@ -376,7 +376,6 @@ public class RevolverConfigUpdater implements Runnable {
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
                 ) {
-            log.error("No concurrency metrics found for pool : {} ", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
 
@@ -413,9 +412,6 @@ public class RevolverConfigUpdater implements Runnable {
 
     private int calculateMaxRollingActiveThreads(int currentConcurrency, OptimizerMetrics optimizerThreadPoolMetrics,
             OptimizerMetrics optimizerBulkheadMetrics, String poolName) {
-        log.info("Calculating maxRollingActiveThreads for command/pool : " + poolName
-                + " from optimizerThreadPoolMetrics: " + optimizerThreadPoolMetrics +
-                " optimizerBulkheadMetrics: " + optimizerBulkheadMetrics);
         int hystrixMaxActiveThreads = optimizerThreadPoolMetrics != null
                 ? optimizerThreadPoolMetrics.getMetrics()
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()
@@ -424,9 +420,6 @@ public class RevolverConfigUpdater implements Runnable {
         int bulkheadActiveCalls = optimizerBulkheadMetrics != null ? optimizerBulkheadMetrics.getMetrics()
                 .getOrDefault(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME,
                         new AtomicInteger(currentConcurrency)).intValue() : 0;
-        log.info("currentConcurrency: {}, bulkheadActiveCalls : {}, poolName : {}",
-                currentConcurrency, bulkheadActiveCalls, poolName);
-
         return Math.max(hystrixMaxActiveThreads, bulkheadActiveCalls);
     }
 

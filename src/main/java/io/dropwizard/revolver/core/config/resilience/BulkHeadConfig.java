@@ -2,7 +2,6 @@ package io.dropwizard.revolver.core.config.resilience;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,7 +14,6 @@ import lombok.NoArgsConstructor;
 @Data
 public class BulkHeadConfig {
 
-    @Default()
     private int maxWaitTimeInMillis = 200;
 
 }

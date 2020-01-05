@@ -403,6 +403,13 @@ public class RevolverConfigUpdater implements Runnable {
                     .optimalConcurrency(optimalConcurrency)
                     .maxRollingActiveThreads(maxRollingActiveThreads)
                     .build();
+        } else if (maxRollingActiveThreads > currentConcurrency * concurrencyConfig.getMaxThreshold()) {
+            int optimalConcurrency = (int) Math
+                    .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
+            return OptimalThreadPoolAttributes.builder()
+                    .optimalConcurrency(optimalConcurrency)
+                    .maxRollingActiveThreads(maxRollingActiveThreads)
+                    .build();
         } else {
             return initialConcurrencyAttrBuilder
                     .maxRollingActiveThreads(maxRollingActiveThreads)

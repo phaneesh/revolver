@@ -466,6 +466,8 @@ public class RevolverRequestResource {
         val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
         val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
         val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+        val mailBoxAuthId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER);
+
         val mailBoxTtl =
                 headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER) != null ? Integer
                         .parseInt(headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER))
@@ -478,7 +480,7 @@ public class RevolverRequestResource {
                                     : headers.getMediaType().toString(), jsonObjectMapper,
                             msgPackObjectMapper)).build();
         }
-        persistenceProvider.saveRequest(requestId, mailBoxId,
+        persistenceProvider.saveRequest(requestId, mailBoxId, mailBoxAuthId,
                 RevolverCallbackRequest.builder().api(api.getApi()).mode(headers.getRequestHeaders()
                         .getFirst(RevolversHttpHeaders.CALL_MODE_HEADER)).callbackUri(
                         headers.getRequestHeaders()
@@ -553,6 +555,8 @@ public class RevolverRequestResource {
         val requestId = headers.getHeaderString(RevolversHttpHeaders.REQUEST_ID_HEADER);
         val transactionId = headers.getHeaderString(RevolversHttpHeaders.TXN_ID_HEADER);
         val mailBoxId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_ID_HEADER);
+        val mailBoxAuthId = headers.getHeaderString(RevolversHttpHeaders.MAILBOX_AUTH_ID_HEADER);
+
         val mailBoxTtl =
                 headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER) != null ? Integer
                         .parseInt(headers.getHeaderString(RevolversHttpHeaders.MAILBOX_TTL_HEADER))
@@ -565,7 +569,7 @@ public class RevolverRequestResource {
                                     : headers.getMediaType().toString(), jsonObjectMapper,
                             msgPackObjectMapper)).build();
         }
-        persistenceProvider.saveRequest(requestId, mailBoxId,
+        persistenceProvider.saveRequest(requestId, mailBoxId, mailBoxAuthId,
                 RevolverCallbackRequest.builder().api(api.getApi()).mode(headers.getRequestHeaders()
                         .getFirst(RevolversHttpHeaders.CALL_MODE_HEADER)).callbackUri(
                         headers.getRequestHeaders()

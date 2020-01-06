@@ -156,8 +156,7 @@ public class OptimizerMetricsCollector implements Runnable {
         }
 
         Double maxRollingActiveThreads = (Double) allowedCallGauge.getValue() - (Double) gauge.getValue();
-        log.info("MetricName : {},Key : {} Value : {}", MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, key,
-                maxRollingActiveThreads);
+        log.info("Key : {} Value : {}", key, maxRollingActiveThreads);
         optimizerMetrics.getMetrics().put(MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, maxRollingActiveThreads);
     }
 

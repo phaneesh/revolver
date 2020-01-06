@@ -24,7 +24,7 @@ public class OptimizerConcurrencyConfig {
     private double bandwidth = 1.2;
 
     //Multiply threadPool size at each optimization by threadsMultiplier
-    private double threadsMultiplier = 1.4;
+    private double threadsMultiplier = 1.2;
 
     //Increase the thread pool size to maximum : maxPoolExpansionLimit * threadPoolSize
     private double maxPoolExpansionLimit = 1.6;

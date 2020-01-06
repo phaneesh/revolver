@@ -41,7 +41,8 @@ public class RevolverConfigUpdater implements Runnable {
     private OptimizerConfig optimizerConfig;
     private ResilienceHttpContext resilienceHttpContext;
     private OptimizerMetricsCache optimizerMetricsCache;
-    private static final int DEFAULT_CONCURRENCY = 10;
+    private static final int DEFAULT_CONCURRENCY = 20;
+    private static final int DEFAULT_MIN_CONCURRENCY = 10;
 
     @Override
     public void run() {
@@ -132,7 +133,6 @@ public class RevolverConfigUpdater implements Runnable {
             threadPoolConfig.setConcurrency(optimalThreadPoolAttributes.getOptimalConcurrency());
             configUpdated.set(true);
         }
-
     }
 
     private void updateApiSettings(RevolverServiceConfig serviceConfig, RevolverHttpApiConfig apiConfig,
@@ -148,15 +148,11 @@ public class RevolverConfigUpdater implements Runnable {
             updateConcurrencySettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerThreadPoolMetrics,
                     optimizerBulkheadMetrics, configUpdated, key);
         }
-
         if (optimizerLatencyMetrics != null) {
             updateTimeoutSettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerLatencyMetrics,
                     configUpdated, key);
         }
-
-
     }
-
 
     private void updateConcurrencySettingForCommand(ThreadPoolConfig threadPoolConfig,
             OptimizerMetrics optimizerThreadPoolMetrics, OptimizerMetrics optimizerBulkheadMetrics,
@@ -380,45 +376,33 @@ public class RevolverConfigUpdater implements Runnable {
         }
 
         int maxRollingActiveThreads = calculateMaxRollingActiveThreads(currentConcurrency, optimizerThreadPoolMetrics,
-                optimizerBulkheadMetrics, poolName);
+                optimizerBulkheadMetrics);
 
+        int optimalConcurrency = DEFAULT_CONCURRENCY;
+        if (maxRollingActiveThreads > currentConcurrency * concurrencyConfig.getMaxThreshold()) {
+            if (maxRollingActiveThreads < initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit()) {
+                optimalConcurrency = (int) Math
+                        .ceil(maxRollingActiveThreads * concurrencyConfig.getThreadsMultiplier());
+            } else {
+                optimalConcurrency = (int) Math
+                        .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
+            }
+        }
         log.info("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
                         + " Initial Concurrency : {}, Current Concurrency: {}, MaxRollingActiveThreads : {}, "
-                        + "Pool Name: {}", concurrencyConfig.isEnabled(), concurrencyConfig.getMaxPoolExpansionLimit(),
+                        + "Pool Name: {}, optimalConcurrency : {}", concurrencyConfig.isEnabled(),
+                concurrencyConfig.getMaxPoolExpansionLimit(),
                 concurrencyConfig.getMaxThreshold(), initialConcurrency, currentConcurrency, maxRollingActiveThreads,
-                poolName);
+                poolName, optimalConcurrency);
 
-        if (maxRollingActiveThreads <= 7) {
-            return OptimalThreadPoolAttributes.builder()
-                    .optimalConcurrency(DEFAULT_CONCURRENCY)
-                    .maxRollingActiveThreads(maxRollingActiveThreads)
-                    .build();
-        } else if ((maxRollingActiveThreads > currentConcurrency * concurrencyConfig.getMaxThreshold()
-                || maxRollingActiveThreads < currentConcurrency * concurrencyConfig.getMinThreshold())
-                && maxRollingActiveThreads
-                < initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit()) {
-            int optimalConcurrency = (int) Math
-                    .ceil(maxRollingActiveThreads * concurrencyConfig.getThreadsMultiplier());
-            return OptimalThreadPoolAttributes.builder()
-                    .optimalConcurrency(optimalConcurrency)
-                    .maxRollingActiveThreads(maxRollingActiveThreads)
-                    .build();
-        } else if (maxRollingActiveThreads > currentConcurrency * concurrencyConfig.getMaxThreshold()) {
-            int optimalConcurrency = (int) Math
-                    .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
-            return OptimalThreadPoolAttributes.builder()
-                    .optimalConcurrency(optimalConcurrency)
-                    .maxRollingActiveThreads(maxRollingActiveThreads)
-                    .build();
-        } else {
-            return initialConcurrencyAttrBuilder
-                    .maxRollingActiveThreads(maxRollingActiveThreads)
-                    .build();
-        }
+        return OptimalThreadPoolAttributes.builder()
+                .optimalConcurrency(optimalConcurrency)
+                .maxRollingActiveThreads(maxRollingActiveThreads)
+                .build();
     }
 
     private int calculateMaxRollingActiveThreads(int currentConcurrency, OptimizerMetrics optimizerThreadPoolMetrics,
-            OptimizerMetrics optimizerBulkheadMetrics, String poolName) {
+            OptimizerMetrics optimizerBulkheadMetrics) {
         int hystrixMaxActiveThreads = optimizerThreadPoolMetrics != null
                 ? optimizerThreadPoolMetrics.getMetrics()
                 .getOrDefault(ROLLING_MAX_ACTIVE_THREADS.getMetricName(), new AtomicInteger(0)).intValue()

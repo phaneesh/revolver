@@ -5,7 +5,7 @@
 
     <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver-resilience4j</artifactId>
-    <version>1.0-14-4-SNAPSHOT</version>
+    <version>1.0-14-5-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>dropwizard-revolver</name>
@@ -271,22 +271,22 @@
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-micrometer</artifactId>
-            <version>0.15.0</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-bulkhead</artifactId>
-            <version>0.15.0</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-circuitbreaker</artifactId>
-            <version>0.15.0</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.resilience4j</groupId>
             <artifactId>resilience4j-timelimiter</artifactId>
-            <version>0.15.0</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.micrometer</groupId>

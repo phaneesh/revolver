@@ -42,7 +42,6 @@ public class RevolverConfigUpdater implements Runnable {
     private ResilienceHttpContext resilienceHttpContext;
     private OptimizerMetricsCache optimizerMetricsCache;
     private static final int DEFAULT_CONCURRENCY = 20;
-    private static final int DEFAULT_MIN_CONCURRENCY = 10;
 
     @Override
     public void run() {
@@ -378,7 +377,10 @@ public class RevolverConfigUpdater implements Runnable {
         int maxRollingActiveThreads = calculateMaxRollingActiveThreads(currentConcurrency, optimizerThreadPoolMetrics,
                 optimizerBulkheadMetrics);
 
-        int optimalConcurrency = DEFAULT_CONCURRENCY;
+        int optimalConcurrency = initialConcurrency;
+        if (initialConcurrency < DEFAULT_CONCURRENCY) {
+            optimalConcurrency = DEFAULT_CONCURRENCY;
+        }
         if (maxRollingActiveThreads > currentConcurrency * concurrencyConfig.getMaxThreshold()) {
             if (maxRollingActiveThreads < initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit()) {
                 optimalConcurrency = (int) Math

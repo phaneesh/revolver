@@ -118,8 +118,10 @@ public class ResilienceUtil {
             updateBulkHeadsForDefaultServiceConfig(revolverServiceConfig, resilienceConfig);
         }
 
-        POOL_VS_BULK_HEAD.forEach((s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {} ", s,
-                bulkhead.getBulkheadConfig().getMaxConcurrentCalls()));
+        POOL_VS_BULK_HEAD.forEach(
+                (s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime", s,
+                        bulkhead.getBulkheadConfig().getMaxConcurrentCalls(),
+                        bulkhead.getBulkheadConfig().getMaxWaitTime()));
         resilienceHttpContext.setPoolVsBulkHeadMap(POOL_VS_BULK_HEAD);
     }
 

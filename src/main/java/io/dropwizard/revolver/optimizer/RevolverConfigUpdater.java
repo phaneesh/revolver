@@ -126,9 +126,9 @@ public class RevolverConfigUpdater implements Runnable {
                 threadPoolConfig.getConcurrency(), threadPoolConfig.getInitialConcurrency(), poolName,
                 optimizerThreadPoolMetrics, optimizerBulkheadMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
-            log.info("Setting concurrency for pool : " + poolName + " from : " + threadPoolConfig.getConcurrency()
-                    + " to : " + optimalThreadPoolAttributes.getOptimalConcurrency() + ", maxRollingActiveThreads : "
-                    + optimalThreadPoolAttributes.getMaxRollingActiveThreads());
+            log.info("Setting concurrency for pool : {}  from :  {} to : {} with maxRollingThreads : {}",
+                    poolName, threadPoolConfig.getConcurrency(), optimalThreadPoolAttributes.getOptimalConcurrency(),
+                    optimalThreadPoolAttributes.getMaxRollingActiveThreads());
             threadPoolConfig.setConcurrency(optimalThreadPoolAttributes.getOptimalConcurrency());
             configUpdated.set(true);
         }
@@ -149,7 +149,7 @@ public class RevolverConfigUpdater implements Runnable {
         }
         if (optimizerLatencyMetrics != null) {
             updateTimeoutSettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerLatencyMetrics,
-                    configUpdated, key);
+                    configUpdated);
         }
     }
 
@@ -161,10 +161,9 @@ public class RevolverConfigUpdater implements Runnable {
                 threadPoolConfig.getConcurrency(), threadPoolConfig.getInitialConcurrency(), poolName,
                 optimizerThreadPoolMetrics, optimizerBulkheadMetrics);
         if (optimalThreadPoolAttributes.getOptimalConcurrency() != threadPoolConfig.getConcurrency()) {
-            log.info("Setting concurrency for command : " + poolName + " from : " + threadPoolConfig.getConcurrency()
-                    + " to : "
-                    + optimalThreadPoolAttributes.getOptimalConcurrency() + ", maxRollingActiveThreads : "
-                    + optimalThreadPoolAttributes.getMaxRollingActiveThreads());
+            log.info("Setting concurrency for command : {}  from :  {} to : {} with maxRollingThreads : {}",
+                    poolName, threadPoolConfig.getConcurrency(), optimalThreadPoolAttributes.getOptimalConcurrency(),
+                    optimalThreadPoolAttributes.getMaxRollingActiveThreads());
             threadPoolConfig.setConcurrency(optimalThreadPoolAttributes.getOptimalConcurrency());
             configUpdated.set(true);
         }
@@ -173,18 +172,13 @@ public class RevolverConfigUpdater implements Runnable {
 
 
     private void updateTimeoutSettingForCommand(ThreadPoolConfig threadPoolConfig,
-            OptimizerMetrics optimizerLatencyMetrics, AtomicBoolean configUpdated,
-            String commandName) {
+            OptimizerMetrics optimizerLatencyMetrics, AtomicBoolean configUpdated) {
 
         OptimalTimeoutAttributes optimalTimeoutAttributes = calculateOptimalTimeout(threadPoolConfig.getTimeout(),
                 optimizerLatencyMetrics);
         if (optimalTimeoutAttributes.getOptimalTimeout() != threadPoolConfig.getTimeout()) {
             threadPoolConfig.setTimeout(optimalTimeoutAttributes.getOptimalTimeout());
             configUpdated.set(true);
-            log.info("Setting timeout for : " + commandName + " from : " + threadPoolConfig.getTimeout()
-                    + " to : " + optimalTimeoutAttributes.getOptimalTimeout() + ", " + "meanTimeoutValue : " +
-                    optimalTimeoutAttributes.getMeanTimeout()
-                    + ", with timeout buffer : " + optimalTimeoutAttributes.getTimeoutBuffer());
         }
 
     }
@@ -251,11 +245,6 @@ public class RevolverConfigUpdater implements Runnable {
         optimizerAggregatedMetrics.setSum(optimizerAggregatedMetrics.getSum()
                 + value.longValue());
         optimizerAggregatedMetrics.setCount(optimizerAggregatedMetrics.getCount() + 1L);
-
-        aggregatedAppLatencyMetrics.forEach((metricName, aggregatedAppMetrics) -> {
-            log.info("Aggregated " + metricName + " for app: "
-                    + aggregatedAppMetrics.getSum() / aggregatedAppMetrics.getCount());
-        });
     }
 
     private void aggregateApiLevelMetrics(
@@ -391,7 +380,7 @@ public class RevolverConfigUpdater implements Runnable {
                         .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
             }
         }
-        log.info("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
+        log.debug("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
                         + " Initial Concurrency : {}, Current Concurrency: {}, MaxRollingActiveThreads : {}, "
                         + "Pool Name: {}, optimalConcurrency : {}", concurrencyConfig.isEnabled(),
                 concurrencyConfig.getMaxPoolExpansionLimit(),

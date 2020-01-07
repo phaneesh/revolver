@@ -144,22 +144,28 @@ public class OptimizerMetricsCollector implements Runnable {
 
     private void updateMetricsCacheForResilience(OptimizerMetrics optimizerMetrics,
             String[] splits, SortedMap<String, Gauge> gauges, Gauge gauge, String key) {
-        StringBuilder allowedCallsMetricNameBuilder = new StringBuilder();
-        allowedCallsMetricNameBuilder.append(ALLOWED_CONCURRENT_CALLS_METRIC_NAME);
-        for (int i = 1; i < splits.length; i++) {
-            allowedCallsMetricNameBuilder.append(".");
-            allowedCallsMetricNameBuilder.append(splits[i]);
-        }
-        String allowedCallsMetricName = allowedCallsMetricNameBuilder.toString();
+        String allowedCallsMetricName = getMetricName(splits, ALLOWED_CONCURRENT_CALLS_METRIC_NAME);
         Gauge allowedCallGauge = gauges.get(allowedCallsMetricName);
         if (allowedCallGauge == null || !(allowedCallGauge.getValue() instanceof Number)) {
             return;
         }
 
+        String availableCallsMetricName = getMetricName(splits, "availableCalls");
+
         Double maxRollingActiveThreads = (Double) allowedCallGauge.getValue() - (Double) gauge.getValue();
         log.debug("Key : {} Value : {}", key, maxRollingActiveThreads);
-        metrics.gauge(allowedCallsMetricName + "." + "allowedCalls", () -> allowedCallGauge);
+        metrics.gauge(availableCallsMetricName, () -> gauge);
         optimizerMetrics.getMetrics().put(MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, maxRollingActiveThreads);
+    }
+
+    private String getMetricName(String[] splits, String prefix) {
+        StringBuilder allowedCallsMetricNameBuilder = new StringBuilder();
+        allowedCallsMetricNameBuilder.append(prefix);
+        for (int i = 1; i < splits.length; i++) {
+            allowedCallsMetricNameBuilder.append(".");
+            allowedCallsMetricNameBuilder.append(splits[i]);
+        }
+        return allowedCallsMetricNameBuilder.toString();
     }
 
     /**

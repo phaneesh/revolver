@@ -8,7 +8,7 @@ import lombok.Getter;
 
 
 public enum BulkheadMetric {
-    BULKHEAD_AVAILABLE_CONCURRENT_CALLS("resilience4jBulkheadAvailableConcurrent_calls");
+    BULKHEAD_AVAILABLE_CONCURRENT_CALLS("resilience4jBulkheadAvailableConcurrentCalls");
 
     @Getter
     private String metricName;

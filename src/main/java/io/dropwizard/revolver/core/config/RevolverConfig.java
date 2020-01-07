@@ -114,7 +114,8 @@ public class RevolverConfig extends Configuration {
     public RevolverConfig(ClientConfig clientConfig, RuntimeConfig global,
             ServiceResolverConfig serviceResolverConfig, String hystrixStreamPath,
             @Singular List<RevolverServiceConfig> services, MailBoxConfig mailBox,
-            OptimizerConfig optimizerConfig, ServiceDiscoveryConfig serviceDiscoveryConfig) {
+            OptimizerConfig optimizerConfig, ServiceDiscoveryConfig serviceDiscoveryConfig,
+            ResilienceConfig resilienceConfig) {
         this.clientConfig = clientConfig;
         this.global = global;
         this.serviceResolverConfig = serviceResolverConfig;
@@ -125,6 +126,7 @@ public class RevolverConfig extends Configuration {
         this.dynamicConfig = false;
         this.optimizerConfig = optimizerConfig;
         this.serviceDiscoveryConfig = serviceDiscoveryConfig;
+        this.resilienceConfig = resilienceConfig;
     }
 
 

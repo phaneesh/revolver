@@ -22,6 +22,7 @@ import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.dropwizard.DropwizardConfig;
 import io.micrometer.core.instrument.dropwizard.DropwizardMeterRegistry;
 import io.micrometer.core.instrument.util.HierarchicalNameMapper;
+import java.time.Duration;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -121,7 +122,7 @@ public class ResilienceUtil {
         POOL_VS_BULK_HEAD.forEach(
                 (s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime", s,
                         bulkhead.getBulkheadConfig().getMaxConcurrentCalls(),
-                        bulkhead.getBulkheadConfig().getMaxWaitTime()));
+                        bulkhead.getBulkheadConfig().getMaxWaitDuration()));
         resilienceHttpContext.setPoolVsBulkHeadMap(POOL_VS_BULK_HEAD);
     }
 
@@ -201,16 +202,14 @@ public class ResilienceUtil {
             POOL_VS_BULK_HEAD.put(threadPoolName, bulkheadRegistry.bulkhead(
                     threadPoolName,
                     BulkheadConfig.custom().maxConcurrentCalls(
-                            threadPoolConfig
-                                    .getConcurrency())
-                            .maxWaitTime(bulkHeadConfig.getMaxWaitTimeInMillis())
+                            threadPoolConfig.getConcurrency())
+                            .maxWaitDuration(Duration.ofMillis(bulkHeadConfig.getMaxWaitTimeInMillis()))
                             .build()));
         } else {
             Bulkhead bulkhead = Bulkhead.of(threadPoolName,
-                    BulkheadConfig.custom().maxConcurrentCalls(
-                            threadPoolConfig
-                                    .getConcurrency())
-                            .maxWaitTime(bulkHeadConfig.getMaxWaitTimeInMillis())
+                    BulkheadConfig.custom()
+                            .maxConcurrentCalls(threadPoolConfig.getConcurrency())
+                            .maxWaitDuration(Duration.ofMillis(bulkHeadConfig.getMaxWaitTimeInMillis()))
                             .build());
             bulkheadRegistry.replace(threadPoolName, bulkhead);
             POOL_VS_BULK_HEAD.put(threadPoolName, bulkhead);
@@ -222,7 +221,7 @@ public class ResilienceUtil {
         if (resilienceConfig != null && resilienceConfig.getBulkHeadConfig() != null) {
             bulkHeadConfig = resilienceConfig.getBulkHeadConfig();
         } else {
-            bulkHeadConfig = BulkHeadConfig.builder().build();
+            bulkHeadConfig = new BulkHeadConfig();
         }
         return bulkHeadConfig;
     }
@@ -233,8 +232,7 @@ public class ResilienceUtil {
         ThreadPoolGroupConfig threadPoolGroupConfig = revolverServiceConfig.getThreadPoolGroupConfig();
         if (threadPoolGroupConfig != null) {
             threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
-                String threadPoolName =
-                        getThreadPoolName(revolverServiceConfig, threadPoolConfig);
+                String threadPoolName = getThreadPoolName(revolverServiceConfig, threadPoolConfig);
                 log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName, threadPoolConfig.getConcurrency());
                 updateBulkheadRegistry(threadPoolConfig, threadPoolName, resilienceConfig);
             });
@@ -247,7 +245,7 @@ public class ResilienceUtil {
         if (StringUtils.isEmpty(threadPoolConfig.getThreadPoolName())) {
             return StringUtils.EMPTY;
         }
-        return revolverServiceConfig.getService() + "." + threadPoolConfig.getThreadPoolName();
+        return getThreadPoolNameForService(revolverServiceConfig.getService(), threadPoolConfig.getThreadPoolName());
     }
 
     private static void updateTimeoutsForDefaultServiceConfig(Map<String, Integer> poolVsTimeout,
@@ -304,6 +302,10 @@ public class ResilienceUtil {
         return revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
     }
 
+    public static String getThreadPoolNameForService(String service, String threadPoolName) {
+        return service + "-" + threadPoolName;
+    }
+
     private static void updateBulkHeadsForDefaultServiceConfig(RevolverServiceConfig revolverServiceConfig,
             ResilienceConfig resilienceConfig) {
         BulkHeadConfig bulkHeadConfig = getBulkHeadConfig(resilienceConfig);
@@ -316,13 +318,13 @@ public class ResilienceUtil {
                 POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkheadRegistry
                         .bulkhead(revolverServiceConfig.getService(),
                                 BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
-                                        .maxWaitTime(bulkHeadConfig.getMaxWaitTimeInMillis())
+                                        .maxWaitDuration(Duration.ofMillis(bulkHeadConfig.getMaxWaitTimeInMillis()))
                                         .build()));
 
             } else {
                 Bulkhead bulkhead = Bulkhead.of(revolverServiceConfig.getService(),
                         BulkheadConfig.custom().maxConcurrentCalls(threadPoolConfig.getConcurrency())
-                                .maxWaitTime(bulkHeadConfig.getMaxWaitTimeInMillis()).build());
+                                .maxWaitDuration(Duration.ofMillis(bulkHeadConfig.getMaxWaitTimeInMillis())).build());
                 bulkheadRegistry.replace(revolverServiceConfig.getService(), bulkhead);
                 POOL_VS_BULK_HEAD.put(revolverServiceConfig.getService(), bulkhead);
             }

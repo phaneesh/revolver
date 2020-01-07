@@ -1,5 +1,9 @@
 package io.dropwizard.revolver.core.resilience;
 
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getApiName;
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getCbName;
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getThreadPoolNameForService;
+
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.RevolverContext;
 import io.dropwizard.revolver.core.RevolverExecutionException;
@@ -120,7 +124,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         if (StringUtils.isEmpty(threadPoolName)) {
             return request.getService() + "." + request.getApi();
         }
-        return request.getService() + "." + threadPoolName;
+        return getThreadPoolNameForService(request.getService(), threadPoolName);
     }
 
     private TimeLimiter getTimeoutConfig(ResilienceHttpContext resilienceHttpContext,
@@ -129,7 +133,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         Map<String, Integer> apiVsTimeout = resilienceHttpContext.getApiVsTimeout();
         long ttl = 0;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
-            String apiName = ResilienceUtil.getApiName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
+            String apiName = getApiName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
             if (apiVsTimeout.get(apiName) != null) {
                 ttl = apiVsTimeout.get(apiName);
             }
@@ -155,12 +159,11 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
             log.info("BulkheadName : {},  Available Calls : {}, Max Calls : {}, Wait Time : {}", bulkhead.getName(),
                     bulkhead.getMetrics().getAvailableConcurrentCalls(),
                     bulkhead.getMetrics().getMaxAllowedConcurrentCalls(),
-                    bulkhead.getBulkheadConfig().getMaxWaitTime());
+                    bulkhead.getBulkheadConfig().getMaxWaitDuration());
             return bulkhead;
         }
         log.info("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,
-                request.getService(),
-                request.getApi());
+                request.getService(), request.getApi());
         threadPoolName = serviceConfiguration.getService();
         if (StringUtils.isNotEmpty(threadPoolName)) {
             bulkhead = bulkheadMap.get(threadPoolName);
@@ -189,7 +192,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         Map<String, CircuitBreaker> circuitBreakerMap = resilienceHttpContext.getApiVsCircuitBreaker();
         String cbName;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
-            cbName = ResilienceUtil.getCbName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
+            cbName = getCbName(serviceConfiguration, (RevolverHttpApiConfig) apiConfiguration);
         } else {
             cbName = serviceConfiguration.getService();
         }

@@ -46,7 +46,7 @@ public class RevolverConfigUpdater implements Runnable {
     @Override
     public void run() {
         try {
-            log.info("Running revolver config updater job with exception catching enabled");
+            log.info("Running revolver config updater job");
             Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
             if (metricsCache.isEmpty()) {
                 log.info("Metrics cache is empty");
@@ -371,6 +371,7 @@ public class RevolverConfigUpdater implements Runnable {
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
                 ) {
+            log.info("Metrics not found for pool optimization");
             return initialConcurrencyAttrBuilder.build();
         }
 

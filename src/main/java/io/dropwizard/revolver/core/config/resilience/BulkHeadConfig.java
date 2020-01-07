@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 @Data
 public class BulkHeadConfig {
 
-    private int maxWaitTimeInMillis = 200;
+    private int maxWaitTimeInMillis = 100;
 
 }

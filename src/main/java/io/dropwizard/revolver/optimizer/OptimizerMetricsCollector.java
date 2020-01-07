@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 public class OptimizerMetricsCollector implements Runnable {
 
-    public static final String ALLOWED_CONCURRENT_CALLS_METRIC_NAME = "resilience4jBulkheadMax_allowedConcurrentCalls";
+    public static final String ALLOWED_CONCURRENT_CALLS_METRIC_NAME = "resilience4jBulkheadMaxAllowedConcurrentCalls";
     public static final String MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME = "maxRollingActiveThreads";
     private MetricRegistry metrics;
     private OptimizerMetricsCache optimizerMetricsCache;
@@ -138,6 +138,7 @@ public class OptimizerMetricsCollector implements Runnable {
                 break;
             default:
                 optimizerMetrics.getMetrics().put(metricName, (Number) gauge.getValue());
+                break;
         }
     }
 

@@ -73,10 +73,6 @@
             <name>Clojars repository</name>
             <url>https://clojars.org/repo</url>
         </repository>
-        <repository>
-            <id>phonepe-releases</id>
-            <url>http://artifactory.phonepe.com/content/repositories/releases</url>
-        </repository>
     </repositories>
 
     <dependencies>

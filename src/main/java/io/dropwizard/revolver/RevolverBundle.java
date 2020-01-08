@@ -113,7 +113,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
 
     private static RevolverConfig revolverConfig;
-    private static ResilienceHttpContext resilienceHttpContext = new ResilienceHttpContext();
+    private static ResilienceHttpContext resilienceHttpContext;
 
     @Override
     public void initialize(Bootstrap<?> bootstrap) {
@@ -147,7 +147,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixUtil.initializeHystrix(environment, metricsPublisher, revolverConfig);
         SentinelUtil.initializeSentinel(revolverConfig);
-
+        resilienceHttpContext = ResilienceHttpContext.builder().metrics(metrics).build();
         ResilienceUtil.bindResilienceMetrics(environment.metrics());
         ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
 
@@ -386,9 +386,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         .builder().metrics(metrics).optimizerMetricsCache(optimizerMetricsCache)
                         .optimizerConfig(optimizerConfig).build();
                 scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                        1L,
-                        2L,
-                        optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+                        60L, 2L, optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }
 
             if (optimizerConfig.getConfigUpdaterConfig() != null && optimizerConfig.getConfigUpdaterConfig()

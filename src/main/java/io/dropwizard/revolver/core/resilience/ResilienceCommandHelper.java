@@ -4,6 +4,8 @@ import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getApiName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getCbName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getThreadPoolNameForService;
 
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.RevolverContext;
 import io.dropwizard.revolver.core.RevolverExecutionException;
@@ -16,6 +18,7 @@ import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.core.util.RevolverExceptionHelper;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
@@ -50,7 +53,15 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     }
 
     public ResponseType executeSync() throws Exception {
-        return execute();
+        try {
+            return execute();
+        } catch (Exception e) {
+            if (e instanceof BulkheadFullException) {
+                log.error("BulkheadFullException occurred");
+                registerMetric();
+            }
+            throw e;
+        }
     }
 
     public CompletableFuture<ResponseType> executeASync() {
@@ -73,8 +84,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         CircuitBreaker circuitBreaker = getCircuitBreaker(resilienceHttpContext, request,
                 handler.getServiceConfiguration(), handler.getApiConfiguration());
 
-        Bulkhead bulkhead = getBulkHead(resilienceHttpContext, request, handler.getServiceConfiguration(),
-                handler.getApiConfiguration());
+        Bulkhead bulkhead = getBulkHead(resilienceHttpContext, request, handler.getServiceConfiguration());
 
         TimeLimiter timeLimiter = getTimeoutConfig(resilienceHttpContext, handler.getServiceConfiguration(),
                 handler.getApiConfiguration());
@@ -118,8 +128,8 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     }
 
 
-    private String getThreadPoolName(RequestType request, CommandHandlerConfigurationType apiConfiguration) {
-        ThreadPoolConfig threadPoolConfig = apiConfiguration.getRuntime().getThreadPool();
+    private String getThreadPoolName() {
+        ThreadPoolConfig threadPoolConfig = handler.getApiConfiguration().getRuntime().getThreadPool();
         String threadPoolName = threadPoolConfig.getThreadPoolName();
         if (StringUtils.isEmpty(threadPoolName)) {
             return request.getService() + "." + request.getApi();
@@ -150,10 +160,10 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     }
 
     private Bulkhead getBulkHead(ResilienceHttpContext resilienceHttpContext, RequestType request,
-            ServiceConfigurationType serviceConfiguration, CommandHandlerConfigurationType apiConfiguration) {
+            ServiceConfigurationType serviceConfiguration) {
 
         Map<String, Bulkhead> bulkheadMap = resilienceHttpContext.getPoolVsBulkHeadMap();
-        String threadPoolName = getThreadPoolName(request, apiConfiguration);
+        String threadPoolName = getThreadPoolName();
         Bulkhead bulkhead = bulkheadMap.get(threadPoolName);
         if (bulkhead != null) {
             log.debug("BulkheadName : {},  Available Calls : {}, Max Calls : {}, Wait Time : {}", bulkhead.getName(),
@@ -206,5 +216,21 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         log.info("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
         circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
         return circuitBreaker;
+    }
+
+    private String getMetricName() {
+        return "BulkheadFullException" + "." + getThreadPoolName();
+    }
+
+    private void registerMetric() {
+
+        if (getResilienceContext().getMetrics() == null) {
+            return;
+        }
+        MetricRegistry metrics = getResilienceContext().getMetrics();
+        Meter meter = metrics.meter(getMetricName());
+        if (meter != null) {
+            meter.mark();
+        }
     }
 }

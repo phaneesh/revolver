@@ -1,5 +1,6 @@
 package io.dropwizard.revolver.core.resilience;
 
+import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
@@ -29,5 +30,7 @@ public class ResilienceHttpContext extends RevolverHttpContext {
     private Map<String, Integer> apiVsTimeout;
 
     private ExecutorService executor = Executors.newCachedThreadPool();
+
+    private MetricRegistry metrics;
 
 }

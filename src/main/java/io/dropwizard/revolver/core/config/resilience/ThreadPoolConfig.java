@@ -20,5 +20,5 @@ public class ThreadPoolConfig {
 
     private int queueSize = 100;
 
-    private int keepAliveTimeInSeconds = 60;
+    private int keepAliveTimeInSeconds = 300;
 }

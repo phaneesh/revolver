@@ -147,7 +147,8 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
         HystrixUtil.initializeHystrix(environment, metricsPublisher, revolverConfig);
         SentinelUtil.initializeSentinel(revolverConfig);
-        resilienceHttpContext = ResilienceHttpContext.builder().metrics(metrics).build();
+        resilienceHttpContext = ResilienceHttpContext.builder().metrics(metrics)
+                .resilienceConfig(revolverConfig.getResilienceConfig()).build();
         ResilienceUtil.bindResilienceMetrics(environment.metrics());
         ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
 

@@ -18,4 +18,6 @@ public class ResilienceConfig {
     private CircuitBreakerConfig circuitBreakerConfig;
 
     private BulkHeadConfig bulkHeadConfig;
+
+    private ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
 }

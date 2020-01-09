@@ -139,5 +139,6 @@ public class RevolverConfig extends Configuration {
         this.dynamicConfig = false;
         this.configPollIntervalSeconds = 600;
         this.dynamicConfigUrl = null;
+        this.resilienceConfig = new ResilienceConfig();
     }
 }

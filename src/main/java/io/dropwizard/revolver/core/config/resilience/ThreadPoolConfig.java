@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ThreadPoolConfig {
 
-    private int corePoolSize = 100;
+    private int corePoolSize = 50;
 
     private int maxPoolSize = 1024;
 

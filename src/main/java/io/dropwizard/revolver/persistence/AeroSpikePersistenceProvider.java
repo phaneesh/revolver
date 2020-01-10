@@ -352,14 +352,14 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
      * @return boolean
      */
     private boolean isInvalidMailboxAuthId(boolean enforceMailboxAuthCheck, String mailBoxAuthId, Record record) {
-        boolean invalidMailboxId = enforceMailboxAuthCheck
+        boolean isInvalidMailboxAuth = enforceMailboxAuthCheck
                 // support both old and new default mailbox id during deployment duration
                 && !(Arrays.asList(null, mailBoxConfig.getDefaultMailboxAuthId())
                 .contains(record.getString(BinNames.MAILBOX_AUTH_ID)))
                 && !record.getString(BinNames.MAILBOX_AUTH_ID).equals(mailBoxAuthId);
         log.info("Enforcing mailbox auth check : {}, mailbox auth id check pass : {}", enforceMailboxAuthCheck,
-                !invalidMailboxId);
-        return invalidMailboxId;
+                !isInvalidMailboxAuth);
+        return isInvalidMailboxAuth;
     }
 
     private RevolverCallbackRequest recordToRequest(Record record) {

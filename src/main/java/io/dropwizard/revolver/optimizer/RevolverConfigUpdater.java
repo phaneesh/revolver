@@ -360,7 +360,7 @@ public class RevolverConfigUpdater implements Runnable {
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
                 ) {
-            log.info("Metrics not found for pool optimization");
+            log.info("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
 
@@ -380,12 +380,11 @@ public class RevolverConfigUpdater implements Runnable {
                         .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
             }
         }
-        log.debug("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
+        log.info("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
                         + " Initial Concurrency : {}, Current Concurrency: {}, MaxRollingActiveThreads : {}, "
                         + "Pool Name: {}, optimalConcurrency : {}", concurrencyConfig.isEnabled(),
-                concurrencyConfig.getMaxPoolExpansionLimit(),
-                concurrencyConfig.getMaxThreshold(), initialConcurrency, currentConcurrency, maxRollingActiveThreads,
-                poolName, optimalConcurrency);
+                concurrencyConfig.getMaxPoolExpansionLimit(), concurrencyConfig.getMaxThreshold(), initialConcurrency,
+                currentConcurrency, maxRollingActiveThreads, poolName, optimalConcurrency);
 
         return OptimalThreadPoolAttributes.builder()
                 .optimalConcurrency(optimalConcurrency)

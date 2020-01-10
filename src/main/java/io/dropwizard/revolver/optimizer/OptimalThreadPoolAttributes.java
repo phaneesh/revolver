@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OptimalThreadPoolAttributes {
-    private int optimalConcurrency;
+
+    private int optimalConcurrency = 10;
     private int maxRollingActiveThreads;
 }

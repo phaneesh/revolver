@@ -1,5 +1,6 @@
 package io.dropwizard.revolver.core.resilience;
 
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.BULK_HEAD_DELIMITER;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getApiName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getCbName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getThreadPoolNameForService;
@@ -132,7 +133,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         ThreadPoolConfig threadPoolConfig = handler.getApiConfiguration().getRuntime().getThreadPool();
         String threadPoolName = threadPoolConfig.getThreadPoolName();
         if (StringUtils.isEmpty(threadPoolName)) {
-            return request.getService() + "." + request.getApi();
+            return request.getService() + BULK_HEAD_DELIMITER + request.getApi();
         }
         return getThreadPoolNameForService(request.getService(), threadPoolName);
     }

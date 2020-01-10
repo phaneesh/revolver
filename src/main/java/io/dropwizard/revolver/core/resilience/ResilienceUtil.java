@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class ResilienceUtil {
 
+    public static final String BULK_HEAD_DELIMITER = "-";
     private static final Map<String, String> DEFAULT_KEY_VALUE_MAP = Maps.newHashMap();
     private static final String METRIC_PREFIX = "resilience";
     private static final String DEFAULT_CIRCUIT_BREAKER = "revolver";
@@ -185,7 +186,8 @@ public class ResilienceUtil {
                                 return;
                             }
                             threadPoolName =
-                                    revolverServiceConfig.getService() + "." + revolverHttpApiConfig.getApi();
+                                    revolverServiceConfig.getService() + BULK_HEAD_DELIMITER + revolverHttpApiConfig
+                                            .getApi();
                             log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
                                     hystrixCommandConfig.getThreadPool().getConcurrency());
                             updateBulkheadRegistry(hystrixCommandConfig.getThreadPool(),
@@ -303,7 +305,7 @@ public class ResilienceUtil {
     }
 
     public static String getThreadPoolNameForService(String service, String threadPoolName) {
-        return service + "-" + threadPoolName;
+        return service + BULK_HEAD_DELIMITER + threadPoolName;
     }
 
     private static void updateBulkHeadsForDefaultServiceConfig(RevolverServiceConfig revolverServiceConfig,

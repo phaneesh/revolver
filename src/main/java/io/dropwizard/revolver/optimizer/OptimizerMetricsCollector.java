@@ -125,7 +125,6 @@ public class OptimizerMetricsCollector implements Runnable {
 
         OptimizerCacheKey cacheKey = getOptimizerCacheKey(executorType, time, splits, keyStartIndex, length,
                 metricType);
-        log.info("CacheKey: {}", cacheKey);
         if (optimizerMetricsCache.get(cacheKey) == null) {
             optimizerMetricsCache.put(cacheKey, OptimizerMetrics.builder()
                     .metrics(Maps.newHashMap())
@@ -154,7 +153,7 @@ public class OptimizerMetricsCollector implements Runnable {
         String availableCallsMetricName = getMetricName(splits, "availableCalls");
 
         Double maxRollingActiveThreads = (Double) allowedCallGauge.getValue() - (Double) gauge.getValue();
-        log.info("Key : {} Value : {}, Available : {}, AvailableCallsMetricName : {}", key, maxRollingActiveThreads,
+        log.debug("Key : {} Value : {}, Available : {}, AvailableCallsMetricName : {}", key, maxRollingActiveThreads,
                 gauge.getValue(), availableCallsMetricName);
         metrics.gauge(availableCallsMetricName, () -> gauge);
         optimizerMetrics.getMetrics().put(MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME, maxRollingActiveThreads);

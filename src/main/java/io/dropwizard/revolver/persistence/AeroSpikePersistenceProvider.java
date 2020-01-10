@@ -143,7 +143,7 @@ public class AeroSpikePersistenceProvider implements PersistenceProvider {
                             : request.getMethod().toUpperCase());
             Bin path = new Bin(BinNames.PATH, request.getPath());
             Bin mailBoxId = new Bin(BinNames.MAILBOX_ID,
-                    mailboxId == null ? mailBoxConfig.getDefaultMailboxAuthId() : mailboxId);
+                    mailboxId == null ? DEFAULT_MAILBOX_ID : mailboxId);
             Bin mailboxAuthIdBin = new Bin(BinNames.MAILBOX_AUTH_ID,
                     mailboxAuthId == null ? mailBoxConfig.getDefaultMailboxAuthId() : mailboxAuthId);
             Bin queryParams = new Bin(BinNames.QUERY_PARAMS,

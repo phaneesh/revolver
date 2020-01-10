@@ -5,7 +5,7 @@
 
     <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver-resilience4j</artifactId>
-    <version>1.0-15-16</version>
+    <version>1.0-15-17</version>
     <packaging>jar</packaging>
 
     <name>dropwizard-revolver</name>

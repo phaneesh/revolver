@@ -97,8 +97,8 @@ public class RevolverConfigUpdater implements Runnable {
                             OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics
                                     .get(threadPoolConfig.getThreadPoolName());
                             OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics
-                                    .get(revolverServiceConfig.getService() + "." + threadPoolConfig
-                                            .getThreadPoolName());
+                                    .get(ResilienceUtil.getThreadPoolNameForService(revolverServiceConfig.getService(),
+                                            threadPoolConfig.getThreadPoolName()));
                             updateConcurrencySettingForPool(threadPoolConfig, optimizerThreadPoolMetrics,
                                     optimizerBulkheadMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
                         });
@@ -140,8 +140,9 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics, AtomicBoolean configUpdated) {
 
         String key = serviceConfig.getService() + "." + apiConfig.getApi();
+        String bulkheadKey = serviceConfig.getService() + ResilienceUtil.BULK_HEAD_DELIMITER + apiConfig.getApi();
         OptimizerMetrics optimizerLatencyMetrics = apiLevelLatencyMetrics.get(key);
-        OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics.get(key);
+        OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics.get(bulkheadKey);
         OptimizerMetrics optimizerBulkheadMetrics = apiLevelBulkheadMetrics.get(key);
         if (optimizerThreadPoolMetrics != null || optimizerBulkheadMetrics != null) {
             updateConcurrencySettingForCommand(apiConfig.getRuntime().getThreadPool(), optimizerThreadPoolMetrics,
@@ -271,7 +272,11 @@ public class RevolverConfigUpdater implements Runnable {
                                 key);
                         if (!bulkheadMetricsMap.containsKey(metric)
                                 || bulkheadMetricsMap.get(metric).intValue() < value.intValue()) {
-                            log.info("Key : {}, Metric : {}, Value : {}", key, metric, value);
+                            int oldValue = 0;
+                            if (bulkheadMetricsMap.get(metric) != null) {
+                                oldValue = bulkheadMetricsMap.get(metric).intValue();
+                            }
+                            log.info("Key : {}, Metric : {}, Value : {}, Old Value: {}", key, metric, value, oldValue);
                             bulkheadMetricsMap.put(metric, value);
                         }
                         break;
@@ -287,14 +292,14 @@ public class RevolverConfigUpdater implements Runnable {
     }
 
     private Map<String, Number> getNullSafeOptimizerMetricsMap(
-            Map<String, OptimizerMetrics> maxedThreadPoolMetrics, OptimizerCacheKey key) {
-        if (!maxedThreadPoolMetrics.containsKey(key.getName())) {
-            maxedThreadPoolMetrics.put(key.getName(),
+            Map<String, OptimizerMetrics> apiLevelBulkheadMetrics, OptimizerCacheKey key) {
+        if (!apiLevelBulkheadMetrics.containsKey(key.getName())) {
+            apiLevelBulkheadMetrics.put(key.getName(),
                     OptimizerMetrics.builder().metrics(Maps.newHashMap())
                             .build());
         }
 
-        OptimizerMetrics optimizerAggregatedMetrics = maxedThreadPoolMetrics
+        OptimizerMetrics optimizerAggregatedMetrics = apiLevelBulkheadMetrics
                 .get(key.getName());
 
         return optimizerAggregatedMetrics.getMetrics();

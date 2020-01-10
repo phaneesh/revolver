@@ -125,6 +125,7 @@ public class OptimizerMetricsCollector implements Runnable {
 
         OptimizerCacheKey cacheKey = getOptimizerCacheKey(executorType, time, splits, keyStartIndex, length,
                 metricType);
+        log.info("CacheKey: {}", cacheKey);
         if (optimizerMetricsCache.get(cacheKey) == null) {
             optimizerMetricsCache.put(cacheKey, OptimizerMetrics.builder()
                     .metrics(Maps.newHashMap())

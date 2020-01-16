@@ -140,8 +140,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         HystrixCodaHaleMetricsPublisher metricsPublisher = new HystrixCodaHaleMetricsPublisher(
                 environment.metrics());
         val metrics = environment.metrics();
-        ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
-                .scheduledExecutorService("metrics-builder").build();
 
         initializeRevolver(configuration, environment);
 
@@ -152,7 +150,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         ResilienceUtil.bindResilienceMetrics(environment.metrics());
         ResilienceUtil.initializeResilience(revolverConfig, resilienceHttpContext);
 
-        initializeOptimizer(metrics, scheduledExecutorService);
+        initializeOptimizer(metrics, environment);
 
         PersistenceProvider persistenceProvider = getPersistenceProvider(configuration,
                 environment);
@@ -374,7 +372,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    private void initializeOptimizer(MetricRegistry metrics, ScheduledExecutorService scheduledExecutorService) {
+    private void initializeOptimizer(MetricRegistry metrics, Environment environment) {
+        ScheduledExecutorService scheduledExecutorService = environment.lifecycle()
+                .scheduledExecutorService("metrics-builder").build();
+
         OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
         if (optimizerConfig != null && optimizerConfig.isEnabled()) {
             OptimizerMetricsCache optimizerMetricsCache = OptimizerMetricsCache.builder().
@@ -389,7 +390,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         .optimizerConfig(optimizerConfig)
                         .build();
                 scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                        60L, 2L, optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+                        60L, 5L, optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }
 
             if (optimizerConfig.getConfigUpdaterConfig() != null && optimizerConfig.getConfigUpdaterConfig()

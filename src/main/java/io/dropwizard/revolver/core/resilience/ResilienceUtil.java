@@ -121,7 +121,7 @@ public class ResilienceUtil {
         }
 
         POOL_VS_BULK_HEAD.forEach(
-                (s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime", s,
+                (s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime : {}", s,
                         bulkhead.getBulkheadConfig().getMaxConcurrentCalls(),
                         bulkhead.getBulkheadConfig().getMaxWaitDuration()));
         resilienceHttpContext.setPoolVsBulkHeadMap(POOL_VS_BULK_HEAD);
@@ -286,14 +286,15 @@ public class ResilienceUtil {
                                 return;
                             }
                             ThreadPoolConfig threadPoolConfig = hystrixCommandConfig.getThreadPool();
-                            if (threadPoolConfig.getTimeout() != 0) {
-                                apiVsTimeout.put(apiName, threadPoolConfig.getTimeout());
-                                return;
-                            }
+                            int timeout = threadPoolConfig.getTimeout();
                             String threadPoolName = threadPoolConfig.getThreadPoolName();
                             if (poolVsTimeout.get(threadPoolName) != null) {
-                                apiVsTimeout.put(apiName, poolVsTimeout.get(threadPoolName));
+                                int poolTimeout = poolVsTimeout.get(threadPoolName);
+                                if (poolTimeout > timeout) {
+                                    timeout = poolTimeout;
+                                }
                             }
+                            apiVsTimeout.put(apiName, timeout);
                         }
                     });
         }

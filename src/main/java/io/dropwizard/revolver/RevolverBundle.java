@@ -390,7 +390,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         .optimizerConfig(optimizerConfig)
                         .build();
                 scheduledExecutorService.scheduleAtFixedRate(optimizerMetricsCollector,
-                        60L, 5L, optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
+                        60L, 2L, optimizerConfig.getMetricsCollectorConfig().getTimeUnit());
             }
 
             if (optimizerConfig.getConfigUpdaterConfig() != null && optimizerConfig.getConfigUpdaterConfig()

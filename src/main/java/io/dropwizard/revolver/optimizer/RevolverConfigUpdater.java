@@ -276,10 +276,9 @@ public class RevolverConfigUpdater implements Runnable {
                             if (bulkheadMetricsMap.get(metric) != null) {
                                 oldValue = bulkheadMetricsMap.get(metric).intValue();
                             }
-                            if (log.isDebugEnabled()) {
-                                log.debug("Key : {}, Metric : {}, Value : {}, Old Value: {}", key, metric, value,
-                                        oldValue);
-                            }
+                            log.debug("Key : {}, Metric : {}, Value : {}, Old Value: {}", key, metric, value,
+                                    oldValue);
+
                             bulkheadMetricsMap.put(metric, value);
                         }
                         break;

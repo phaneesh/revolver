@@ -276,7 +276,9 @@ public class RevolverConfigUpdater implements Runnable {
                             if (bulkheadMetricsMap.get(metric) != null) {
                                 oldValue = bulkheadMetricsMap.get(metric).intValue();
                             }
-                            log.info("Key : {}, Metric : {}, Value : {}, Old Value: {}", key, metric, value, oldValue);
+                            log.debug("Key : {}, Metric : {}, Value : {}, Old Value: {}", key, metric, value,
+                                    oldValue);
+
                             bulkheadMetricsMap.put(metric, value);
                         }
                         break;
@@ -364,7 +366,7 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
-                ) {
+        ) {
             log.info("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }

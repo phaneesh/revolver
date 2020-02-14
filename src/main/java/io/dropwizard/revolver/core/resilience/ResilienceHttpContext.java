@@ -6,9 +6,11 @@ import io.dropwizard.revolver.core.config.resilience.ThreadPoolConfig;
 import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.micrometer.core.instrument.util.NamedThreadFactory;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import lombok.AllArgsConstructor;
@@ -22,6 +24,8 @@ import lombok.Data;
 @Builder
 @AllArgsConstructor
 public class ResilienceHttpContext extends RevolverHttpContext {
+
+    private static final String THREAD_POOL_PREFIX = "resilience";
 
     private CircuitBreaker defaultCircuitBreaker;
 
@@ -67,8 +71,9 @@ public class ResilienceHttpContext extends RevolverHttpContext {
             resilienceConfig = new ResilienceConfig();
         }
         ThreadPoolConfig threadPoolConfig = resilienceConfig.getThreadPoolConfig();
+        ThreadFactory threadFactory = new NamedThreadFactory(THREAD_POOL_PREFIX);
         this.executor = new ThreadPoolExecutor(threadPoolConfig.getCorePoolSize(), threadPoolConfig.getMaxPoolSize(),
                 threadPoolConfig.getKeepAliveTimeInSeconds(), TimeUnit.SECONDS,
-                new ArrayBlockingQueue<>(threadPoolConfig.getQueueSize()));
+                new ArrayBlockingQueue<>(threadPoolConfig.getQueueSize()), threadFactory);
     }
 }

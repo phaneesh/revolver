@@ -36,7 +36,7 @@ public class OptimizerMetricsCollector implements Runnable {
     @Override
     public void run() {
 
-        log.info("Running optimiser metrics collection job");
+        log.debug("Running optimiser metrics collection job");
         SortedMap<String, Gauge> gauges = metrics.getGauges();
         Long time = System.currentTimeMillis();
 
@@ -153,7 +153,7 @@ public class OptimizerMetricsCollector implements Runnable {
         String availableCallsMetricName = getMetricName(splits, "availableCalls");
 
         Double maxRollingActiveThreads = (Double) allowedCallGauge.getValue() - (Double) gauge.getValue();
-        log.info("Key : {} Value : {}, Available : {}, AvailableCallsMetricName : {}", key, maxRollingActiveThreads,
+        log.debug("Key : {} Value : {}, Available : {}, AvailableCallsMetricName : {}", key, maxRollingActiveThreads,
                 gauge.getValue(), availableCallsMetricName);
         try {
             metrics.gauge(availableCallsMetricName, () -> gauge);

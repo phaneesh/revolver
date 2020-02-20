@@ -149,6 +149,7 @@ public class BaseRevolverTest {
                                                 .grade(SentinelGrade.FLOW_GRADE_THREAD)
                                                 .poolName("test").build())
                                         .build())
+                                .revolverExecutorType(RevolverExecutorType.RESILIENCE)
                                 .api(RevolverHttpApiConfig.configBuilder()
                                         .api("test")
                                         .method(RequestMethod.GET)

@@ -1,6 +1,7 @@
 package io.dropwizard.revolver.core.resilience;
 
 import com.codahale.metrics.MetricRegistry;
+import com.google.common.collect.Maps;
 import io.dropwizard.revolver.core.config.resilience.ResilienceConfig;
 import io.dropwizard.revolver.core.config.resilience.ThreadPoolConfig;
 import io.dropwizard.revolver.http.RevolverHttpContext;
@@ -29,11 +30,11 @@ public class ResilienceHttpContext extends RevolverHttpContext {
 
     private CircuitBreaker defaultCircuitBreaker;
 
-    private Map<String, CircuitBreaker> apiVsCircuitBreaker;
+    private Map<String, CircuitBreaker> apiVsCircuitBreaker = Maps.newHashMap();
 
-    private Map<String, Bulkhead> poolVsBulkHeadMap;
+    private Map<String, Bulkhead> poolVsBulkHeadMap = Maps.newHashMap();
 
-    private Map<String, Integer> apiVsTimeout;
+    private Map<String, Integer> apiVsTimeout = Maps.newHashMap();
 
     private ExecutorService executor;
 

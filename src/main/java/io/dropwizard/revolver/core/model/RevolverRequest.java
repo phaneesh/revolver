@@ -55,11 +55,11 @@ public class RevolverRequest {
     private TraceInfo trace = new TraceInfo();
 
     @Builder.Default
-    private RevolverExecutorType revolverExecutorType = RevolverExecutorType.HYSTRIX;
+    private RevolverExecutorType revolverExecutorType = RevolverExecutorType.RESILIENCE;
 
     public RevolverExecutorType getRevolverExecutorType() {
         if (revolverExecutorType == null) {
-            return RevolverExecutorType.HYSTRIX;
+            return RevolverExecutorType.RESILIENCE;
         }
         return revolverExecutorType;
     }

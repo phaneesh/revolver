@@ -1,6 +1,8 @@
 package io.dropwizard.revolver.core.resilience;
 
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.BULK_HEAD_DELIMITER;
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.DEFAULT_CIRCUIT_BREAKER;
+import static io.dropwizard.revolver.core.resilience.ResilienceUtil.circuitBreakerRegistry;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getApiName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getCbName;
 import static io.dropwizard.revolver.core.resilience.ResilienceUtil.getThreadPoolNameForService;
@@ -31,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import rx.Observable;
 
 /***
  Created by nitish.goyal on 22/11/19
@@ -79,9 +82,18 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         }
     }
 
+    public Observable executeAsyncAsObservable() {
+        return Observable.fromCallable((() -> {
+            try {
+                return execute();
+            } catch (Exception e) {
+                throw getException(e);
+            }
+        }));
+    }
+
     private ResponseType execute() throws Exception {
         ResilienceHttpContext resilienceHttpContext = getResilienceContext();
-
         CircuitBreaker circuitBreaker = getCircuitBreaker(resilienceHttpContext, request,
                 handler.getServiceConfiguration(), handler.getApiConfiguration());
 
@@ -152,7 +164,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
 
         if (ttl == 0) {
             //Ideally timeout should be set for all apis. This case should never happen
-            log.info("Timeout not set for api : {}", apiConfiguration.getApi());
+            log.debug("Timeout not set for api : {}", apiConfiguration.getApi());
             ttl = DEFAULT_TTL;
         }
         TimeLimiterConfig config
@@ -173,7 +185,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
                     bulkhead.getBulkheadConfig().getMaxWaitDuration());
             return bulkhead;
         }
-        log.info("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,
+        log.debug("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,
                 request.getService(), request.getApi());
         threadPoolName = serviceConfiguration.getService();
         if (StringUtils.isNotEmpty(threadPoolName)) {
@@ -182,7 +194,7 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
 
         if (bulkhead == null) {
             //Ideally should never happen
-            log.info("No bulk head defined for service : {}, api : {} threadPool : {}", request.getService(),
+            log.debug("No bulk head defined for service : {}, api : {} threadPool : {}", request.getService(),
                     request.getApi(), threadPoolName);
             bulkhead = Bulkhead.ofDefaults("revolver");
         }
@@ -214,8 +226,11 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
         }
 
         //Ideally should never happen
-        log.info("No circuit breaker defined for service {}, api {}", request.getService(), request.getApi());
         circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
+        log.debug("DefaultCircuitBreaker : {}", circuitBreaker);
+        if (circuitBreaker == null) {
+            circuitBreaker = circuitBreakerRegistry.circuitBreaker(DEFAULT_CIRCUIT_BREAKER);
+        }
         return circuitBreaker;
     }
 

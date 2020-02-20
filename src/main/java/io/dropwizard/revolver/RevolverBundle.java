@@ -237,13 +237,15 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private static RevolverHttpContext getContext(RevolverExecutorType revolverExecutorType) {
         if (revolverExecutorType == null) {
-            return new RevolverHttpContext();
+            return resilienceHttpContext;
         }
         switch (revolverExecutorType) {
             case RESILIENCE:
                 return resilienceHttpContext;
+            case HYSTRIX:
+                return new RevolverHttpContext();
         }
-        return new RevolverHttpContext();
+        return resilienceHttpContext;
     }
 
     public static RevolverServiceResolver getServiceNameResolver() {

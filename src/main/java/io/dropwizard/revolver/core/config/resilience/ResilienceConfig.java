@@ -1,5 +1,6 @@
 package io.dropwizard.revolver.core.config.resilience;
 
+import io.dropwizard.revolver.core.config.hystrix.CircuitBreakerConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,6 +16,8 @@ import lombok.NoArgsConstructor;
 public class ResilienceConfig {
 
     private BulkHeadConfig bulkHeadConfig;
+
+    private CircuitBreakerConfig circuitBreakerConfig;
 
     private ThreadPoolConfig threadPoolConfig = new ThreadPoolConfig();
 }

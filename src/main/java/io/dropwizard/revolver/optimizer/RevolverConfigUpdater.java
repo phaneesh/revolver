@@ -7,10 +7,12 @@ import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.core.resilience.ResilienceHttpContext;
 import io.dropwizard.revolver.core.resilience.ResilienceUtil;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import io.dropwizard.revolver.optimizer.OptimalThreadPoolAttributes.OptimalThreadPoolAttributesBuilder;
 import io.dropwizard.revolver.optimizer.OptimalTimeoutAttributes.OptimalTimeoutAttributesBuilder;
 import io.dropwizard.revolver.optimizer.config.OptimizerConcurrencyConfig;
@@ -91,7 +93,18 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics) {
         AtomicBoolean configUpdated = new AtomicBoolean();
         revolverConfig.getServices().forEach(revolverServiceConfig -> {
-            if (revolverServiceConfig.getThreadPoolGroupConfig() != null) {
+
+            if (revolverServiceConfig instanceof RevolverHttpsServiceConfig) {
+                return;
+            }
+
+            RevolverHttpServiceConfig revolverHttpsServiceConfig = (RevolverHttpServiceConfig) revolverServiceConfig;
+            //After moving to Java 11, optimizer isn't supported in Hystrix anymore
+            if (RevolverExecutorType.HYSTRIX == revolverHttpsServiceConfig.getRevolverExecutorType()) {
+                return;
+            }
+
+            if (revolverHttpsServiceConfig.getThreadPoolGroupConfig() != null) {
                 revolverServiceConfig.getThreadPoolGroupConfig().getThreadPools()
                         .forEach(threadPoolConfig -> {
                             OptimizerMetrics optimizerThreadPoolMetrics = apiLevelThreadPoolMetrics
@@ -103,12 +116,12 @@ public class RevolverConfigUpdater implements Runnable {
                                     optimizerBulkheadMetrics, configUpdated, threadPoolConfig.getThreadPoolName());
                         });
             }
-            if (revolverServiceConfig instanceof RevolverHttpServiceConfig) {
-                ((RevolverHttpServiceConfig) revolverServiceConfig).getApis().forEach(api -> {
-                    updateApiSettings(revolverServiceConfig, api, apiLevelThreadPoolMetrics,
-                            apiLevelBulkheadMetrics, apiLevelLatencyMetrics, configUpdated);
-                });
-            }
+
+            revolverHttpsServiceConfig.getApis().forEach(api -> {
+                updateApiSettings(revolverServiceConfig, api, apiLevelThreadPoolMetrics,
+                        apiLevelBulkheadMetrics, apiLevelLatencyMetrics, configUpdated);
+            });
+
         });
 
         if (configUpdated.get()) {
@@ -366,7 +379,7 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
-        ) {
+                ) {
             log.info("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
@@ -387,7 +400,7 @@ public class RevolverConfigUpdater implements Runnable {
                         .ceil(initialConcurrency * concurrencyConfig.getMaxPoolExpansionLimit());
             }
         }
-        log.info("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
+        log.debug("Optimizer Concurrency Settings Enabled : {}, Max Threads Multiplier : {}, Max Threshold : {},"
                         + " Initial Concurrency : {}, Current Concurrency: {}, MaxRollingActiveThreads : {}, "
                         + "Pool Name: {}, optimalConcurrency : {}", concurrencyConfig.isEnabled(),
                 concurrencyConfig.getMaxPoolExpansionLimit(), concurrencyConfig.getMaxThreshold(), initialConcurrency,

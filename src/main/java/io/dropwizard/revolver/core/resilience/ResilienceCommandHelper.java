@@ -239,14 +239,17 @@ public class ResilienceCommandHelper<RequestType extends RevolverRequest, Respon
     }
 
     private void registerMetric() {
-
-        if (getResilienceContext().getMetrics() == null) {
-            return;
-        }
-        MetricRegistry metrics = getResilienceContext().getMetrics();
-        Meter meter = metrics.meter(getMetricName());
-        if (meter != null) {
-            meter.mark();
+        try {
+            if (getResilienceContext().getMetrics() == null) {
+                return;
+            }
+            MetricRegistry metrics = getResilienceContext().getMetrics();
+            Meter meter = metrics.meter(getMetricName());
+            if (meter != null) {
+                meter.mark();
+            }
+        }catch (Exception e){
+            log.error("Error occurred while registering metrics : ", e);
         }
     }
 }

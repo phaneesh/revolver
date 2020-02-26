@@ -287,6 +287,7 @@ public class ResilienceUtil {
                                 return;
                             }
                             ThreadPoolConfig threadPoolConfig = hystrixCommandConfig.getThreadPool();
+                            //Setting the timeout which is higher of pool or api level timeout
                             int timeout = threadPoolConfig.getTimeout();
                             String threadPoolName = threadPoolConfig.getThreadPoolName();
                             if (poolVsTimeout.get(threadPoolName) != null) {

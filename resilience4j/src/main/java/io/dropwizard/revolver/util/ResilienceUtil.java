@@ -35,22 +35,20 @@ import org.apache.commons.lang3.StringUtils;
 public class ResilienceUtil {
 
     public static final String BULK_HEAD_DELIMITER = "-";
+    public static final String DEFAULT_CIRCUIT_BREAKER = "revolver";
     private static final Map<String, String> DEFAULT_KEY_VALUE_MAP = Maps.newHashMap();
     private static final String METRIC_PREFIX = "resilience";
-    public static final String DEFAULT_CIRCUIT_BREAKER = "revolver";
     private static final Map<String, Bulkhead> POOL_VS_BULK_HEAD = Maps.newHashMap();
+    public static CircuitBreakerRegistry circuitBreakerRegistry =
+            CircuitBreakerRegistry.ofDefaults();
+    private static BulkheadRegistry bulkheadRegistry = BulkheadRegistry.ofDefaults();
 
     static {
         DEFAULT_KEY_VALUE_MAP.put(METRIC_PREFIX + ".step", "PT1M");
         DEFAULT_KEY_VALUE_MAP.put(METRIC_PREFIX + ".enabled", "true");
     }
-
     private ResilienceUtil() {
     }
-
-    private static BulkheadRegistry bulkheadRegistry = BulkheadRegistry.ofDefaults();
-    public static CircuitBreakerRegistry circuitBreakerRegistry =
-            CircuitBreakerRegistry.ofDefaults();
 
     public static void initializeResilience(RevolverConfig revolverConfig,
             ResilienceHttpContext resilienceHttpContext) {

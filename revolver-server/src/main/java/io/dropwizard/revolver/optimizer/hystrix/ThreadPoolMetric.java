@@ -11,12 +11,6 @@ public enum ThreadPoolMetric {
     ROLLING_MAX_ACTIVE_THREADS("rollingMaxActiveThreads"),
     PROPERTY_VALUE_MAXIMUM_SIZE("propertyValue_maximumSize");
 
-    String metricName;
-
-    ThreadPoolMetric(String metricName) {
-        this.metricName = metricName;
-    }
-
     //Reverse map from metricName to ENUM
     private static final Map<String, ThreadPoolMetric> lookup = new HashMap<>();
 
@@ -24,6 +18,12 @@ public enum ThreadPoolMetric {
         for (ThreadPoolMetric s : EnumSet.allOf(ThreadPoolMetric.class)) {
             lookup.put(s.getMetricName(), s);
         }
+    }
+
+    String metricName;
+
+    ThreadPoolMetric(String metricName) {
+        this.metricName = metricName;
     }
 
     public static ThreadPoolMetric get(String metricName) {

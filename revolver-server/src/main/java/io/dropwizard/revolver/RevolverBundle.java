@@ -112,58 +112,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
 
     private static RevolverConfig revolverConfig;
 
-    @Override
-    public void initialize(Bootstrap<?> bootstrap) {
-        //Reset everything before configuration
-        registerTypes(bootstrap);
-        bootstrap.addBundle(new MsgPackBundle());
-        bootstrap.addBundle(
-                new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
-        bootstrap.addBundle(new RiemannBundle<Configuration>() {
-            @Override
-            public RiemannConfig getRiemannConfiguration(Configuration configuration) {
-                if (configuration instanceof RevolverConfig) {
-                    return ((RevolverConfig) configuration).getRiemann();
-                }
-                return null;
-            }
-        });
-    }
-
-    @Override
-    public void run(T configuration, Environment environment) {
-        //Add metrics publisher
-        val metrics = environment.metrics();
-
-        initializeRevolver(configuration, environment);
-        revolverContextFactory = new RevolverContextFactory(environment, revolverConfig, metrics);
-
-        RevolverCommandHandlerFactory revolverCommandHandlerFactory = new RevolverCommandHandlerFactory();
-
-        initializeOptimizer(metrics, environment);
-
-        PersistenceProvider persistenceProvider = getPersistenceProvider(configuration,
-                environment);
-        InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(persistenceProvider).revolverConfig(revolverConfig).build();
-
-        registerResources(environment, metrics, persistenceProvider, callbackHandler);
-        registerMappers(environment);
-        registerFilters(environment);
-    }
-
-    public abstract CuratorFramework getCurator();
-
-    public abstract RevolverConfig getRevolverConfig(T configuration);
-
-    public abstract String getRevolverConfigAttribute();
-
-    public abstract ConfigSource getConfigSource();
-
-    public void onConfigChange(String configData) {
-        log.info("Config changed! Override to propagate config changes to other bundles");
-    }
-
     public static RevolverServiceResolver getServiceNameResolver() {
         return serviceNameResolver;
     }
@@ -197,7 +145,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public static Map<String, RevolverHttpServiceConfig> getServiceConfig() {
         return serviceConfig;
     }
-
 
     public static RevolverHttpCommand getHttpCommand(String service, String api) {
         if (!serviceConfig.containsKey(service)) {
@@ -392,6 +339,57 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         return path.replaceAll("\\{(([^/])+\\})", "(([^/])+)");
     }
 
+    @Override
+    public void initialize(Bootstrap<?> bootstrap) {
+        //Reset everything before configuration
+        registerTypes(bootstrap);
+        bootstrap.addBundle(new MsgPackBundle());
+        bootstrap.addBundle(
+                new AssetsBundle("/revolver/dashboard/", "/revolver/dashboard/", "index.html"));
+        bootstrap.addBundle(new RiemannBundle<Configuration>() {
+            @Override
+            public RiemannConfig getRiemannConfiguration(Configuration configuration) {
+                if (configuration instanceof RevolverConfig) {
+                    return ((RevolverConfig) configuration).getRiemann();
+                }
+                return null;
+            }
+        });
+    }
+
+    @Override
+    public void run(T configuration, Environment environment) {
+        //Add metrics publisher
+        val metrics = environment.metrics();
+
+        initializeRevolver(configuration, environment);
+        revolverContextFactory = new RevolverContextFactory(environment, revolverConfig, metrics);
+
+        RevolverCommandHandlerFactory revolverCommandHandlerFactory = new RevolverCommandHandlerFactory();
+
+        initializeOptimizer(metrics, environment);
+
+        PersistenceProvider persistenceProvider = getPersistenceProvider(configuration,
+                environment);
+        InlineCallbackHandler callbackHandler = InlineCallbackHandler.builder()
+                .persistenceProvider(persistenceProvider).revolverConfig(revolverConfig).build();
+
+        registerResources(environment, metrics, persistenceProvider, callbackHandler);
+        registerMappers(environment);
+        registerFilters(environment);
+    }
+
+    public abstract CuratorFramework getCurator();
+
+    public abstract RevolverConfig getRevolverConfig(T configuration);
+
+    public abstract String getRevolverConfigAttribute();
+
+    public abstract ConfigSource getConfigSource();
+
+    public void onConfigChange(String configData) {
+        log.info("Config changed! Override to propagate config changes to other bundles");
+    }
 
     PersistenceProvider getPersistenceProvider(T configuration, Environment environment) {
         RevolverConfig revolverConfig = getRevolverConfig(configuration);

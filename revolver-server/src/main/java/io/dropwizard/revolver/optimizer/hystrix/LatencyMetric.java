@@ -14,12 +14,6 @@ public enum LatencyMetric {
     LATENCY_PERCENTILE_75("latencyExecute_percentile_75"),
     LATENCY_PERCENTILE_50("latencyExecute_percentile_50");
 
-    String metricName;
-
-    LatencyMetric(String metricName) {
-        this.metricName = metricName;
-    }
-
     //Reverse map from metricName to ENUM
     private static final Map<String, LatencyMetric> lookup = new HashMap<>();
 
@@ -27,6 +21,12 @@ public enum LatencyMetric {
         for (LatencyMetric s : EnumSet.allOf(LatencyMetric.class)) {
             lookup.put(s.getMetricName(), s);
         }
+    }
+
+    String metricName;
+
+    LatencyMetric(String metricName) {
+        this.metricName = metricName;
     }
 
     public static LatencyMetric get(String metricName) {

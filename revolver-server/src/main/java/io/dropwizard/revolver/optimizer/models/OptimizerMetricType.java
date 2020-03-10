@@ -8,16 +8,15 @@ public enum OptimizerMetricType {
     THREAD_POOL("threadPool", 3, AggregationAlgo.MAX),
     BULKHEAD("bulkhead", 3, AggregationAlgo.MAX);
 
-
     //
     /**
      * Minimum number of tokens for hystrix metrics
      *
-     * LATENCY metrics pattern : {serviceName}.{serviceName}.{commandName}.latencyExecute_percentile_{percentileType}
-     * so minValidLength = 4
+     * LATENCY metrics pattern : {serviceName}.{serviceName}.{commandName}.latencyExecute_percentile_{percentileType} so
+     * minValidLength = 4
      *
      * THREADPOOL metrics pattern : HystrixThreadPool.{threadpoolGroupName}.rollingMaxActiveThreads
-     *                              HystrixThreadPool.{serviceName}.{commandName}.rollingMaxActiveThreads
+     * HystrixThreadPool.{serviceName}.{commandName}.rollingMaxActiveThreads
      *
      * BULKHEAD metrics pattern :  resilience4jBulkheadAvailableConcurrent_calls.name.{serviceName}.{apiName}
      *

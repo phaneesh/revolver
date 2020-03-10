@@ -59,7 +59,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
             mailbox.add(mailBoxId, requestId);
         }
 
-        if(!StringUtils.isBlank(mailboxAuthId)){
+        if (!StringUtils.isBlank(mailboxAuthId)) {
             mailboxAuth.add(mailboxAuthId, requestId);
             requestToMailboxAuthMap.put(requestId, mailboxAuthId);
         }
@@ -75,7 +75,7 @@ public class InMemoryPersistenceProvider implements PersistenceProvider {
             mailbox.add(mailBoxId, requestId);
         }
 
-        if(!StringUtils.isBlank(mailboxAuthId)){
+        if (!StringUtils.isBlank(mailboxAuthId)) {
             mailboxAuth.add(mailboxAuthId, requestId);
             requestToMailboxAuthMap.put(requestId, mailboxAuthId);
         }

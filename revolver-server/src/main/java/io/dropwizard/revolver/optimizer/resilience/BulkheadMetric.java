@@ -10,13 +10,6 @@ import lombok.Getter;
 public enum BulkheadMetric {
     BULKHEAD_AVAILABLE_CONCURRENT_CALLS("resilience4jBulkheadAvailableConcurrentCalls");
 
-    @Getter
-    private String metricName;
-
-    BulkheadMetric(String metricName) {
-        this.metricName = metricName;
-    }
-
     //Reverse map from metricName to ENUM
     private static final Map<String, BulkheadMetric> lookup = new HashMap<>();
 
@@ -24,6 +17,13 @@ public enum BulkheadMetric {
         for (BulkheadMetric s : EnumSet.allOf(BulkheadMetric.class)) {
             lookup.put(s.getMetricName(), s);
         }
+    }
+
+    @Getter
+    private String metricName;
+
+    BulkheadMetric(String metricName) {
+        this.metricName = metricName;
     }
 
     public static BulkheadMetric get(String metricName) {

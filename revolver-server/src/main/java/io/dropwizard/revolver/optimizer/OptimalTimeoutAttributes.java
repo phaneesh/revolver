@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class OptimalTimeoutAttributes {
+
     private int optimalTimeout;
     private int meanTimeout;
     private double timeoutBuffer;

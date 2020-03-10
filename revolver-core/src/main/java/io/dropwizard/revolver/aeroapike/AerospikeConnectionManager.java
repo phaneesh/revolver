@@ -31,12 +31,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.dropwizard.revolver.core.config.AerospikeMailBoxConfig;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 /**
  * @author phaneesh

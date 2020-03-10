@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.netflix.hystrix.strategy.HystrixPlugins;
 import io.dropwizard.Configuration;
 import io.dropwizard.ConfiguredBundle;
 import io.dropwizard.assets.AssetsBundle;
@@ -116,7 +115,6 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     @Override
     public void initialize(Bootstrap<?> bootstrap) {
         //Reset everything before configuration
-        HystrixPlugins.reset();
         registerTypes(bootstrap);
         bootstrap.addBundle(new MsgPackBundle());
         bootstrap.addBundle(

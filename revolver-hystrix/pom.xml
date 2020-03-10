@@ -11,6 +11,10 @@
 
     <artifactId>revolver-hystrix</artifactId>
 
+    <properties>
+        <hystrix.version>1.5.11</hystrix.version>
+    </properties>
+
 
     <dependencies>
         <dependency>
@@ -23,6 +27,38 @@
             <artifactId>revolver-core</artifactId>
             <version>2.0.1-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.netflix.hystrix</groupId>
+            <artifactId>hystrix-metrics-event-stream</artifactId>
+            <version>${hystrix.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.netflix.hystrix</groupId>
+                    <artifactId>hystrix-core</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.hystrix</groupId>
+            <artifactId>hystrix-core</artifactId>
+            <version>${hystrix.version}-22</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hystrix</groupId>
+            <artifactId>hystrix-codahale-metrics-publisher</artifactId>
+            <version>${hystrix.version}-22</version>
+        </dependency>
+        <dependency>
+            <groupId>com.netflix.archaius</groupId>
+            <artifactId>archaius-core</artifactId>
+            <version>0.4.1</version>
+        </dependency>
+
     </dependencies>
 
 </project>

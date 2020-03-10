@@ -1,4 +1,4 @@
-package io.dropwizard.revolver.core.config.hystrix;
+package io.dropwizard.revolver.http;
 
 import com.google.common.base.Strings;
 import com.netflix.hystrix.contrib.codahalemetricspublisher.HystrixCodaHaleMetricsPublisher;
@@ -14,6 +14,7 @@ public class HystrixUtil {
 
     public static void initializeHystrix(Environment environment, HystrixCodaHaleMetricsPublisher metricsPublisher,
             RevolverConfig revolverConfig) {
+        HystrixPlugins.reset();
         HystrixPlugins.getInstance().registerMetricsPublisher(metricsPublisher);
         if (Strings.isNullOrEmpty(revolverConfig.getHystrixStreamPath())) {
             environment.getApplicationContext()

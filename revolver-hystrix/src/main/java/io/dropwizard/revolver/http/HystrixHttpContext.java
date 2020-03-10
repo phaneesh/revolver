@@ -3,7 +3,6 @@ package io.dropwizard.revolver.http;
 import com.codahale.metrics.MetricRegistry;
 import com.netflix.hystrix.contrib.codahalemetricspublisher.HystrixCodaHaleMetricsPublisher;
 import io.dropwizard.revolver.core.config.RevolverConfig;
-import io.dropwizard.revolver.core.config.hystrix.HystrixUtil;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.setup.Environment;
 

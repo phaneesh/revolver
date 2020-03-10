@@ -60,7 +60,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.3.7</dropwizard.version>
         <dropwizard.servicediscovery>1.3.13-2</dropwizard.servicediscovery>
-        <hystrix.version>1.5.11</hystrix.version>
         <ranger.version>0.5</ranger.version>
         <okhttp.version>3.13.1</okhttp.version>
         <aerospike.version>4.4.3</aerospike.version>
@@ -153,16 +152,6 @@
             <version>${dropwizard.version}-1</version>
         </dependency>
         <dependency>
-            <groupId>org.hystrix</groupId>
-            <artifactId>hystrix-core</artifactId>
-            <version>${hystrix.version}-22</version>
-        </dependency>
-        <dependency>
-            <groupId>com.netflix.archaius</groupId>
-            <artifactId>archaius-core</artifactId>
-            <version>0.4.1</version>
-        </dependency>
-        <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxjava</artifactId>
             <version>1.2.0</version>
@@ -171,31 +160,6 @@
             <groupId>org.hdrhistogram</groupId>
             <artifactId>HdrHistogram</artifactId>
             <version>2.1.9</version>
-        </dependency>
-        <dependency>
-            <groupId>com.netflix.hystrix</groupId>
-            <artifactId>hystrix-metrics-event-stream</artifactId>
-            <version>${hystrix.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.netflix.hystrix</groupId>
-                    <artifactId>hystrix-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.csp</groupId>
-            <artifactId>sentinel-core</artifactId>
-            <version>1.6.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hystrix</groupId>
-            <artifactId>hystrix-codahale-metrics-publisher</artifactId>
-            <version>${hystrix.version}-22</version>
         </dependency>
         <dependency>
             <groupId>com.flipkart.ranger</groupId>
@@ -275,31 +239,6 @@
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-micrometer</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-bulkhead</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-circuitbreaker</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.resilience4j</groupId>
-            <artifactId>resilience4j-timelimiter</artifactId>
-            <version>1.2.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-            <version>1.1.4</version>
         </dependency>
     </dependencies>
 

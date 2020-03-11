@@ -37,5 +37,6 @@ public interface RevolversHttpHeaders {
     String CALLBACK_RESPONSE_CODE = "X-RESPONSE-CODE";
     String RETRY_AFTER = "X-RETRY-AFTER";
     String DYAMIC_MAILBOX = "X-DYNAMIC-MAILBOX";
+    String FORWARDED_BY = "X-FORWARDED-BY";
 
 }

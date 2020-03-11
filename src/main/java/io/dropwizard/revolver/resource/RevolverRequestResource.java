@@ -32,7 +32,6 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.ApiLatencyConfig;
-import io.dropwizard.revolver.core.config.HeadersConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
@@ -79,7 +78,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author phaneesh
@@ -209,7 +207,6 @@ public class RevolverRequestResource {
                                     : MediaType.APPLICATION_JSON, jsonObjectMapper,
                             msgPackObjectMapper)).build();
         }
-        updateHeaders(headers);
         String serviceKey = service + "." + apiMap.getApi().getApi();
         if (RevolverBundle.apiStatus.containsKey(serviceKey) && !RevolverBundle.apiStatus
                 .get(serviceKey)) {
@@ -256,21 +253,6 @@ public class RevolverRequestResource {
                         headers.getMediaType() != null ? headers.getMediaType().toString()
                                 : MediaType.APPLICATION_JSON, jsonObjectMapper,
                         msgPackObjectMapper)).build();
-    }
-
-    private void updateHeaders(HttpHeaders headers) {
-        if (headers == null || CollectionUtils.isEmpty(headers.getRequestHeaders())) {
-            return;
-        }
-        String forwardedBy;
-        if (revolverConfig.getHeadersConfig() == null || StringUtils
-                .isEmpty(revolverConfig.getHeadersConfig().getForwardedBy())) {
-            forwardedBy = HeadersConfig.DEFAULT_FORWARDED_BY;
-        } else {
-            forwardedBy = revolverConfig.getHeadersConfig().getForwardedBy();
-        }
-        headers.getRequestHeaders()
-                .putSingle(RevolversHttpHeaders.FORWARDED_BY, forwardedBy);
     }
 
     private ApiPathMap resolvePath(String service, String path, HttpHeaders headers) {

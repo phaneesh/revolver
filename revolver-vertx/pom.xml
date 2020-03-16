@@ -32,6 +32,16 @@
             <artifactId>vertx-core</artifactId>
             <version>${vertex.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-config</artifactId>
+            <version>${vertex.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <version>${vertex.version}</version>
+        </dependency>
 
     </dependencies>
 

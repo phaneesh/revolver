@@ -197,7 +197,7 @@ public class RevolverRequestResource {
     }
 
 
-    private Response processRequest(String service, RevolverHttpApiConfig.RequestMethod method,
+    public Response processRequest(String service, RevolverHttpApiConfig.RequestMethod method,
             String path, HttpHeaders headers, UriInfo uriInfo, byte[] body) throws Exception {
         val apiMap = resolvePath(service, path, headers);
         if (apiMap == null) {

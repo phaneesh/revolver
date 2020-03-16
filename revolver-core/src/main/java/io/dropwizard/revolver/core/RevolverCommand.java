@@ -79,6 +79,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
                     .getHandler(revolverExecutorType);
 
             response = (ResponseType) revolverCommandHandler.executeSync(this, normalizedRequest);
+            log.info("RevolverResponse : {}", response);
             if (log.isDebugEnabled()) {
                 log.debug("Command response: " + response);
             }

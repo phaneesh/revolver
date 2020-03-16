@@ -38,6 +38,8 @@ import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.revolver.splitting.SplitStrategy;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientResponse;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.ws.rs.core.HttpHeaders;
@@ -93,9 +95,7 @@ public class RevolverHttpCommand extends
                 .contains(request.getMethod())) {
             switch (request.getMethod()) {
                 case GET: {
-                    RevolverHttpResponse response = doGet(request);
-                    log.info("Get response body : {}", response);
-                    return response;
+                    return doGet(request);
                 }
                 case POST: {
                     return doPost(request);
@@ -230,6 +230,14 @@ public class RevolverHttpCommand extends
     private RevolverHttpResponse doGet(RevolverHttpRequest request) throws Exception {
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.get();
+        if (request.getRoutingContext() != null) {
+            return getFromVertx(request);
+        }
+        return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
+    }
+
+    private RevolverHttpResponse getFromVertx(RevolverHttpRequest request) throws Exception {
+        RoutingContext routingContext = request.getRoutingContext();
         HttpUrl url = getServiceUrl(request, getApiConfiguration());
         RevolverHttpResponse revolverHttpResponse = RevolverHttpResponse.builder()
                 .build();
@@ -238,7 +246,7 @@ public class RevolverHttpCommand extends
             vertxClient.getNow(url.port(), url.host(), url.encodedPath(), response -> {
                 log.info("Status : {}", response.statusCode());
                 try {
-                    getHttpResponse(revolverHttpResponse, getApiConfiguration(), response, true);
+                    getHttpResponse(routingContext, revolverHttpResponse, getApiConfiguration(), response, true);
                     log.info("Revolver Response Body : {}", revolverHttpResponse.getBody());
                 } catch (Exception e) {
                     log.info("Exception : ", e);
@@ -248,7 +256,6 @@ public class RevolverHttpCommand extends
         });
 
         return revolverHttpResponse;
-        //return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
     private Request.Builder initializeRequest(RevolverHttpRequest request) throws RevolverException {
@@ -366,17 +373,20 @@ public class RevolverHttpCommand extends
         return revolverResponse.build();
     }
 
-    private RevolverHttpResponse getHttpResponse(RevolverHttpResponse revolverResponse,
+    private RevolverHttpResponse getHttpResponse(RoutingContext routingContext, RevolverHttpResponse revolverResponse,
             RevolverHttpApiConfig apiConfiguration, HttpClientResponse response, boolean readBody) throws Exception {
         revolverResponse.setStatusCode(response.statusCode());
         response.bodyHandler(buffer -> {
             val headers = new MultivaluedHashMap<String, String>();
+            HttpServerResponse toRsp = routingContext.response()
+                    .setStatusCode(response.statusCode());
             response.headers()
                     .names()
                     .forEach(h -> headers.putSingle(h, response.getHeader(h)));
             revolverResponse.setHeaders(headers);
             if (readBody && buffer != null) {
                 log.info("Body : {}", buffer.toString());
+                toRsp.end(buffer);
                 revolverResponse.setBody(buffer.getBytes());
             }
         });

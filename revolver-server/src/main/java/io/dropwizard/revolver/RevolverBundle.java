@@ -415,7 +415,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         log.info("Starting server..");
         vertx.createHttpServer()
                 .requestHandler(router)
-                .listen(8082, Objects.nonNull(System.getenv("HOST")) ? System.getenv("HOST") : "localhost",
+                .listen(8080, Objects.nonNull(System.getenv("HOST")) ? System.getenv("HOST") : "localhost",
                         event -> Runtime.getRuntime()
                                 .addShutdownHook(new Thread(() -> {
                                     vertx.createHttpServer()

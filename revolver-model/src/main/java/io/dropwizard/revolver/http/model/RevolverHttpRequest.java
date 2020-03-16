@@ -22,6 +22,7 @@ import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.core.model.RevolverRequest;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
+import io.vertx.ext.web.RoutingContext;
 import java.util.Map;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
@@ -42,6 +43,7 @@ public class RevolverHttpRequest extends RevolverRequest {
     private String path;
     private RevolverHttpApiConfig.RequestMethod method;
     private byte[] body;
+    private RoutingContext routingContext;
 
     public RevolverHttpRequest() {
         this.headers = new MultivaluedHashMap<>();
@@ -55,7 +57,8 @@ public class RevolverHttpRequest extends RevolverRequest {
     public RevolverHttpRequest(String service, String api,
             RevolverHttpApiConfig.RequestMethod method, TraceInfo traceInfo,
             MultivaluedMap<String, String> headers, MultivaluedMap<String, String> queryParams,
-            Map<String, String> pathParams, String path, byte[] body, RevolverExecutorType revolverExecutorType) {
+            Map<String, String> pathParams, String path, byte[] body, RevolverExecutorType revolverExecutorType,
+            RoutingContext routingContext) {
         super("http", service, api, traceInfo, revolverExecutorType);
         this.headers = new MultivaluedHashMap<>();
         this.queryParams = new MultivaluedHashMap<>();
@@ -66,5 +69,6 @@ public class RevolverHttpRequest extends RevolverRequest {
         this.body = body;
         this.path = path;
         this.method = method;
+        this.routingContext = routingContext;
     }
 }

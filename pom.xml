@@ -1,12 +1,20 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.dropwizard.revolver</groupId>
+    <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>1.3.7-38-16</version>
-    <packaging>jar</packaging>
+    <version>2.0.1</version>
+    <modules>
+        <module>revolver-model</module>
+        <module>resilience4j</module>
+        <module>sentinel</module>
+        <module>revolver-core</module>
+        <module>revolver-server</module>
+        <module>revolver-hystrix</module>
+    </modules>
+    <packaging>pom</packaging>
 
     <name>dropwizard-revolver</name>
     <url>https://github.com/phaneesh/revolver</url>
@@ -52,7 +60,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.3.7</dropwizard.version>
         <dropwizard.servicediscovery>1.3.13-2</dropwizard.servicediscovery>
-        <hystrix.version>1.5.11</hystrix.version>
         <ranger.version>0.5</ranger.version>
         <okhttp.version>3.13.1</okhttp.version>
         <aerospike.version>4.4.3</aerospike.version>
@@ -145,16 +152,6 @@
             <version>${dropwizard.version}-1</version>
         </dependency>
         <dependency>
-            <groupId>org.hystrix</groupId>
-            <artifactId>hystrix-core</artifactId>
-            <version>${hystrix.version}-22</version>
-        </dependency>
-        <dependency>
-            <groupId>com.netflix.archaius</groupId>
-            <artifactId>archaius-core</artifactId>
-            <version>0.4.1</version>
-        </dependency>
-        <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxjava</artifactId>
             <version>1.2.0</version>
@@ -165,29 +162,15 @@
             <version>2.1.9</version>
         </dependency>
         <dependency>
-            <groupId>com.netflix.hystrix</groupId>
-            <artifactId>hystrix-metrics-event-stream</artifactId>
-            <version>${hystrix.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.netflix.hystrix</groupId>
-                    <artifactId>hystrix-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.hystrix</groupId>
-            <artifactId>hystrix-codahale-metrics-publisher</artifactId>
-            <version>${hystrix.version}-22</version>
-        </dependency>
-        <dependency>
             <groupId>com.flipkart.ranger</groupId>
             <artifactId>ranger</artifactId>
             <version>${ranger.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.aerospike</groupId>

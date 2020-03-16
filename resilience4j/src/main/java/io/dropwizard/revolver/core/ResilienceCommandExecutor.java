@@ -1,7 +1,5 @@
 package io.dropwizard.revolver.core;
 
-import static io.dropwizard.revolver.util.ResilienceUtil.DEFAULT_CIRCUIT_BREAKER;
-import static io.dropwizard.revolver.util.ResilienceUtil.circuitBreakerRegistry;
 import static io.dropwizard.revolver.util.ResilienceUtil.getApiName;
 import static io.dropwizard.revolver.util.ResilienceUtil.getCbName;
 
@@ -142,7 +140,9 @@ public class ResilienceCommandExecutor<RequestType extends RevolverRequest, Resp
 
         if (ttl == 0) {
             //Ideally timeout should be set for all apis. This case should never happen
-            log.debug("Timeout not set for api : {}", apiConfiguration.getApi());
+            if (log.isDebugEnabled()) {
+                log.debug("Timeout not set for api : {}", apiConfiguration.getApi());
+            }
             ttl = DEFAULT_TTL;
         }
         TimeLimiterConfig config
@@ -157,14 +157,19 @@ public class ResilienceCommandExecutor<RequestType extends RevolverRequest, Resp
         String threadPoolName = getThreadPoolName();
         Bulkhead bulkhead = bulkheadMap.get(threadPoolName);
         if (bulkhead != null) {
-            log.debug("BulkheadName : {},  Available Calls : {}, Max Calls : {}, Wait Time : {}", bulkhead.getName(),
-                    bulkhead.getMetrics().getAvailableConcurrentCalls(),
-                    bulkhead.getMetrics().getMaxAllowedConcurrentCalls(),
-                    bulkhead.getBulkheadConfig().getMaxWaitDuration());
+            if (log.isDebugEnabled()) {
+                log.debug("BulkheadName : {},  Available Calls : {}, Max Calls : {}, Wait Time : {}",
+                        bulkhead.getName(), bulkhead.getMetrics()
+                                .getAvailableConcurrentCalls(), bulkhead.getMetrics()
+                                .getMaxAllowedConcurrentCalls(), bulkhead.getBulkheadConfig()
+                                .getMaxWaitDuration());
+            }
             return bulkhead;
         }
-        log.debug("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,
-                revolverRequest.getService(), revolverRequest.getApi());
+        if (log.isDebugEnabled()) {
+            log.debug("No bulk head defined for threadPool : {} service : {}, api : {}", threadPoolName,
+                    revolverRequest.getService(), revolverRequest.getApi());
+        }
         threadPoolName = serviceConfiguration.getService();
         if (StringUtils.isNotEmpty(threadPoolName)) {
             bulkhead = bulkheadMap.get(threadPoolName);
@@ -205,9 +210,8 @@ public class ResilienceCommandExecutor<RequestType extends RevolverRequest, Resp
 
         //Ideally should never happen
         circuitBreaker = resilienceHttpContext.getDefaultCircuitBreaker();
-        log.debug("DefaultCircuitBreaker : {}", circuitBreaker);
-        if (circuitBreaker == null) {
-            circuitBreaker = circuitBreakerRegistry.circuitBreaker(DEFAULT_CIRCUIT_BREAKER);
+        if (log.isDebugEnabled()) {
+            log.debug("DefaultCircuitBreaker : {}", circuitBreaker);
         }
         return circuitBreaker;
     }

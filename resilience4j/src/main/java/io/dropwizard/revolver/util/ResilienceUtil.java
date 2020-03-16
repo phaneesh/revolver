@@ -53,8 +53,6 @@ public class ResilienceUtil {
     public static void initializeResilience(RevolverConfig revolverConfig,
             ResilienceHttpContext resilienceHttpContext) {
 
-        log.info("Initializing resilience util");
-
         initializeBulkHeads(revolverConfig, resilienceHttpContext);
         initializeCircuitBreakers(revolverConfig, resilienceHttpContext);
         initializeTimeout(revolverConfig, resilienceHttpContext);
@@ -92,7 +90,6 @@ public class ResilienceUtil {
     private static void initializeCircuitBreakers(RevolverConfig revolverConfig,
             ResilienceHttpContext resilienceHttpContext) {
 
-        log.info("Initializing resilience circuit breakers");
         Map<String, CircuitBreaker> apiVsCircuitBreaker = Maps.newHashMap();
         resilienceHttpContext.setDefaultCircuitBreaker(circuitBreakerRegistry.circuitBreaker(DEFAULT_CIRCUIT_BREAKER));
 
@@ -102,15 +99,19 @@ public class ResilienceUtil {
             updateCBForDefaultServiceConfig(apiVsCircuitBreaker, revolverServiceConfig);
 
         }
-        apiVsCircuitBreaker.forEach(
-                (s, circuitBreaker) -> log.info("Resilience circuit breaker : {}, circuit break config : {} ", s,
-                        circuitBreaker.getCircuitBreakerConfig().getFailureRateThreshold()));
+        apiVsCircuitBreaker.forEach((s, circuitBreaker) -> {
+            if (log.isDebugEnabled()) {
+                log.debug("Resilience circuit breaker : {}, circuit break config : {} ", s,
+                        circuitBreaker.getCircuitBreakerConfig()
+                                .getFailureRateThreshold());
+            }
+
+        });
         resilienceHttpContext.setApiVsCircuitBreaker(apiVsCircuitBreaker);
     }
 
     private static void initializeBulkHeads(RevolverConfig revolverConfig,
             ResilienceHttpContext resilienceHttpContext) {
-        log.info("Initializing resilience bulk heads");
 
         ResilienceConfig resilienceConfig = revolverConfig.getResilienceConfig();
         for (RevolverServiceConfig revolverServiceConfig : revolverConfig.getServices()) {
@@ -120,15 +121,18 @@ public class ResilienceUtil {
             updateBulkHeadsForDefaultServiceConfig(revolverServiceConfig, resilienceConfig);
         }
 
-        POOL_VS_BULK_HEAD.forEach(
-                (s, bulkhead) -> log.info("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime : {}", s,
-                        bulkhead.getBulkheadConfig().getMaxConcurrentCalls(),
-                        bulkhead.getBulkheadConfig().getMaxWaitDuration()));
+        POOL_VS_BULK_HEAD.forEach((s, bulkhead) -> {
+            if (log.isDebugEnabled()) {
+                log.debug("Resilience bulk head Key : {}, bulk head value : {}, maxWaitTime : {}", s,
+                        bulkhead.getBulkheadConfig()
+                                .getMaxConcurrentCalls(), bulkhead.getBulkheadConfig()
+                                .getMaxWaitDuration());
+            }
+        });
         resilienceHttpContext.setPoolVsBulkHeadMap(POOL_VS_BULK_HEAD);
     }
 
     private static void initializeTimeout(RevolverConfig revolverConfig, ResilienceHttpContext resilienceHttpContext) {
-        log.info("Initializing resilience time out");
         Map<String, Integer> poolVsTimeout = Maps.newHashMap();
         Map<String, Integer> apiVsTimeout = Maps.newHashMap();
 
@@ -139,8 +143,11 @@ public class ResilienceUtil {
             updateTimeoutsForDefaultServiceConfig(poolVsTimeout, revolverServiceConfig);
         }
 
-        apiVsTimeout
-                .forEach((s, timeout) -> log.info("Resilience timeout  Key : {}, timeout value : {} ", s, timeout));
+        apiVsTimeout.forEach((s, timeout) -> {
+            if (log.isDebugEnabled()) {
+                log.debug("Resilience timeout  Key : {}, timeout value : {} ", s, timeout)
+            }
+        });
         resilienceHttpContext.setApiVsTimeout(apiVsTimeout);
     }
 
@@ -188,8 +195,11 @@ public class ResilienceUtil {
                             threadPoolName =
                                     revolverServiceConfig.getService() + BULK_HEAD_DELIMITER + revolverHttpApiConfig
                                             .getApi();
-                            log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
-                                    hystrixCommandConfig.getThreadPool().getConcurrency());
+                            if (log.isDebugEnabled()) {
+                                log.debug("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
+                                        hystrixCommandConfig.getThreadPool()
+                                                .getConcurrency());
+                            }
                             updateBulkheadRegistry(hystrixCommandConfig.getThreadPool(),
                                     threadPoolName, resilienceConfig);
                         }
@@ -235,7 +245,10 @@ public class ResilienceUtil {
         if (threadPoolGroupConfig != null) {
             threadPoolGroupConfig.getThreadPools().forEach(threadPoolConfig -> {
                 String threadPoolName = ThreadPoolUtil.getThreadPoolName(revolverServiceConfig, threadPoolConfig);
-                log.info("ThreadPool Name : {}, Concurrency : {} ", threadPoolName, threadPoolConfig.getConcurrency());
+                if (log.isDebugEnabled()) {
+                    log.debug("ThreadPool Name : {}, Concurrency : {} ", threadPoolName,
+                            threadPoolConfig.getConcurrency());
+                }
                 updateBulkheadRegistry(threadPoolConfig, threadPoolName, resilienceConfig);
             });
 

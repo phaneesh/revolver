@@ -1,4 +1,4 @@
-package io.dropwizard.revolver.routes;
+package io.dropwizard.revolver.vertx;
 
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig.RequestMethod;
@@ -23,7 +23,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 public class RequestUtil {
 
 
-    static UriInfo getUriInfo(RoutingContext routingContext) {
+    public static UriInfo getUriInfo(RoutingContext routingContext) {
 
         return new UriInfo() {
             @Override
@@ -123,7 +123,7 @@ public class RequestUtil {
         };
     }
 
-    static HttpHeaders getHeaders(RoutingContext routingContext) {
+    public static HttpHeaders getHeaders(RoutingContext routingContext) {
         HttpHeaders headers = null;
         try {
             headers = new ContainerRequest(new URI(routingContext.normalisedPath()),
@@ -152,7 +152,7 @@ public class RequestUtil {
         return headers;
     }
 
-    static String getServiceName(RoutingContext routingContext) {
+    public static String getServiceName(RoutingContext routingContext) {
         String path = routingContext.normalisedPath();
         int length = "/apis/".length();
         String servicePath = path.substring(length);
@@ -160,7 +160,7 @@ public class RequestUtil {
         return servicePath.substring(0, indexOfApiSlash);
     }
 
-    static String getApiPath(RoutingContext routingContext) {
+    public static String getApiPath(RoutingContext routingContext) {
         String path = routingContext.normalisedPath();
         int length = "/apis/".length();
         String servicePath = path.substring(length);
@@ -168,7 +168,7 @@ public class RequestUtil {
         return servicePath.substring(indexOfApiSlash + 1);
     }
 
-    static byte[] getBody(RoutingContext routingContext) {
+    public static byte[] getBody(RoutingContext routingContext) {
         return routingContext.getBody() == null ? null : routingContext.getBody()
                 .getBytes();
     }

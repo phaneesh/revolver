@@ -69,23 +69,25 @@ import io.dropwizard.revolver.resource.RevolverMailboxResource;
 import io.dropwizard.revolver.resource.RevolverMailboxResourceV2;
 import io.dropwizard.revolver.resource.RevolverMetadataResource;
 import io.dropwizard.revolver.resource.RevolverRequestResource;
-import io.dropwizard.revolver.routes.RouterRegistry;
 import io.dropwizard.revolver.splitting.PathExpressionSplitConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
+import io.dropwizard.revolver.vertx.RevolverVerticle;
+import io.dropwizard.revolver.vertx.routes.RouterRegistry;
 import io.dropwizard.riemann.RiemannBundle;
 import io.dropwizard.riemann.RiemannConfig;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.vertx.circuitbreaker.CircuitBreaker;
 import io.vertx.circuitbreaker.CircuitBreakerOptions;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.ext.web.Router;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -96,7 +98,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.log4j.LogManager;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 /**
@@ -108,7 +109,9 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public static final ObjectMapper MSG_PACK_OBJECT_MAPPER = new ObjectMapper(
             new MessagePackFactory());
     public static final Map<String, Boolean> apiStatus = new ConcurrentHashMap<>();
-    public static final Vertx vertx = Vertx.vertx();
+    public static final Vertx vertx = Vertx.vertx(new VertxOptions());
+    public static final Router router = Router.router(vertx);
+
     public static final CircuitBreaker cb = CircuitBreaker.create("my-circuit-breaker", vertx,
             new CircuitBreakerOptions().setMaxFailures(2)
                     .setTimeout(20000)
@@ -403,27 +406,16 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     private void initializeVertx(Environment environment, PersistenceProvider persistenceProvider,
             InlineCallbackHandler callbackHandler, MetricRegistry metrics) {
 
-        Router router = Router.router(vertx);
+        RevolverRequestResource revolverRequestResource = new RevolverRequestResource(environment.getObjectMapper(),
+                environment.getObjectMapper(), persistenceProvider, callbackHandler, metrics, revolverConfig);
         RouterRegistry.builder()
                 .router(router)
-                .revolverRequestResource(
-                        new RevolverRequestResource(environment.getObjectMapper(), environment.getObjectMapper(),
-                                persistenceProvider, callbackHandler, metrics, revolverConfig))
-                .build()
-                .register();
+                .revolverRequestResource(revolverRequestResource)
+                .build();
 
-        log.info("Starting server..");
-        vertx.createHttpServer()
-                .requestHandler(router)
-                .listen(8080, Objects.nonNull(System.getenv("HOST")) ? System.getenv("HOST") : "localhost",
-                        event -> Runtime.getRuntime()
-                                .addShutdownHook(new Thread(() -> {
-                                    vertx.createHttpServer()
-                                            .requestHandler(router)
-                                            .close(r -> log.info("Closing httpServer"));
-                                    log.info("Shutting down..");
-                                    LogManager.shutdown();
-                                })));
+        DeploymentOptions deploymentOptions = new DeploymentOptions();
+        deploymentOptions.setInstances(5);
+        vertx.deployVerticle(RevolverVerticle.class.getName(), deploymentOptions);
     }
 
     public abstract CuratorFramework getCurator();

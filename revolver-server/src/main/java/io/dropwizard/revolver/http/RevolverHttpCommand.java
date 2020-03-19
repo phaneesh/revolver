@@ -37,6 +37,7 @@ import io.dropwizard.revolver.splitting.RevolverSplitServiceConfig;
 import io.dropwizard.revolver.splitting.SplitConfig;
 import io.dropwizard.revolver.splitting.SplitStrategy;
 import io.vertx.core.http.HttpClient;
+import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
@@ -231,12 +232,12 @@ public class RevolverHttpCommand extends
         Request.Builder httpRequest = initializeRequest(request);
         httpRequest.get();
         if (request.getRoutingContext() != null) {
-            return getFromVertx(request);
+            return executeGetByVertx(request);
         }
         return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
     }
 
-    private RevolverHttpResponse getFromVertx(RevolverHttpRequest request) throws Exception {
+    private RevolverHttpResponse executeGetByVertx(RevolverHttpRequest request) throws Exception {
         RoutingContext routingContext = request.getRoutingContext();
         HttpUrl url = getServiceUrl(request, getApiConfiguration());
         RevolverHttpResponse revolverHttpResponse = RevolverHttpResponse.builder()
@@ -301,6 +302,9 @@ public class RevolverHttpCommand extends
     }
 
     private RevolverHttpResponse doPost(RevolverHttpRequest request) throws Exception {
+        if (request.getRoutingContext() != null) {
+            return executePostByVertx(request);
+        }
         Request.Builder httpRequest = initializeRequest(request);
         if (request.getBody() != null) {
             if (null != request.getHeaders() && StringUtils.isNotBlank(request.getHeaders()
@@ -314,6 +318,21 @@ public class RevolverHttpCommand extends
             httpRequest.post(RequestBody.create(MediaType.parse("*/*"), new byte[0]));
         }
         return executeRequest(getApiConfiguration(), httpRequest.build(), true, request);
+    }
+
+    private RevolverHttpResponse executePostByVertx(RevolverHttpRequest request) throws Exception {
+        RoutingContext routingContext = request.getRoutingContext();
+        HttpUrl url = getServiceUrl(request, getApiConfiguration());
+        RevolverHttpResponse revolverHttpResponse = RevolverHttpResponse.builder()
+                .build();
+        log.info("Request Port : {}, Host : {}, Path : {}", url.port(), url.host(), url.encodedPath());
+        RevolverBundle.cb.execute(future -> {
+            HttpClientRequest httpClientRequest = vertxClient.post(url.port(), url.host(), url.encodedPath());
+            httpClientRequest.write(routingContext.getBody());
+            future.complete();
+        });
+
+        return revolverHttpResponse;
     }
 
     private RevolverHttpResponse doPut(RevolverHttpRequest request) throws Exception {

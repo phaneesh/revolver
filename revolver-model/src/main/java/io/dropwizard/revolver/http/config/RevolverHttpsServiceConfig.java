@@ -66,7 +66,8 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
             ThreadPoolGroupConfig threadPoolGroupConfig,
             RevolverHttpServiceSplitConfig serviceSplitConfig,
             SentinelCommandConfig sentinelCommandConfig) {
-        super(type, service, sentinelCommandConfig);
+        super(type, service);
+        this.setSentinelCommandConfig(sentinelCommandConfig);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
         this.authEnabled = authEnabled;

@@ -5,7 +5,7 @@
 
     <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>2.0.4</version>
+    <version>2.0.5</version>
     <modules>
         <module>revolver-model</module>
         <module>resilience4j</module>
@@ -65,7 +65,7 @@
         <commons.text.version>1.4</commons.text.version>
         <caffeine.version>2.6.2</caffeine.version>
         <junit.version>4.12</junit.version>
-        <mockito.version>2.13.0</mockito.version>
+        <mockito.version>2.20.0</mockito.version>
         <wiremock.version>1.58</wiremock.version>
         <lombok.version>1.18.0</lombok.version>
         <guava.version>23.0</guava.version>

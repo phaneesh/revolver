@@ -145,7 +145,7 @@ public class ResilienceUtil {
 
         apiVsTimeout.forEach((s, timeout) -> {
             if (log.isDebugEnabled()) {
-                log.debug("Resilience timeout  Key : {}, timeout value : {} ", s, timeout)
+                log.debug("Resilience timeout  Key : {}, timeout value : {} ", s, timeout);
             }
         });
         resilienceHttpContext.setApiVsTimeout(apiVsTimeout);

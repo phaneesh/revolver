@@ -17,11 +17,11 @@
 
 package io.dropwizard.revolver.http.model;
 
+import com.google.common.base.Objects;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -32,11 +32,28 @@ import lombok.ToString;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode
 @ToString
 public class ApiPathMap {
 
     private RevolverHttpApiConfig api;
 
     private String path;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof ApiPathMap)) {
+            return false;
+        }
+        ApiPathMap that = (ApiPathMap) o;
+        return Objects.equal(api.getApi(), that.api.getApi()) &&
+                Objects.equal(path, that.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(api.getApi(), path);
+    }
 }

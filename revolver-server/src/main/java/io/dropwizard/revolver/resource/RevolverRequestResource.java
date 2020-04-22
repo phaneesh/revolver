@@ -33,6 +33,7 @@ import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.core.config.ApiLatencyConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.tracing.TraceInfo;
 import io.dropwizard.revolver.http.RevolverHttpCommand;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
@@ -99,17 +100,17 @@ public class RevolverRequestResource {
     private final PersistenceProvider persistenceProvider;
     private final InlineCallbackHandler callbackHandler;
     private final MetricRegistry metrics;
-    private final RevolverConfig revolverConfig;
+    private final RevolverConfigHolder revolverConfigHolder;
 
     public RevolverRequestResource(ObjectMapper jsonObjectMapper, ObjectMapper msgPackObjectMapper,
             PersistenceProvider persistenceProvider, InlineCallbackHandler callbackHandler,
-            MetricRegistry metrics, RevolverConfig revolverConfig) {
+            MetricRegistry metrics, RevolverConfigHolder revolverConfigHolder) {
         this.jsonObjectMapper = jsonObjectMapper;
         this.msgPackObjectMapper = msgPackObjectMapper;
         this.persistenceProvider = persistenceProvider;
         this.callbackHandler = callbackHandler;
         this.metrics = metrics;
-        this.revolverConfig = revolverConfig;
+        this.revolverConfigHolder = revolverConfigHolder;
     }
 
     @GET
@@ -342,7 +343,7 @@ public class RevolverRequestResource {
     private String getCallMode(ApiPathMap apiMap, HttpHeaders headers) {
 
         val callMode = headers.getRequestHeaders().getFirst(RevolversHttpHeaders.CALL_MODE_HEADER);
-        OptimizerConfig optimizerConfig = revolverConfig.getOptimizerConfig();
+        OptimizerConfig optimizerConfig = revolverConfigHolder.getConfig().getOptimizerConfig();
         if (optimizerConfig == null || !optimizerConfig.isEnabled()
                 || optimizerConfig.getTimeConfig() == null || !Strings.isNullOrEmpty(callMode)
                 || !(headers.getRequestHeaders()
@@ -353,7 +354,7 @@ public class RevolverRequestResource {
         if (apiLatencyConfig == null || apiLatencyConfig.isDowngradeDisable()) {
             return callMode;
         }
-        OptimizerTimeConfig timeoutConfig = revolverConfig.getOptimizerConfig().getTimeConfig();
+        OptimizerTimeConfig timeoutConfig = revolverConfigHolder.getConfig().getOptimizerConfig().getTimeConfig();
         if (apiLatencyConfig.getLatency() > timeoutConfig.getAppLatencyThresholdValue()) {
             return RevolverHttpCommand.CALL_MODE_POLLING;
         }

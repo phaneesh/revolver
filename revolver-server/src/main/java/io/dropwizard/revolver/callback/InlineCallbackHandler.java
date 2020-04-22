@@ -26,6 +26,7 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
@@ -64,8 +65,8 @@ public class InlineCallbackHandler extends CallbackHandler {
 
     @Builder
     public InlineCallbackHandler(PersistenceProvider persistenceProvider,
-            RevolverConfig revolverConfig) {
-        super(persistenceProvider, revolverConfig);
+            RevolverConfigHolder revolverConfigHolder) {
+        super(persistenceProvider, revolverConfigHolder);
         this.clientLoadingCache = Caffeine.newBuilder()
                 .build(key -> buildConfiguration(key.callbackRequest, key.endpoint));
     }
@@ -174,9 +175,9 @@ public class InlineCallbackHandler extends CallbackHandler {
         method = Strings.isNullOrEmpty(method) ? "POST" : method;
         String timeout = callbackRequest.getHeaders()
                 .getOrDefault(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER, Collections
-                        .singletonList(String.valueOf(revolverConfig.getCallbackTimeout()))).get(0);
+                        .singletonList(String.valueOf(revolverConfigHolder.getConfig().getCallbackTimeout()))).get(0);
         timeout =
-                Strings.isNullOrEmpty(timeout) ? String.valueOf(revolverConfig.getCallbackTimeout())
+                Strings.isNullOrEmpty(timeout) ? String.valueOf(revolverConfigHolder.getConfig().getCallbackTimeout())
                         : timeout;
         switch (uri.getScheme()) {
             case "https":

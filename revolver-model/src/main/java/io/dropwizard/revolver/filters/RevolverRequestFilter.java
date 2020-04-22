@@ -18,6 +18,7 @@ package io.dropwizard.revolver.filters;
 
 import com.google.common.base.Strings;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.http.RevolversHttpHeaders;
 import java.time.Instant;
 import java.util.UUID;
@@ -41,10 +42,10 @@ import lombok.val;
 @Singleton
 public class RevolverRequestFilter implements ContainerRequestFilter {
 
-    private final RevolverConfig config;
+    private final RevolverConfigHolder configHolder;
 
-    public RevolverRequestFilter(RevolverConfig config) {
-        this.config = config;
+    public RevolverRequestFilter(RevolverConfigHolder configHolder) {
+        this.configHolder = configHolder;
     }
 
     @Override
@@ -88,7 +89,7 @@ public class RevolverRequestFilter implements ContainerRequestFilter {
                         .getHeaderString(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER))) {
                     containerRequestContext.getHeaders()
                             .add(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER,
-                                    String.valueOf(config.getCallbackTimeout()));
+                                    String.valueOf(configHolder.getConfig().getCallbackTimeout()));
                 }
                 //Add callback method header if it is absent
                 if (Strings.isNullOrEmpty(containerRequestContext

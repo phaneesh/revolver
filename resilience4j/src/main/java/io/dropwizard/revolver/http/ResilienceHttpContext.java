@@ -72,7 +72,10 @@ public class ResilienceHttpContext extends RevolverHttpContext {
 
     @Override
     public void reload(RevolverConfig revolverConfig) {
+        // change executor also with new thread pool config for resilience
         setupExecutor(revolverConfig.getResilienceConfig());
+
+        // initialize resilience bulkheads, circuit breakers again
         ResilienceUtil.initializeResilience(revolverConfig, this);
     }
 

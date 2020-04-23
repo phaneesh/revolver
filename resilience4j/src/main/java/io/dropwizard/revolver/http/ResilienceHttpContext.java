@@ -86,6 +86,10 @@ public class ResilienceHttpContext extends RevolverHttpContext {
     }
 
     private void setupExecutor(ResilienceConfig resilienceConfig) {
+        if(null == resilienceConfig){
+            resilienceConfig = new ResilienceConfig();
+        }
+
         ThreadPoolConfig threadPoolConfig = resilienceConfig.getThreadPoolConfig();
         ThreadFactory threadFactory = new NamedThreadFactory(THREAD_POOL_PREFIX);
         this.executor = new ThreadPoolExecutor(threadPoolConfig.getCorePoolSize(), threadPoolConfig.getMaxPoolSize(),

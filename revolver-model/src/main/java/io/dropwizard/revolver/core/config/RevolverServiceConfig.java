@@ -17,9 +17,11 @@
 
 package io.dropwizard.revolver.core.config;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.dropwizard.revolver.core.config.resilience.ResilienceCommandConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,6 +36,8 @@ import org.hibernate.validator.constraints.NotBlank;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
+@JsonSubTypes({@JsonSubTypes.Type(value = RevolverHttpServiceConfig.class, name = "http"),
+        @JsonSubTypes.Type(value = RevolverHttpsServiceConfig.class, name = "https")})
 @ToString
 public class RevolverServiceConfig {
 
@@ -47,11 +51,9 @@ public class RevolverServiceConfig {
     private String fallbackAddress;
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
     private SentinelCommandConfig sentinelCommandConfig = new SentinelCommandConfig();
-    private ResilienceCommandConfig resilienceCommandConfig = new ResilienceCommandConfig();
 
-    public RevolverServiceConfig(String type, String service, SentinelCommandConfig sentinelCommandConfig) {
+    public RevolverServiceConfig(String type, String service) {
         this.type = type;
         this.service = service;
-        this.sentinelCommandConfig = sentinelCommandConfig;
     }
 }

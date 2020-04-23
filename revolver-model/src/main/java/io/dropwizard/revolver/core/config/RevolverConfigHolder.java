@@ -10,7 +10,7 @@ public class RevolverConfigHolder {
 
     public RevolverConfigHolder(RevolverConfig initialRevolverConfig) {
         this.configReference = new AtomicReference<>(initialRevolverConfig);
-        this.lastUpdatedTimestamp = new AtomicLong(0L);
+        this.lastUpdatedTimestamp = new AtomicLong(System.currentTimeMillis());
     }
 
     public RevolverConfig getConfig() {

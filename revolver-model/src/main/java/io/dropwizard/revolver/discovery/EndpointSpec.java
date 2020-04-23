@@ -17,14 +17,19 @@
 
 package io.dropwizard.revolver.discovery;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dropwizard.revolver.discovery.model.EndpointSpecType;
+import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
+import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
 import javax.validation.constraints.NotNull;
 
 /**
  * @author phaneesh
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
+@JsonSubTypes({@JsonSubTypes.Type(value = RangerEndpointSpec.class, name = "ranger_sharded"),
+        @JsonSubTypes.Type(value = SimpleEndpointSpec.class, name = "simple")})
 public abstract class EndpointSpec {
 
     @NotNull

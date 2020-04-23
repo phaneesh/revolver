@@ -54,8 +54,6 @@ public class SentinelUtil {
             return;
         }
         addFlowRules(sentinelCommandConfig.getFlowControlConfig(), sentinelRules, poolsInitialized);
-
-
     }
 
     private static void addFlowRules(SentinelFlowControlConfig flowControlConfig, SentinelRules sentinelRules,

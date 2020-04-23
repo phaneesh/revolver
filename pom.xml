@@ -5,14 +5,14 @@
 
     <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>2.0.5</version>
+    <version>2.0.7</version>
     <modules>
         <module>revolver-model</module>
         <module>resilience4j</module>
-        <module>sentinel</module>
+        <!--<module>sentinel</module>-->
         <module>revolver-core</module>
         <module>revolver-server</module>
-        <module>revolver-hystrix</module>
+        <!--<module>revolver-hystrix</module>-->
     </modules>
     <packaging>pom</packaging>
 
@@ -260,17 +260,44 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.7.0</version>
                 <configuration>
-                    <release>11</release>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.ow2.asm</groupId>
-                        <artifactId>asm</artifactId>
-                        <version>7.2</version>
-                    </dependency>
-                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>cobertura-maven-plugin</artifactId>
+                <version>2.7</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <instrumentation>
+                        <ignoreTrivial>true</ignoreTrivial>
+                        <excludes>
+                            <exclude>io/dropwizard/revolver/**/model/**/*.class</exclude>
+                            <exclude>io/dropwizard/revolver/**/config/**/*.class</exclude>
+                        </excludes>
+                    </instrumentation>
+                    <check>
+                        <branchRate>70</branchRate>
+                        <lineRate>70</lineRate>
+                        <haltOnFailure>false</haltOnFailure>
+                        <totalBranchRate>70</totalBranchRate>
+                        <totalLineRate>70</totalLineRate>
+                        <packageLineRate>70</packageLineRate>
+                        <packageBranchRate>70</packageBranchRate>
+                    </check>
+                    <formats>
+                        <format>html</format>
+                    </formats>
+                </configuration>
             </plugin>
         </plugins>
     </build>

@@ -34,7 +34,7 @@ public abstract class ConfigUpdateEventListener {
                 configLoadInfo.setPreviousLoadTime(new Date());
             }
         } catch (Exception e) {
-            log.error("Error updating revolver configuration", e);
+            log.error("Error updating "+configAttribute+" configuration", e);
         }
     }
 

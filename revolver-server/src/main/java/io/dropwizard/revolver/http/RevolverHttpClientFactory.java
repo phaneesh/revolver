@@ -165,7 +165,7 @@ public class RevolverHttpClientFactory {
         builder.addInterceptor(chain -> {
             Request userAgentRequest = chain.request()
                     .newBuilder()
-                    .header("User-Agent", "revolver")
+                    .addHeader("User-Agent", "revolver")
                     .build();
             return chain.proceed(userAgentRequest);
         });

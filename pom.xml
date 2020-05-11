@@ -5,14 +5,14 @@
 
     <groupId>io.revolver</groupId>
     <artifactId>dropwizard-revolver</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.8</version>
     <modules>
         <module>revolver-model</module>
         <module>resilience4j</module>
-        <module>sentinel</module>
+        <!--<module>sentinel</module>-->
         <module>revolver-core</module>
         <module>revolver-server</module>
-        <module>revolver-hystrix</module>
+        <!--<module>revolver-hystrix</module>-->
     </modules>
     <packaging>pom</packaging>
 
@@ -59,14 +59,13 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <dropwizard.version>1.3.7</dropwizard.version>
-        <dropwizard.servicediscovery>1.3.13-2</dropwizard.servicediscovery>
-        <ranger.version>0.5</ranger.version>
+        <dropwizard.servicediscovery>1.3.13-5</dropwizard.servicediscovery>
         <okhttp.version>3.13.1</okhttp.version>
         <aerospike.version>4.4.3</aerospike.version>
         <commons.text.version>1.4</commons.text.version>
         <caffeine.version>2.6.2</caffeine.version>
         <junit.version>4.12</junit.version>
-        <mockito.version>2.13.0</mockito.version>
+        <mockito.version>2.20.0</mockito.version>
         <wiremock.version>1.58</wiremock.version>
         <lombok.version>1.18.0</lombok.version>
         <guava.version>23.0</guava.version>
@@ -160,17 +159,6 @@
             <groupId>org.hdrhistogram</groupId>
             <artifactId>HdrHistogram</artifactId>
             <version>2.1.9</version>
-        </dependency>
-        <dependency>
-            <groupId>com.flipkart.ranger</groupId>
-            <artifactId>ranger</artifactId>
-            <version>${ranger.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.aerospike</groupId>

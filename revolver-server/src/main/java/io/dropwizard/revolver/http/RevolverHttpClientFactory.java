@@ -59,6 +59,7 @@ import okhttp3.Credentials;
 import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.OkHttpClient.Builder;
+import okhttp3.Request;
 import okhttp3.internal.tls.OkHostnameVerifier;
 import org.apache.commons.lang3.StringUtils;
 
@@ -161,6 +162,13 @@ public class RevolverHttpClientFactory {
             builder.connectionPool(new ConnectionPool(serviceConfiguration.getConnectionPoolSize(),
                     serviceConfiguration.getConnectionKeepAliveInMillis(), TimeUnit.MILLISECONDS));
         }
+        builder.addInterceptor(chain -> {
+            Request userAgentRequest = chain.request()
+                    .newBuilder()
+                    .addHeader("User-Agent", "revolver")
+                    .build();
+            return chain.proceed(userAgentRequest);
+        });
         return builder.build();
     }
 

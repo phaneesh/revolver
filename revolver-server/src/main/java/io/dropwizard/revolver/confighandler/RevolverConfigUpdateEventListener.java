@@ -46,7 +46,7 @@ public class RevolverConfigUpdateEventListener implements ConfigUpdateEventListe
                         ConfigLoadInfo.builder()
                                 .previousConfigHash(DEFAULT_CONFIG_HASH)
                                 .previousLoadTime(new Date())
-                                .build());
+                                .build()).copy();
     }
 
     @Override

@@ -22,4 +22,8 @@ public class ConfigLoadInfo {
     public ConfigLoadInfo(Date previousLoadTime) {
         this.previousLoadTime = previousLoadTime;
     }
+
+    public ConfigLoadInfo copy(){
+        return new ConfigLoadInfo(this.previousConfigHash, this.previousLoadTime);
+    }
 }

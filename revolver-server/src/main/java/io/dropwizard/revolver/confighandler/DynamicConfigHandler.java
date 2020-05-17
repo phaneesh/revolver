@@ -90,7 +90,7 @@ public class DynamicConfigHandler implements Managed {
             }
             log.info("Initializing dynamic config handler... Config Hash: {}", configLoadInfo.getPreviousConfigHash());
         } catch (Exception e) {
-            log.error("Error fetching configuration", e);
+            log.error("Error initializing dynamic config handler", e);
         }
     }
 

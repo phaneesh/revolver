@@ -30,6 +30,7 @@ import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +57,8 @@ public class DynamicConfigHandler implements Managed {
 
     private RevolverBundle revolverBundle;
 
+    private static Map<String, ConfigLoadInfo> initialConfigLoadInfos;
+
     public DynamicConfigHandler(RevolverConfigHolder revolverConfigHolder,
             ObjectMapper objectMapper, ConfigSource configSource, RevolverBundle revolverBundle) {
         this.revolverConfigHolder = revolverConfigHolder;
@@ -70,7 +73,20 @@ public class DynamicConfigHandler implements Managed {
             if (configSource == null) {
                 configLoadInfo.setPreviousConfigHash(DEFAULT_CONFIG_HASH);
             } else {
-                configLoadInfo.setPreviousConfigHash(computeHash(loadConfigData().toString()));
+                JsonNode appConfig = loadConfigData();
+
+                String initialHash = computeHash(appConfig.toString());
+                configLoadInfo.setPreviousConfigHash(initialHash);
+
+                appConfig.fields()
+                        .forEachRemaining((configAttribute) ->
+                                initialConfigLoadInfos.put(configAttribute.getKey(),
+                                        ConfigLoadInfo.builder()
+                                                .previousLoadTime(new Date())
+                                                .previousConfigHash(computeHash(configAttribute.getValue().toString()))
+                                                .build()
+                                )
+                        );
             }
             log.info("Initializing dynamic config handler... Config Hash: {}", configLoadInfo.getPreviousConfigHash());
         } catch (Exception e) {
@@ -132,11 +148,24 @@ public class DynamicConfigHandler implements Managed {
 
     private static void notifyListeners(ConfigUpdateEvent configUpdateEvent) {
         configUpdateEventListeners
-                .forEach(configUpdateEventListener -> configUpdateEventListener.configUpdated(configUpdateEvent));
+                .forEach(configUpdateEventListener -> {
+                    try {
+                        configUpdateEventListener.configUpdated(configUpdateEvent);
+                    } catch (Exception e) {
+                        log.error("Error while notifying config update event to listener: {}",
+                                configUpdateEventListener, e);
+                    }
+                });
     }
 
     public static void registerConfigUpdateEventListener(ConfigUpdateEventListener configUpdateEventListener) {
-        configUpdateEventListeners.add(configUpdateEventListener);
+        try {
+            configUpdateEventListeners.add(configUpdateEventListener);
+            configUpdateEventListener.initConfigLoadInfo(initialConfigLoadInfos);
+        } catch (Exception e) {
+            log.error("Error while registering config update event listener: {}",
+                    configUpdateEventListener, e);
+        }
     }
 
     public static void registerConfigUpdateEventListeners(List<ConfigUpdateEventListener> eventListeners) {

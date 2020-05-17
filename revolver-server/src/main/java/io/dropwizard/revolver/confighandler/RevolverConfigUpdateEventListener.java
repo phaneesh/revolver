@@ -10,9 +10,9 @@ import io.dropwizard.revolver.core.RevolverContextFactory;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
-import io.dropwizard.revolver.http.RevolverHttpContext;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -40,6 +40,16 @@ public class RevolverConfigUpdateEventListener implements ConfigUpdateEventListe
         this.revolverConfigHolder = configHolder;
     }
 
+    @Override
+    public void initConfigLoadInfo(Map<String, ConfigLoadInfo> initialConfigLoadInfos) {
+        this.configLoadInfo = initialConfigLoadInfos.getOrDefault(configAttribute,
+                        ConfigLoadInfo.builder()
+                                .previousConfigHash(DEFAULT_CONFIG_HASH)
+                                .previousLoadTime(new Date())
+                                .build());
+    }
+
+    @Override
     public void configUpdated(ConfigUpdateEvent configUpdateEvent) {
         try {
             String configString = configUpdateEvent.getUpdatedConfig()

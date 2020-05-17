@@ -10,8 +10,10 @@ import io.dropwizard.revolver.core.RevolverContextFactory;
 import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
+import io.dropwizard.revolver.http.RevolverHttpContext;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -71,7 +73,8 @@ public class RevolverConfigUpdateEventListener implements ConfigUpdateEventListe
 
         RevolverContextFactory revolverContextFactory = RevolverBundle.revolverContextFactory;
         for (RevolverExecutorType revolverExecutorType : RevolverExecutorType.values()) {
-            revolverContextFactory.getContext(revolverExecutorType).reload(revolverConfig);
+            Optional.ofNullable(revolverContextFactory.getContext(revolverExecutorType))
+                    .ifPresent(revolverHttpContext -> revolverHttpContext.reload(revolverConfig));
         }
     }
 

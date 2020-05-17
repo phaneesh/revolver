@@ -52,7 +52,7 @@ public class RevolverConfigUpdater implements Runnable {
             log.info("Running revolver config updater job");
             Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
             if (metricsCache.isEmpty()) {
-                log.info("Metrics cache is empty");
+                log.warn("Metrics cache is empty");
                 return;
             }
 
@@ -380,7 +380,7 @@ public class RevolverConfigUpdater implements Runnable {
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
                 ) {
-            log.info("Metrics not found for pool optimization for pool : {}", poolName);
+            log.warn("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
 

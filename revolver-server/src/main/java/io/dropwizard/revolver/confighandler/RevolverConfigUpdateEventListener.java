@@ -67,11 +67,12 @@ public class RevolverConfigUpdateEventListener implements ConfigUpdateEventListe
     }
 
     public synchronized void configUpdated(RevolverConfig revolverConfig) {
+        RevolverBundle.loadServiceConfiguration(revolverConfig);
+
         RevolverContextFactory revolverContextFactory = RevolverBundle.revolverContextFactory;
         for (RevolverExecutorType revolverExecutorType : RevolverExecutorType.values()) {
             revolverContextFactory.getContext(revolverExecutorType).reload(revolverConfig);
         }
-        RevolverBundle.loadServiceConfiguration(revolverConfig);
     }
 
 }

@@ -29,6 +29,7 @@ import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -57,7 +58,7 @@ public class DynamicConfigHandler implements Managed {
 
     private RevolverBundle revolverBundle;
 
-    private static Map<String, ConfigLoadInfo> initialConfigLoadInfos;
+    private static Map<String, ConfigLoadInfo> initialConfigLoadInfos = new HashMap<>();
 
     public DynamicConfigHandler(RevolverConfigHolder revolverConfigHolder,
             ObjectMapper objectMapper, ConfigSource configSource, RevolverBundle revolverBundle) {

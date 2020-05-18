@@ -51,7 +51,7 @@ public class RevolverMailboxResourceTest extends BaseRevolverTest {
             .addResource(
                     new RevolverRequestResource(environment.getObjectMapper(),
                             RevolverBundle.MSG_PACK_OBJECT_MAPPER, inMemoryPersistenceProvider,
-                            callbackHandler, new MetricRegistry(), revolverConfig))
+                            callbackHandler, new MetricRegistry(), revolverConfigHolder))
             .addResource(
                     new RevolverMailboxResource(inMemoryPersistenceProvider, environment.getObjectMapper(),
                             RevolverBundle.MSG_PACK_OBJECT_MAPPER,

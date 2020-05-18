@@ -15,7 +15,7 @@
  *
  */
 
-package io.dropwizard.revolver.handler;
+package io.dropwizard.revolver.confighandler;
 
 import java.io.InputStream;
 

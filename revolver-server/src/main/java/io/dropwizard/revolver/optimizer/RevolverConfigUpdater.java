@@ -2,8 +2,10 @@ package io.dropwizard.revolver.optimizer;
 
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.RevolverBundle;
+import io.dropwizard.revolver.confighandler.RevolverConfigUpdateEventListener;
 import io.dropwizard.revolver.core.RevolverContextFactory;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
@@ -39,9 +41,10 @@ import lombok.extern.slf4j.Slf4j;
 public class RevolverConfigUpdater implements Runnable {
 
     private static final int DEFAULT_CONCURRENCY = 20;
-    private RevolverConfig revolverConfig;
+    private RevolverConfigHolder revolverConfigHolder;
     private OptimizerConfig optimizerConfig;
     private OptimizerMetricsCache optimizerMetricsCache;
+    private RevolverConfigUpdateEventListener configUpdateEventListener;
 
     @Override
     public void run() {
@@ -90,7 +93,7 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics) {
         AtomicBoolean configUpdated = new AtomicBoolean();
-        revolverConfig.getServices().forEach(revolverServiceConfig -> {
+        revolverConfigHolder.getConfig().getServices().forEach(revolverServiceConfig -> {
 
             if (revolverServiceConfig instanceof RevolverHttpsServiceConfig) {
                 return;
@@ -123,12 +126,8 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
-            log.debug("Updating revolver config to : " + revolverConfig);
-            RevolverContextFactory revolverContextFactory = RevolverBundle.revolverContextFactory;
-            for (RevolverExecutorType revolverExecutorType : RevolverExecutorType.values()) {
-                revolverContextFactory.getContext(revolverExecutorType).reload(revolverConfig);
-            }
-            RevolverBundle.loadServiceConfiguration(revolverConfig);
+            log.debug("Updating revolver config to : " + revolverConfigHolder.getConfig());
+            configUpdateEventListener.configUpdated(revolverConfigHolder.getConfig());
         }
     }
 

@@ -23,10 +23,14 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.common.io.ByteStreams;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -140,10 +144,16 @@ public class DynamicConfigHandler implements Managed {
         log.info(
                 "Fetching configuration from config source. Current Hash: {} | Previous fetch time: {}",
                 configLoadInfo.getPreviousConfigHash(), configLoadInfo.getPreviousLoadTime());
+        InputStream inputStream = configSource.loadConfigData();
+
+        final String config = new String(ByteStreams.toByteArray(inputStream), StandardCharsets.UTF_8);
+        EnvironmentVariableSubstitutor substitutor = new EnvironmentVariableSubstitutor(false, true);
+        final String substituted = substitutor.replace(config);
+        inputStream = new ByteArrayInputStream(substituted.getBytes(StandardCharsets.UTF_8));
+
         JsonNode node = objectMapper
-                .readTree(new YAMLFactory().createParser(configSource.loadConfigData()));
-        EnvironmentVariableSubstitutor substitute = new EnvironmentVariableSubstitutor(false, true);
-        substitute.replace(node.toString());
+                .readTree(new YAMLFactory().createParser(inputStream));
+
         return node;
     }
 

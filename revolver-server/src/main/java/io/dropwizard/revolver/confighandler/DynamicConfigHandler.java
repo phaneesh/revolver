@@ -149,12 +149,8 @@ public class DynamicConfigHandler implements Managed {
         final String config = new String(ByteStreams.toByteArray(inputStream), StandardCharsets.UTF_8);
         EnvironmentVariableSubstitutor substitutor = new EnvironmentVariableSubstitutor(false, true);
         final String substituted = substitutor.replace(config);
-        inputStream = new ByteArrayInputStream(substituted.getBytes(StandardCharsets.UTF_8));
 
-        JsonNode node = objectMapper
-                .readTree(new YAMLFactory().createParser(inputStream));
-
-        return node;
+        return objectMapper.readTree(new YAMLFactory().createParser(substituted));
     }
 
     private static void notifyListeners(ConfigUpdateEvent configUpdateEvent) {

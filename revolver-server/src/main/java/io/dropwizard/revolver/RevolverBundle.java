@@ -29,7 +29,6 @@ import io.dropwizard.msgpack.MsgPackBundle;
 import io.dropwizard.revolver.aeroapike.AerospikeConnectionManager;
 import io.dropwizard.revolver.callback.InlineCallbackHandler;
 import io.dropwizard.revolver.confighandler.ConfigSource;
-import io.dropwizard.revolver.confighandler.ConfigUpdateEventListener;
 import io.dropwizard.revolver.confighandler.DynamicConfigHandler;
 import io.dropwizard.revolver.confighandler.RevolverConfigUpdateEventListener;
 import io.dropwizard.revolver.core.RevolverCommandHandlerFactory;

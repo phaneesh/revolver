@@ -1,10 +1,7 @@
 package io.dropwizard.revolver.optimizer;
 
 import com.google.common.collect.Maps;
-import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.confighandler.RevolverConfigUpdateEventListener;
-import io.dropwizard.revolver.core.RevolverContextFactory;
-import io.dropwizard.revolver.core.config.RevolverConfig;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
@@ -126,7 +123,9 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
-            log.debug("Updating revolver config to : " + revolverConfigHolder.getConfig());
+            if (log.isDebugEnabled()) {
+                log.debug("Updating revolver config to : " + revolverConfigHolder.getConfig());
+            }
             configUpdateEventListener.configUpdated(revolverConfigHolder.getConfig());
         }
     }
@@ -379,7 +378,7 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ThreadPoolMetric.ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
-                ) {
+        ) {
             log.warn("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }

@@ -5,6 +5,7 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import com.google.common.collect.Lists;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelFlowControlConfig;
@@ -19,11 +20,11 @@ import org.apache.commons.lang3.StringUtils;
 @Slf4j
 public class SentinelUtil {
 
-    public static void initializeSentinel(RevolverConfig revolverConfig) {
+    public static void initializeSentinel(RevolverConfigHolder revolverConfigHolder) {
 
         List<String> rulesInitialized = Lists.newArrayList();
         SentinelRules sentinelRules = new SentinelRules();
-        for (RevolverServiceConfig config : revolverConfig.getServices()) {
+        for (RevolverServiceConfig config : revolverConfigHolder.getConfig().getServices()) {
             if (config.getSentinelCommandConfig() == null) {
                 continue;
             }

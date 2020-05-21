@@ -20,6 +20,7 @@ package io.dropwizard.revolver.http;
 
 import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.setup.Environment;
 
@@ -28,7 +29,7 @@ import io.dropwizard.setup.Environment;
  */
 public class RevolverHttpContext extends RevolverContext {
 
-    public void initialize(Environment environment, RevolverConfig revolverConfig,
+    public void initialize(Environment environment, RevolverConfigHolder revolverConfigHolder,
             MetricRegistry metrics) {
 
     }

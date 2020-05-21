@@ -19,7 +19,7 @@ package io.dropwizard.revolver.resource;
 
 import com.codahale.metrics.annotation.Metered;
 import com.google.common.collect.ImmutableMap;
-import io.dropwizard.revolver.handler.DynamicConfigHandler;
+import io.dropwizard.revolver.confighandler.DynamicConfigHandler;
 import io.swagger.annotations.ApiOperation;
 import javax.inject.Singleton;
 import javax.ws.rs.GET;
@@ -49,7 +49,7 @@ public class RevolverConfigResource {
     @Path("/v1/config/reload")
     @POST
     @Metered
-    @ApiOperation(value = "Reload revolver configuration")
+    @ApiOperation(value = "Reload configuration")
     @Produces(MediaType.APPLICATION_JSON)
     public Response reload() {
         long start = System.currentTimeMillis();
@@ -66,10 +66,10 @@ public class RevolverConfigResource {
     @Path("/v1/config/info")
     @GET
     @Metered
-    @ApiOperation(value = "Revolver configuration reload info")
+    @ApiOperation(value = "Configuration reload info")
     @Produces(MediaType.APPLICATION_JSON)
     public Response info() {
-        return Response.ok(dynamicConfigHandler.configLoadInfo()).build();
+        return Response.ok(dynamicConfigHandler.getConfigLoadInfo()).build();
     }
 
 }

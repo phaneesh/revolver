@@ -1,9 +1,8 @@
 package io.dropwizard.revolver.optimizer;
 
 import com.google.common.collect.Maps;
-import io.dropwizard.revolver.RevolverBundle;
-import io.dropwizard.revolver.core.RevolverContextFactory;
-import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.confighandler.RevolverConfigUpdateEventListener;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
@@ -39,9 +38,10 @@ import lombok.extern.slf4j.Slf4j;
 public class RevolverConfigUpdater implements Runnable {
 
     private static final int DEFAULT_CONCURRENCY = 20;
-    private RevolverConfig revolverConfig;
+    private RevolverConfigHolder revolverConfigHolder;
     private OptimizerConfig optimizerConfig;
     private OptimizerMetricsCache optimizerMetricsCache;
+    private RevolverConfigUpdateEventListener configUpdateEventListener;
 
     @Override
     public void run() {
@@ -49,7 +49,7 @@ public class RevolverConfigUpdater implements Runnable {
             log.info("Running revolver config updater job");
             Map<OptimizerCacheKey, OptimizerMetrics> metricsCache = optimizerMetricsCache.getCache();
             if (metricsCache.isEmpty()) {
-                log.info("Metrics cache is empty");
+                log.warn("Metrics cache is empty");
                 return;
             }
 
@@ -90,7 +90,7 @@ public class RevolverConfigUpdater implements Runnable {
             Map<String, OptimizerMetrics> apiLevelBulkheadMetrics,
             Map<String, OptimizerMetrics> apiLevelLatencyMetrics) {
         AtomicBoolean configUpdated = new AtomicBoolean();
-        revolverConfig.getServices().forEach(revolverServiceConfig -> {
+        revolverConfigHolder.getConfig().getServices().forEach(revolverServiceConfig -> {
 
             if (revolverServiceConfig instanceof RevolverHttpsServiceConfig) {
                 return;
@@ -123,12 +123,10 @@ public class RevolverConfigUpdater implements Runnable {
         });
 
         if (configUpdated.get()) {
-            log.debug("Updating revolver config to : " + revolverConfig);
-            RevolverContextFactory revolverContextFactory = RevolverBundle.revolverContextFactory;
-            for (RevolverExecutorType revolverExecutorType : RevolverExecutorType.values()) {
-                revolverContextFactory.getContext(revolverExecutorType).reload(revolverConfig);
+            if (log.isDebugEnabled()) {
+                log.debug("Updating revolver config to : " + revolverConfigHolder.getConfig());
             }
-            RevolverBundle.loadServiceConfiguration(revolverConfig);
+            configUpdateEventListener.configUpdated(revolverConfigHolder.getConfig());
         }
     }
 
@@ -380,8 +378,8 @@ public class RevolverConfigUpdater implements Runnable {
                         .containsKey(ThreadPoolMetric.ROLLING_MAX_ACTIVE_THREADS.getMetricName()))
                         && (optimizerBulkheadMetrics == null || !optimizerBulkheadMetrics.getMetrics()
                         .containsKey(OptimizerMetricsCollector.MAX_ROLLING_ACTIVE_THREADS_METRIC_NAME)))
-                ) {
-            log.info("Metrics not found for pool optimization for pool : {}", poolName);
+        ) {
+            log.warn("Metrics not found for pool optimization for pool : {}", poolName);
             return initialConcurrencyAttrBuilder.build();
         }
 

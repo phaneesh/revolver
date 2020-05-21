@@ -26,6 +26,7 @@ import io.appform.dropwizard.discovery.common.ShardInfo;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.config.CommandHandlerConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.model.RevolverApiMetadata;
 import io.dropwizard.revolver.core.model.RevolverMetadataResponse;
@@ -61,11 +62,11 @@ import lombok.extern.slf4j.Slf4j;
 public class RevolverMetadataResource {
 
     public static final String UNKNOWN = "UNKNOWN";
-    private RevolverConfig config;
+    private RevolverConfigHolder configHolder;
 
     @Builder
-    public RevolverMetadataResource(RevolverConfig config) {
-        this.config = config;
+    public RevolverMetadataResource(RevolverConfigHolder configHolder) {
+        this.configHolder = configHolder;
     }
 
     @Path("/v1/metadata/status")
@@ -76,8 +77,8 @@ public class RevolverMetadataResource {
     public RevolverMetadataResponse status() {
         RevolverMetadataResponse.RevolverMetadataResponseBuilder metadataResponse = RevolverMetadataResponse
                 .builder();
-        metadataResponse.clientId(config.getClientConfig().getClientName());
-        List<RevolverHttpServiceConfig> services = config.getServices().stream()
+        metadataResponse.clientId(configHolder.getConfig().getClientConfig().getClientName());
+        List<RevolverHttpServiceConfig> services = configHolder.getConfig().getServices().stream()
                 .filter(service -> service instanceof RevolverHttpServiceConfig)
                 .map(service -> ((RevolverHttpServiceConfig) service))
                 .sorted(Comparator.comparing(RevolverServiceConfig::getService))
@@ -118,7 +119,7 @@ public class RevolverMetadataResource {
     @ApiOperation(value = "Get configuration of revolver api gateway")
     @Produces(MediaType.APPLICATION_JSON)
     public RevolverConfig config() {
-        return config;
+        return configHolder.getConfig();
     }
 
     @Path("/v1/metadata/config/threads")
@@ -129,7 +130,7 @@ public class RevolverMetadataResource {
     public Response threads() {
         int apiThreads = 0;
         int sharedThreads = 0;
-        for (RevolverServiceConfig s : config.getServices()) {
+        for (RevolverServiceConfig s : configHolder.getConfig().getServices()) {
             if (s instanceof RevolverHttpServiceConfig) {
                 if (((RevolverHttpServiceConfig) s).getApis().stream()
                         .noneMatch(CommandHandlerConfig::isSharedPool)) {

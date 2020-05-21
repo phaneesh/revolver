@@ -35,6 +35,7 @@ import io.dropwizard.revolver.core.config.ClientConfig;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.InMemoryMailBoxConfig;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
@@ -46,7 +47,7 @@ import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.discovery.RevolverServiceResolver;
 import io.dropwizard.revolver.discovery.ServiceResolverConfig;
 import io.dropwizard.revolver.discovery.model.SimpleEndpointSpec;
-import io.dropwizard.revolver.handler.ConfigSource;
+import io.dropwizard.revolver.confighandler.ConfigSource;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig.RequestMethod;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
@@ -88,7 +89,7 @@ public class BaseRevolverTest {
     protected static final Environment environment = mock(Environment.class);
     protected static final ObjectMapper mapper = new ObjectMapper();
     protected static final InMemoryPersistenceProvider inMemoryPersistenceProvider = new InMemoryPersistenceProvider();
-    protected static RevolverConfig revolverConfig;
+    protected static RevolverConfigHolder revolverConfigHolder;
     protected static OptimizerConfig optimizerConfig;
     protected static InlineCallbackHandler callbackHandler;
 
@@ -132,7 +133,7 @@ public class BaseRevolverTest {
 
         optimizerConfig = OptimizerUtils.getDefaultOptimizerConfig();
 
-        revolverConfig = RevolverConfig.builder().mailBox(InMemoryMailBoxConfig.builder().build())
+        RevolverConfig revolverConfig = RevolverConfig.builder().mailBox(InMemoryMailBoxConfig.builder().build())
                 .serviceResolverConfig(
                         ServiceResolverConfig.builder().namespace("test").useCurator(false)
                                 .zkConnectionString("localhost:2181").build())
@@ -354,6 +355,8 @@ public class BaseRevolverTest {
                                                                 .timeout(2000).build()).build())
                                         .build()).build()).build();
 
+        revolverConfigHolder = new RevolverConfigHolder(revolverConfig);
+
         RevolverBundle.serviceNameResolver = RevolverServiceResolver.builder()
                 .objectMapper(environment.getObjectMapper()).build();
         RevolverBundle.loadServiceConfiguration(revolverConfig);
@@ -369,7 +372,7 @@ public class BaseRevolverTest {
 
         @Override
         public RevolverConfig getRevolverConfig(Configuration configuration) {
-            return revolverConfig;
+            return revolverConfigHolder.getConfig();
         }
 
         @Override
@@ -417,7 +420,8 @@ public class BaseRevolverTest {
             }
         });
         callbackHandler = InlineCallbackHandler.builder()
-                .persistenceProvider(inMemoryPersistenceProvider).revolverConfig(revolverConfig)
+                .persistenceProvider(inMemoryPersistenceProvider)
+                .revolverConfigHolder(revolverConfigHolder)
                 .build();
 
         optimizerMetricsCache = OptimizerMetricsCache.builder()
@@ -427,7 +431,8 @@ public class BaseRevolverTest {
                 .optimizerMetricsCache(optimizerMetricsCache).optimizerConfig(optimizerConfig)
                 .build();
         revolverConfigUpdater = RevolverConfigUpdater.builder()
-                .optimizerMetricsCache(optimizerMetricsCache).revolverConfig(revolverConfig)
+                .optimizerMetricsCache(optimizerMetricsCache)
+                .revolverConfigHolder(revolverConfigHolder)
                 .optimizerConfig(optimizerConfig).build();
     }
 }

@@ -4,6 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.collections.CollectionUtils;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.dropwizard.setup.Environment;
@@ -20,7 +21,7 @@ public class RevolverContextFactory {
 
     private final Map<RevolverExecutorType, RevolverHttpContext> CONTEXT_MAP = Maps.newHashMap();
 
-    public RevolverContextFactory(Environment environment, RevolverConfig revolverConfig,
+    public RevolverContextFactory(Environment environment, RevolverConfigHolder revolverConfigHolder,
             MetricRegistry metrics) {
 
         Reflections reflections = new Reflections("io.dropwizard.revolver.http");
@@ -34,7 +35,7 @@ public class RevolverContextFactory {
                     RevolverHttpContext revolverHttpContext = (RevolverHttpContext) obj;
                     CONTEXT_MAP.putIfAbsent(revolverHttpContext.getExecutorType(),
                             revolverHttpContext);
-                    revolverHttpContext.initialize(environment, revolverConfig, metrics);
+                    revolverHttpContext.initialize(environment, revolverConfigHolder, metrics);
 
                 }
             } catch (InstantiationException e) {

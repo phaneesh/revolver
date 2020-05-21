@@ -6,6 +6,7 @@ import static io.dropwizard.revolver.util.ResilienceUtil.circuitBreakerRegistry;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Maps;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.core.config.resilience.ResilienceConfig;
 import io.dropwizard.revolver.core.config.resilience.ThreadPoolConfig;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
@@ -46,22 +47,22 @@ public class ResilienceHttpContext extends RevolverHttpContext {
 
     private MetricRegistry metrics;
 
-    private ResilienceConfig resilienceConfig;
+    private RevolverConfigHolder revolverConfigHolder;
 
     public ResilienceHttpContext() {
-        setupExecutor();
+        setupExecutor(new ResilienceConfig());
     }
 
 
     @Override
-    public void initialize(Environment environment, RevolverConfig revolverConfig, MetricRegistry metrics) {
+    public void initialize(Environment environment, RevolverConfigHolder revolverConfigHolder, MetricRegistry metrics) {
         this.defaultCircuitBreaker = circuitBreakerRegistry.circuitBreaker(DEFAULT_CIRCUIT_BREAKER);
         this.metrics = metrics;
-        this.resilienceConfig = revolverConfig.getResilienceConfig();
-        setupExecutor();
+        this.revolverConfigHolder = revolverConfigHolder;
+        setupExecutor(revolverConfigHolder.getConfig().getResilienceConfig());
 
         ResilienceUtil.bindResilienceMetrics(metrics);
-        ResilienceUtil.initializeResilience(revolverConfig, this);
+        ResilienceUtil.initializeResilience(revolverConfigHolder.getConfig(), this);
     }
 
     @Override
@@ -71,20 +72,27 @@ public class ResilienceHttpContext extends RevolverHttpContext {
 
     @Override
     public void reload(RevolverConfig revolverConfig) {
+        // change executor also with new thread pool config for resilience
+        setupExecutor(revolverConfig.getResilienceConfig());
+
+        // initialize resilience bulkheads, circuit breakers again
         ResilienceUtil.initializeResilience(revolverConfig, this);
     }
 
     public ExecutorService getExecutor() {
         if (executor == null) {
-            setupExecutor();
+            setupExecutor(revolverConfigHolder.getConfig() != null
+                    ? revolverConfigHolder.getConfig().getResilienceConfig()
+                    : new ResilienceConfig());
         }
         return executor;
     }
 
-    private void setupExecutor() {
-        if (resilienceConfig == null) {
+    private void setupExecutor(ResilienceConfig resilienceConfig) {
+        if(null == resilienceConfig){
             resilienceConfig = new ResilienceConfig();
         }
+
         ThreadPoolConfig threadPoolConfig = resilienceConfig.getThreadPoolConfig();
         ThreadFactory threadFactory = new NamedThreadFactory(THREAD_POOL_PREFIX);
         this.executor = new ThreadPoolExecutor(threadPoolConfig.getCorePoolSize(), threadPoolConfig.getMaxPoolSize(),

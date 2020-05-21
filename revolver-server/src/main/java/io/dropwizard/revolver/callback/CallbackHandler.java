@@ -19,18 +19,19 @@ package io.dropwizard.revolver.callback;
 
 import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.core.config.RevolverConfig;
+import io.dropwizard.revolver.core.config.RevolverConfigHolder;
 import io.dropwizard.revolver.persistence.PersistenceProvider;
 
 public abstract class CallbackHandler {
 
     protected PersistenceProvider persistenceProvider;
 
-    protected RevolverConfig revolverConfig;
+    protected RevolverConfigHolder revolverConfigHolder;
 
     public CallbackHandler(PersistenceProvider persistenceProvider,
-            RevolverConfig revolverConfig) {
+            RevolverConfigHolder revolverConfigHolder) {
         this.persistenceProvider = persistenceProvider;
-        this.revolverConfig = revolverConfig;
+        this.revolverConfigHolder = revolverConfigHolder;
     }
 
     public abstract void handle(String requestId, RevolverCallbackResponse response);

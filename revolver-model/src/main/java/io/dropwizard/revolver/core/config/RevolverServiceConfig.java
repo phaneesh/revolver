@@ -20,12 +20,15 @@ package io.dropwizard.revolver.core.config;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
+import java.util.Set;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Singular;
 import lombok.ToString;
 import org.hibernate.validator.constraints.NotBlank;
 
@@ -52,8 +55,14 @@ public class RevolverServiceConfig {
     private HystrixCommandConfig runtime = new HystrixCommandConfig();
     private SentinelCommandConfig sentinelCommandConfig = new SentinelCommandConfig();
 
-    public RevolverServiceConfig(String type, String service) {
+    @Singular("api")
+    private Set<RevolverHttpApiConfig> apis;
+
+    public RevolverServiceConfig(String type,
+                                 String service,
+                                 Set<RevolverHttpApiConfig> apis) {
         this.type = type;
         this.service = service;
+        this.apis = apis;
     }
 }

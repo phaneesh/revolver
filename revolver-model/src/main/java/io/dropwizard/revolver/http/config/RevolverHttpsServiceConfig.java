@@ -50,8 +50,6 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
     private AuthConfig auth;
     private String keyStorePath;
     private String keystorePassword;
-    @Singular("api")
-    private Set<RevolverHttpApiConfig> apis;
     private boolean trackingHeaders;
     private boolean compression;
     private int connectionKeepAliveInMillis = 60000;
@@ -66,7 +64,7 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
             ThreadPoolGroupConfig threadPoolGroupConfig,
             RevolverHttpServiceSplitConfig serviceSplitConfig,
             SentinelCommandConfig sentinelCommandConfig) {
-        super(type, service);
+        super(type, service, apis);
         this.setSentinelCommandConfig(sentinelCommandConfig);
         this.endpoint = enpoint;
         this.connectionPoolSize = connectionPoolSize;
@@ -74,7 +72,6 @@ public class RevolverHttpsServiceConfig extends RevolverServiceConfig {
         this.auth = auth;
         this.keyStorePath = keyStorePath;
         this.keystorePassword = keystorePassword;
-        this.apis = apis;
         this.trackingHeaders = trackingHeaders;
         this.compression = compression;
         this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;

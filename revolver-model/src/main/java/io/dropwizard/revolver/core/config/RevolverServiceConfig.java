@@ -20,10 +20,15 @@ package io.dropwizard.revolver.core.config;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
+import io.dropwizard.revolver.core.model.RevolverExecutorType;
+import io.dropwizard.revolver.discovery.EndpointSpec;
+import io.dropwizard.revolver.http.auth.AuthConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.config.RevolverHttpsServiceConfig;
+import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
 import java.util.Set;
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -44,6 +49,19 @@ import org.hibernate.validator.constraints.NotBlank;
 @ToString
 public class RevolverServiceConfig {
 
+    @NotNull
+    @Valid
+    private EndpointSpec endpoint;
+
+    private boolean authEnabled;
+    private AuthConfig auth;
+    private boolean secured;
+
+    private String keyStorePath;
+    private String keystorePassword;
+
+    private int connectionKeepAliveInMillis = 30000;
+
     protected ThreadPoolGroupConfig threadPoolGroupConfig;
     @NotNull
     @NotBlank
@@ -58,11 +76,43 @@ public class RevolverServiceConfig {
     @Singular("api")
     private Set<RevolverHttpApiConfig> apis;
 
+    private int connectionPoolSize;
+    private boolean trackingHeaders;
+    private boolean compression;
+
+    private RevolverHttpServiceSplitConfig serviceSplitConfig;
+
+    private RevolverExecutorType revolverExecutorType;
+
     public RevolverServiceConfig(String type,
                                  String service,
-                                 Set<RevolverHttpApiConfig> apis) {
+                                 Set<RevolverHttpApiConfig> apis,
+                                 int connectionPoolSize,
+                                 EndpointSpec endpoint,
+                                 boolean authEnabled,
+                                 AuthConfig auth,
+                                 boolean secured,
+                                 String keystorePassword,
+                                 String keyStorePath,
+                                 int connectionKeepAliveInMillis,
+                                 RevolverHttpServiceSplitConfig serviceSplitConfig,
+                                 RevolverExecutorType revolverExecutorType,
+                                 boolean trackingHeaders,
+                                 boolean compression) {
         this.type = type;
         this.service = service;
         this.apis = apis;
+        this.connectionPoolSize = connectionPoolSize;
+        this.endpoint = endpoint;
+        this.authEnabled = authEnabled;
+        this.auth = auth;
+        this.secured = secured;
+        this.keystorePassword = keystorePassword;
+        this.keyStorePath = keyStorePath;
+        this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
+        this.serviceSplitConfig = serviceSplitConfig;
+        this.revolverExecutorType = revolverExecutorType;
+        this.trackingHeaders = trackingHeaders;
+        this.compression = compression;
     }
 }

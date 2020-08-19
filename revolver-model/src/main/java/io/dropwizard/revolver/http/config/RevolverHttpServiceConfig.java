@@ -18,18 +18,13 @@
 package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
-import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.http.auth.AuthConfig;
 import io.dropwizard.revolver.splitting.RevolverHttpServiceSplitConfig;
 import java.util.Set;
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Singular;
 import lombok.ToString;
@@ -37,52 +32,31 @@ import lombok.ToString;
 /**
  * @author phaneesh
  */
-@Data
-@AllArgsConstructor
 @NoArgsConstructor
 @ToString(callSuper = true)
 public class RevolverHttpServiceConfig extends RevolverServiceConfig {
 
-    @NotNull
-    @Valid
-    private EndpointSpec endpoint;
-    private int connectionPoolSize;
-    private boolean authEnabled;
-    private boolean secured;
-    private AuthConfig auth;
-    private String keyStorePath;
-    private String keystorePassword;
-    private boolean trackingHeaders;
-    private boolean compression;
-    private int connectionKeepAliveInMillis = 30000;
-    private RevolverHttpServiceSplitConfig serviceSplitConfig;
-
-    private RevolverExecutorType revolverExecutorType;
-
     @Builder
-    public RevolverHttpServiceConfig(String type, String service, EndpointSpec enpoint,
-            int connectionPoolSize, boolean authEnabled, boolean secured, AuthConfig auth,
-            String keyStorePath, String keystorePassword,
-            @Singular("api") Set<RevolverHttpApiConfig> apis, boolean trackingHeaders,
-            boolean compression, int connectionKeepAliveInMillis,
-            ThreadPoolGroupConfig threadPoolGroupConfig,
-            RevolverHttpServiceSplitConfig serviceSplitConfig, SentinelCommandConfig sentinelCommandConfig,
-            RevolverExecutorType revolverExecutorType) {
-        super(type, service, apis);
+    public RevolverHttpServiceConfig(String type,
+                                     String service,
+                                     EndpointSpec endpoint,
+                                     int connectionPoolSize,
+                                     boolean authEnabled,
+                                     boolean secured,
+                                     AuthConfig auth,
+                                     String keyStorePath,
+                                     String keystorePassword,
+                                     @Singular("api") Set<RevolverHttpApiConfig> apis,
+                                     boolean trackingHeaders,
+                                     boolean compression,
+                                     int connectionKeepAliveInMillis,
+                                     RevolverHttpServiceSplitConfig serviceSplitConfig,
+                                     SentinelCommandConfig sentinelCommandConfig,
+                                     RevolverExecutorType revolverExecutorType) {
+        super(type, service, apis, connectionPoolSize, endpoint, authEnabled, auth, secured, keystorePassword,
+                keyStorePath, connectionKeepAliveInMillis, serviceSplitConfig, revolverExecutorType, trackingHeaders,
+                compression);
         this.setSentinelCommandConfig(sentinelCommandConfig);
-        this.endpoint = enpoint;
-        this.connectionPoolSize = connectionPoolSize;
-        this.authEnabled = authEnabled;
-        this.auth = auth;
-        this.secured = secured;
-        this.keyStorePath = keyStorePath;
-        this.keystorePassword = keystorePassword;
-        this.trackingHeaders = trackingHeaders;
-        this.compression = compression;
-        this.connectionKeepAliveInMillis = connectionKeepAliveInMillis;
-        this.threadPoolGroupConfig = threadPoolGroupConfig;
-        this.serviceSplitConfig = serviceSplitConfig;
-        this.revolverExecutorType = revolverExecutorType;
     }
 
 }

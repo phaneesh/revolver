@@ -26,6 +26,7 @@ import io.dropwizard.revolver.base.core.RevolverCallbackResponse;
 import io.dropwizard.revolver.base.core.RevolverRequestState;
 import io.dropwizard.revolver.core.config.HystrixCommandConfig;
 import io.dropwizard.revolver.core.config.RevolverConfigHolder;
+import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.hystrix.ThreadPoolConfig;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.RangerEndpointSpec;
@@ -55,12 +56,11 @@ import lombok.val;
 /**
  * @author phaneesh
  */
-@Data
 @EqualsAndHashCode(callSuper = false)
 @Slf4j
 public class InlineCallbackHandler extends CallbackHandler {
 
-    private LoadingCache<CallbackConfigKey, RevolverHttpServiceConfig> clientLoadingCache;
+    private LoadingCache<CallbackConfigKey, RevolverServiceConfig> clientLoadingCache;
 
     @Builder
     public InlineCallbackHandler(PersistenceProvider persistenceProvider,
@@ -116,9 +116,10 @@ public class InlineCallbackHandler extends CallbackHandler {
                             .getPort() : "");
             log.info("Callback Request URI: {} | Payload: {}", uri.toString(),
                     new String(callBackResponse.getBody()));
-            RevolverHttpServiceConfig httpCommandConfig = clientLoadingCache
-                    .get(CallbackConfigKey.builder().callbackRequest(callbackRequest)
-                            .endpoint(callbackUri).build());
+            RevolverServiceConfig httpCommandConfig = clientLoadingCache.get(CallbackConfigKey.builder()
+                    .callbackRequest(callbackRequest)
+                    .endpoint(callbackUri)
+                    .build());
             if (null == httpCommandConfig) {
                 log.error("Invalid callback configuration for key: {} for request: {}",
                         uri.toString(), requestId);
@@ -160,17 +161,17 @@ public class InlineCallbackHandler extends CallbackHandler {
         }
     }
 
-    private RevolverHttpServiceConfig buildConfiguration(
-            RevolverCallbackRequest callbackRequest, String endpoint)
-            throws MalformedURLException, URISyntaxException {
+    private RevolverServiceConfig buildConfiguration(RevolverCallbackRequest callbackRequest,
+                                                     String endpoint) throws MalformedURLException, URISyntaxException {
         EndpointSpec endpointSpec = null;
         String apiName = "callback";
         URI uri = new URI(endpoint);
-        String serviceName = uri.getHost().replace(".", "-");
+        String serviceName = uri.getHost()
+                .replace(".", "-");
         String type = null;
         String method = callbackRequest.getHeaders()
-                .getOrDefault(RevolversHttpHeaders.CALLBACK_METHOD_HEADER,
-                        Collections.singletonList("POST")).get(0);
+                .getOrDefault(RevolversHttpHeaders.CALLBACK_METHOD_HEADER, Collections.singletonList("POST"))
+                .get(0);
         method = Strings.isNullOrEmpty(method) ? "POST" : method;
         String timeout = callbackRequest.getHeaders()
                 .getOrDefault(RevolversHttpHeaders.CALLBACK_TIMEOUT_HEADER, Collections
@@ -202,8 +203,13 @@ public class InlineCallbackHandler extends CallbackHandler {
                 apiName = discoveryData[2];
         }
         RevolverHttpServiceConfig httpConfig = RevolverHttpServiceConfig.builder()
-                .authEnabled(false).connectionPoolSize(10).secured(uri.getScheme().equals("https"))
-                .enpoint(endpointSpec).service(serviceName).type(type)
+                .authEnabled(false)
+                .connectionPoolSize(10)
+                .secured(uri.getScheme()
+                        .equals("https"))
+                .endpoint(endpointSpec)
+                .service(serviceName)
+                .type(type)
                 .api(RevolverHttpApiConfig.configBuilder().api(apiName)
                         .method(RevolverHttpApiConfig.RequestMethod.valueOf(method)).path(null)
                         .runtime(HystrixCommandConfig.builder().threadPool(
@@ -214,9 +220,11 @@ public class InlineCallbackHandler extends CallbackHandler {
         return httpConfig;
     }
 
-    private RevolverHttpCommand getCommand(RevolverHttpServiceConfig httpConfig) {
-        return RevolverBundle.getHttpCommand(httpConfig.getService(),
-                httpConfig.getApis().iterator().next().getApi());
+    private RevolverHttpCommand getCommand(RevolverServiceConfig httpConfig) {
+        return RevolverBundle.getHttpCommand(httpConfig.getService(), httpConfig.getApis()
+                .iterator()
+                .next()
+                .getApi());
     }
 
     @Data

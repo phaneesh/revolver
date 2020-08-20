@@ -18,6 +18,7 @@
 package io.dropwizard.revolver.http.config;
 
 import io.dropwizard.revolver.core.config.RevolverServiceConfig;
+import io.dropwizard.revolver.core.config.ThreadPoolGroupConfig;
 import io.dropwizard.revolver.core.config.sentinel.SentinelCommandConfig;
 import io.dropwizard.revolver.core.model.RevolverExecutorType;
 import io.dropwizard.revolver.discovery.EndpointSpec;
@@ -52,10 +53,11 @@ public class RevolverHttpServiceConfig extends RevolverServiceConfig {
                                      int connectionKeepAliveInMillis,
                                      RevolverHttpServiceSplitConfig serviceSplitConfig,
                                      SentinelCommandConfig sentinelCommandConfig,
-                                     RevolverExecutorType revolverExecutorType) {
+                                     RevolverExecutorType revolverExecutorType,
+                                     ThreadPoolGroupConfig threadPoolGroupConfig) {
         super(type, service, apis, connectionPoolSize, endpoint, authEnabled, auth, secured, keystorePassword,
                 keyStorePath, connectionKeepAliveInMillis, serviceSplitConfig, revolverExecutorType, trackingHeaders,
-                compression);
+                compression, threadPoolGroupConfig);
         this.setSentinelCommandConfig(sentinelCommandConfig);
     }
 

@@ -98,7 +98,8 @@ public class RevolverServiceConfig {
                                  RevolverHttpServiceSplitConfig serviceSplitConfig,
                                  RevolverExecutorType revolverExecutorType,
                                  boolean trackingHeaders,
-                                 boolean compression) {
+                                 boolean compression,
+                                 ThreadPoolGroupConfig threadPoolGroupConfig) {
         this.type = type;
         this.service = service;
         this.apis = apis;
@@ -114,5 +115,6 @@ public class RevolverServiceConfig {
         this.revolverExecutorType = revolverExecutorType;
         this.trackingHeaders = trackingHeaders;
         this.compression = compression;
+        this.threadPoolGroupConfig = threadPoolGroupConfig;
     }
 }

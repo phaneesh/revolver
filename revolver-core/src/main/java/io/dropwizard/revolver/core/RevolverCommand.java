@@ -30,7 +30,6 @@ import io.dropwizard.revolver.core.util.RevolverExceptionHelper;
 import io.dropwizard.revolver.http.RevolverContext;
 import io.dropwizard.revolver.http.RevolverHttpContext;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
-import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
@@ -41,19 +40,19 @@ import rx.Observable;
  * @author phaneesh
  */
 @Slf4j
-public abstract class RevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse,
-        ContextType extends RevolverContext, ServiceConfigurationType extends RevolverServiceConfig,
-        CommandHandlerConfigType extends CommandHandlerConfig> {
+public abstract class RevolverCommand<RequestType extends RevolverRequest, ResponseType extends RevolverResponse, ContextType extends RevolverContext, CommandHandlerConfigType extends CommandHandlerConfig> {
 
     private final ContextType context;
     private final RuntimeConfig runtimeConfig;
-    private final ServiceConfigurationType serviceConfiguration;
+    private final RevolverServiceConfig serviceConfiguration;
     private final CommandHandlerConfigType apiConfiguration;
-    private ClientConfig clientConfiguration;
+    private final ClientConfig clientConfiguration;
 
-    public RevolverCommand(ContextType context, ClientConfig clientConfiguration,
-            RuntimeConfig runtimeConfig, ServiceConfigurationType serviceConfiguration,
-            CommandHandlerConfigType apiConfiguration) {
+    public RevolverCommand(ContextType context,
+                           ClientConfig clientConfiguration,
+                           RuntimeConfig runtimeConfig,
+                           RevolverServiceConfig serviceConfiguration,
+                           CommandHandlerConfigType apiConfiguration) {
         if (context == null) {
             context = (ContextType) new RevolverHttpContext();
         }
@@ -99,14 +98,14 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         }
     }
 
-    private RevolverExecutorType getExecutionType(ServiceConfigurationType serviceConfiguration,
-            CommandHandlerConfigType apiConfiguration) {
+    private RevolverExecutorType getExecutionType(RevolverServiceConfig serviceConfiguration,
+                                                  CommandHandlerConfigType apiConfiguration) {
         RevolverExecutorType revolverExecutorType = null;
         if (apiConfiguration instanceof RevolverHttpApiConfig) {
             revolverExecutorType = ((RevolverHttpApiConfig) apiConfiguration).getRevolverExecutorType();
         }
-        if (revolverExecutorType == null && serviceConfiguration instanceof RevolverHttpServiceConfig) {
-            revolverExecutorType = ((RevolverHttpServiceConfig) serviceConfiguration).getRevolverExecutorType();
+        if (revolverExecutorType == null) {
+            revolverExecutorType = serviceConfiguration.getRevolverExecutorType();
         }
         if (revolverExecutorType == null) {
             revolverExecutorType = RevolverExecutorType.RESILIENCE;
@@ -160,7 +159,7 @@ public abstract class RevolverCommand<RequestType extends RevolverRequest, Respo
         return this.runtimeConfig;
     }
 
-    public ServiceConfigurationType getServiceConfiguration() {
+    public RevolverServiceConfig getServiceConfiguration() {
         return this.serviceConfiguration;
     }
 

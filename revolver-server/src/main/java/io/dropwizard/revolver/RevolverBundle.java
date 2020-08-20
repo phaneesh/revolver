@@ -108,7 +108,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
     public static ConcurrentHashMap<String, RevolverHttpApiConfig> apiConfig = new ConcurrentHashMap<>();
     public static RevolverContextFactory revolverContextFactory;
 
-    private static ConcurrentHashMap<String, RevolverHttpServiceConfig> serviceConfig = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, RevolverServiceConfig> serviceConfig = new ConcurrentHashMap<>();
     private static MultivaluedMap<String, ApiPathMap> serviceToPathMap = new MultivaluedHashMap<>();
     private static Map<String, Integer> serviceConnectionPoolMap = new ConcurrentHashMap<>();
 
@@ -179,18 +179,19 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             String type = config.getType();
             switch (type) {
                 case "http":
-                    registerHttpCommand(config);
+                    config.setSecured(false);
                     break;
                 case "https":
-                    registerHttpsCommand(config);
+                    config.setSecured(true);
                     break;
                 default:
                     log.warn("Unsupported Service type: " + type);
             }
+            registerService(config);
         }
     }
 
-    public static Map<String, RevolverHttpServiceConfig> getServiceConfig() {
+    public static Map<String, RevolverServiceConfig> getServiceConfig() {
         return serviceConfig;
     }
 
@@ -212,10 +213,10 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                 .serviceConfiguration(serviceConfig.get(service)).build();
     }
 
-    public static void addHttpCommand(RevolverHttpServiceConfig config) {
+    public static void addHttpCommand(RevolverServiceConfig config) {
         if (!serviceConfig.containsKey(config.getService())) {
             serviceConfig.put(config.getService(), config);
-            registerCommand(config, config);
+            registerCommand(config);
         }
     }
 
@@ -226,7 +227,7 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
             return getContext(revolverExecutorType);
         }
 
-        RevolverHttpServiceConfig revolverHttpServiceConfig = serviceConfig.get(service);
+        RevolverServiceConfig revolverHttpServiceConfig = serviceConfig.get(service);
         revolverExecutorType = revolverHttpServiceConfig.getRevolverExecutorType();
         return getContext(revolverExecutorType);
     }
@@ -238,57 +239,47 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         return revolverContextFactory.getContext(revolverExecutorType);
     }
 
-    private static void registerHttpsCommand(RevolverServiceConfig config) {
-        RevolverHttpsServiceConfig httpsConfig = (RevolverHttpsServiceConfig) config;
-        RevolverHttpServiceConfig revolverHttpServiceConfig = RevolverHttpServiceConfig.builder()
-                .apis(httpsConfig.getApis()).auth(httpsConfig.getAuth())
-                .authEnabled(httpsConfig.isAuthEnabled()).compression(httpsConfig.isCompression())
-                .connectionKeepAliveInMillis(httpsConfig.getConnectionKeepAliveInMillis())
-                .connectionPoolSize(httpsConfig.getConnectionPoolSize())
-                .enpoint(httpsConfig.getEndpoint())
-                .keystorePassword(httpsConfig.getKeystorePassword())
-                .keyStorePath(httpsConfig.getKeyStorePath()).secured(true)
-                .service(httpsConfig.getService()).trackingHeaders(httpsConfig.isTrackingHeaders())
-                .type(httpsConfig.getType()).build();
-        registerCommand(config, revolverHttpServiceConfig);
-    }
+    private static void registerCommand(RevolverServiceConfig config) {
 
-    private static void registerCommand(RevolverServiceConfig config,
-            RevolverHttpServiceConfig revolverHttpServiceConfig) {
-
-        if (config instanceof RevolverHttpServiceConfig) {
-
-            setTotalConcurrencyForService(config);
-            setApiSettings(config);
-
-            generateApiConfigMap((RevolverHttpServiceConfig) config);
-            serviceNameResolver.register(revolverHttpServiceConfig.getEndpoint());
-        }
+        setTotalConcurrencyForService(config);
+        setApiSettings(config);
+        generateApiConfigMap(config);
+        serviceNameResolver.register(config.getEndpoint());
     }
 
     private static void setApiSettings(RevolverServiceConfig config) {
-        ((RevolverHttpServiceConfig) config).getApis().forEach(a -> {
-            String key = config.getService() + "." + a.getApi();
-            apiStatus.put(key, true);
-            apiConfig.put(key, a);
-            if (a.getRuntime() != null && a.getRuntime().getThreadPool() != null) {
-                if (a.getRuntime().getThreadPool().getInitialConcurrency() == 0) {
-                    a.getRuntime().getThreadPool()
-                            .setInitialConcurrency(a.getRuntime().getThreadPool().getConcurrency());
-                }
-            }
-            if (null != a.getSplitConfig() && a.getSplitConfig().isEnabled()) {
-                updateSplitConfig(a);
-                if (CollectionUtils
-                        .isNotEmpty(a.getSplitConfig().getPathExpressionSplitConfigs())) {
+        config.getApis()
+                .forEach(a -> {
+                    String key = config.getService() + "." + a.getApi();
+                    apiStatus.put(key, true);
+                    apiConfig.put(key, a);
+                    if (a.getRuntime() != null && a.getRuntime()
+                            .getThreadPool() != null) {
+                        if (a.getRuntime()
+                                .getThreadPool()
+                                .getInitialConcurrency() == 0) {
+                            a.getRuntime()
+                                    .getThreadPool()
+                                    .setInitialConcurrency(a.getRuntime()
+                                            .getThreadPool()
+                                            .getConcurrency());
+                        }
+                    }
+                    if (null != a.getSplitConfig() && a.getSplitConfig()
+                            .isEnabled()) {
+                        updateSplitConfig(a);
+                        if (CollectionUtils.isNotEmpty(a.getSplitConfig()
+                                .getPathExpressionSplitConfigs())) {
 
-                    List<PathExpressionSplitConfig> sortedOnOrder = a.getSplitConfig()
-                            .getPathExpressionSplitConfigs().stream()
-                            .sorted(Comparator.comparing(PathExpressionSplitConfig::getOrder))
-                            .collect(Collectors.toList());
-                    a.getSplitConfig().setPathExpressionSplitConfigs(sortedOnOrder);
-                }
-            }
+                            List<PathExpressionSplitConfig> sortedOnOrder = a.getSplitConfig()
+                                    .getPathExpressionSplitConfigs()
+                                    .stream()
+                                    .sorted(Comparator.comparing(PathExpressionSplitConfig::getOrder))
+                                    .collect(Collectors.toList());
+                            a.getSplitConfig()
+                                    .setPathExpressionSplitConfigs(sortedOnOrder);
+                        }
+                    }
         });
     }
 
@@ -298,9 +289,13 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         //2. Add concurrency from apis which do not belong to any thread pool group
         int totalConcurrency = 0;
         if (config.getThreadPoolGroupConfig() != null) {
-            totalConcurrency = config.getThreadPoolGroupConfig().getThreadPools().stream()
-                    .mapToInt(ThreadPoolConfig::getConcurrency).sum();
-            config.getThreadPoolGroupConfig().getThreadPools()
+            totalConcurrency = config.getThreadPoolGroupConfig()
+                    .getThreadPools()
+                    .stream()
+                    .mapToInt(ThreadPoolConfig::getConcurrency)
+                    .sum();
+            config.getThreadPoolGroupConfig()
+                    .getThreadPools()
                     .forEach(a -> {
                         if (a.getInitialConcurrency() == 0) {
                             log.info("Initial Concurrency : {}, Thread Pool : {}", a.getInitialConcurrency(),
@@ -309,12 +304,17 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
                         }
                     });
         }
-        totalConcurrency += ((RevolverHttpServiceConfig) config).getApis().stream()
-                .filter(a -> Strings
-                        .isNullOrEmpty(a.getRuntime().getThreadPool().getThreadPoolName()))
-                .mapToInt(a -> a.getRuntime().getThreadPool().getConcurrency()).sum();
+        totalConcurrency += config.getApis()
+                .stream()
+                .filter(a -> Strings.isNullOrEmpty(a.getRuntime()
+                        .getThreadPool()
+                        .getThreadPoolName()))
+                .mapToInt(a -> a.getRuntime()
+                        .getThreadPool()
+                        .getConcurrency())
+                .sum();
 
-        ((RevolverHttpServiceConfig) config).setConnectionPoolSize(totalConcurrency);
+        config.setConnectionPoolSize(totalConcurrency);
     }
 
     private static void updateSplitConfig(RevolverHttpApiConfig apiConfig) {
@@ -331,33 +331,30 @@ public abstract class RevolverBundle<T extends Configuration> implements Configu
         }
     }
 
-    private static void registerHttpCommand(RevolverServiceConfig config) {
-        RevolverHttpServiceConfig httpConfig = (RevolverHttpServiceConfig) config;
-        httpConfig.setSecured(false);
-        registerCommand(config, httpConfig);
+    private static void registerService(RevolverServiceConfig config) {
+        registerCommand(config);
 
-        if (serviceConfig.containsKey(httpConfig.getService())) {
-            serviceConfig.put(config.getService(), httpConfig);
-            if (serviceConnectionPoolMap.get(httpConfig.getService()) != null
-                    && !serviceConnectionPoolMap.get(httpConfig.getService())
-                    .equals(((RevolverHttpServiceConfig) config).getConnectionPoolSize())) {
-                RevolverHttpClientFactory.refreshClient(httpConfig);
+        if (serviceConfig.containsKey(config.getService())) {
+            serviceConfig.put(config.getService(), config);
+            if (serviceConnectionPoolMap.get(config.getService()) != null && !serviceConnectionPoolMap.get(
+                    config.getService())
+                    .equals(config.getConnectionPoolSize())) {
+                RevolverHttpClientFactory.refreshClient(config);
             }
         } else {
-            serviceConfig.put(config.getService(), httpConfig);
+            serviceConfig.put(config.getService(), config);
         }
-        serviceConnectionPoolMap.put(httpConfig.getService(), httpConfig.getConnectionPoolSize());
-
+        serviceConnectionPoolMap.put(config.getService(), config.getConnectionPoolSize());
     }
 
-    private static void generateApiConfigMap(
-            RevolverHttpServiceConfig serviceConfiguration) {
+    private static void generateApiConfigMap(RevolverServiceConfig serviceConfiguration) {
         val tokenMatch = Pattern.compile("\\{(([^/])+\\})");
         List<RevolverHttpApiConfig> apis = new ArrayList<>(serviceConfiguration.getApis());
         apis.sort((o1, o2) -> {
             String o1Expr = generatePathExpression(o1.getPath());
             String o2Expr = generatePathExpression(o2.getPath());
-            return tokenMatch.matcher(o2Expr).groupCount() - tokenMatch.matcher(o1Expr)
+            return tokenMatch.matcher(o2Expr)
+                    .groupCount() - tokenMatch.matcher(o1Expr)
                     .groupCount();
         });
         apis.sort(Comparator.comparing(RevolverHttpApiConfig::getPath));

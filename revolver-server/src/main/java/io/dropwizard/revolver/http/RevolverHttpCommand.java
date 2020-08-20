@@ -23,13 +23,13 @@ import com.google.common.base.Strings;
 import io.dropwizard.revolver.RevolverBundle;
 import io.dropwizard.revolver.core.RevolverCommand;
 import io.dropwizard.revolver.core.config.ClientConfig;
+import io.dropwizard.revolver.core.config.RevolverServiceConfig;
 import io.dropwizard.revolver.core.config.RuntimeConfig;
 import io.dropwizard.revolver.core.util.RevolverCommandHelper;
 import io.dropwizard.revolver.discovery.EndpointSpec;
 import io.dropwizard.revolver.discovery.model.Endpoint;
 import io.dropwizard.revolver.exception.RevolverException;
 import io.dropwizard.revolver.http.config.RevolverHttpApiConfig;
-import io.dropwizard.revolver.http.config.RevolverHttpServiceConfig;
 import io.dropwizard.revolver.http.model.RevolverHttpRequest;
 import io.dropwizard.revolver.http.model.RevolverHttpResponse;
 import io.dropwizard.revolver.retry.RetryUtils;
@@ -58,8 +58,7 @@ import org.apache.commons.text.StringSubstitutor;
  */
 @Slf4j
 public class RevolverHttpCommand extends
-        RevolverCommand<RevolverHttpRequest, RevolverHttpResponse, RevolverHttpContext, RevolverHttpServiceConfig, RevolverHttpApiConfig> {
-
+        RevolverCommand<RevolverHttpRequest, RevolverHttpResponse, RevolverHttpContext, RevolverHttpApiConfig> {
 
     public static final String CALL_MODE_POLLING = "POLLING";
     public static final String CALL_MODE_CALLBACK = "CALLBACK";
@@ -69,12 +68,11 @@ public class RevolverHttpCommand extends
 
     @Builder
     public RevolverHttpCommand(RuntimeConfig runtimeConfig,
-            ClientConfig clientConfiguration,
-            RevolverHttpServiceConfig serviceConfiguration,
-            RevolverHttpApiConfig apiConfiguration,
-            RevolverHttpContext revolverContext) {
-        super(revolverContext, clientConfiguration, runtimeConfig, serviceConfiguration,
-                apiConfiguration);
+                               ClientConfig clientConfiguration,
+                               RevolverServiceConfig serviceConfiguration,
+                               RevolverHttpApiConfig apiConfiguration,
+                               RevolverHttpContext revolverContext) {
+        super(revolverContext, clientConfiguration, runtimeConfig, serviceConfiguration, apiConfiguration);
         this.client = RevolverHttpClientFactory.buildClient(serviceConfiguration);
     }
 
@@ -162,7 +160,7 @@ public class RevolverHttpCommand extends
 
     private EndpointSpec getFromSplitConfig(RevolverHttpApiConfig apiConfiguration) {
         String serviceEndPoint = getSplitService(apiConfiguration);
-        RevolverHttpServiceConfig serviceConfig = this.getServiceConfiguration();
+        RevolverServiceConfig serviceConfig = this.getServiceConfiguration();
         if (serviceConfig == null || null == serviceConfig.getServiceSplitConfig()
                 || apiConfiguration.getSplitConfig().getSplitStrategy() != SplitStrategy.SERVICE
                 || StringUtils.isEmpty(serviceEndPoint)) {

@@ -58,7 +58,7 @@
         <aerospike.version>4.4.3</aerospike.version>
         <commons.text.version>1.4</commons.text.version>
         <caffeine.version>2.6.2</caffeine.version>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13.1</junit.version>
         <mockito.version>2.13.0</mockito.version>
         <wiremock.version>1.58</wiremock.version>
         <lombok.version>1.18.0</lombok.version>
